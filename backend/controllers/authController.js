@@ -15,7 +15,7 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 const ACCESS_COOKIE_OPTS = {
   httpOnly: true,
   secure: IS_PROD,
-  sameSite: IS_PROD ? 'strict' : 'lax',
+  sameSite: IS_PROD ? 'none' : 'lax',
   maxAge: 15 * 60 * 1000, // 15 min — matches JWT_EXPIRES_IN
   path: '/',
 };
@@ -23,7 +23,7 @@ const ACCESS_COOKIE_OPTS = {
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
   secure: IS_PROD,
-  sameSite: IS_PROD ? 'strict' : 'lax',
+  sameSite: IS_PROD ? 'none' : 'lax',
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   path: '/api/auth/refresh', // FIX: scope refresh cookie to refresh endpoint only
 };
