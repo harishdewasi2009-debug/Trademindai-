@@ -24,7 +24,7 @@ const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 
 const BASE_V2 = 'https://api.upstox.com/v2';
-const BASE_V3 = 'https://api.upstox.com/v3';
+const BASE_V2 = 'https://api.upstox.com/v3';
 
 function assertConfigured() {
   if (!config.upstox.apiKey || !config.upstox.apiSecret) {
@@ -166,7 +166,7 @@ async function upstoxStatus() {
 
 async function requestAccessTokenApproval() {
   assertConfigured();
-  const url = `${BASE_V3}/login/auth/token/request/${config.upstox.apiKey}`;
+  const url = `${BASE_V2}/login/auth/token/request/${config.upstox.apiKey}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
@@ -370,7 +370,7 @@ async function getLtp(symbol) {
   const accessToken = await getValidAccessToken();
   const instrumentKey = await resolveInstrumentKey(symbol);
 
-  const url = `${BASE_V3}/market-quote/quotes?${new URLSearchParams({ instrument_key: instrumentKey })}`;
+  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({ instrument_key: instrumentKey })}`;
   const res = await fetch(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(10_000),
@@ -451,7 +451,7 @@ async function getLtpBatch(symbols) {
   const unresolved = entries.filter((e) => !e.instrumentKey);
   if (!resolved.length) return { quotes: [], errors: unresolved };
 
-  const url = `${BASE_V3}/market-quote/quotes?${new URLSearchParams({
+  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
     instrument_key: resolved.map((e) => e.instrumentKey).join(','),
   })}`;
   const res = await fetch(url, {
@@ -534,7 +534,7 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   const fromDate = from || defaultFromDate(unit);
 
   const encodedKey = encodeURIComponent(instrumentKey);
-  const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
+  const url = `${BASE_V2}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
   const res = await fetch(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
