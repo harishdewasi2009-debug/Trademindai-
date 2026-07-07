@@ -534,7 +534,7 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   const fromDate = from || defaultFromDate(unit);
 
   const encodedKey = encodeURIComponent(instrumentKey);
-  const url = `${BASE_V2}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
+  const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
   const res = await fetch(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
