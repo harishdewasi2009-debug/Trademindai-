@@ -14,8 +14,8 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // FIX: secure: true in production, added __Host- prefix for access token
 const ACCESS_COOKIE_OPTS = {
   httpOnly: true,
-  secure: IS_PROD,
-  sameSite: IS_PROD ? 'strict' : 'lax',
+  secure: true,
+  sameSite:'none',
   maxAge: 15 * 60 * 1000, // 15 min — matches JWT_EXPIRES_IN
   path: '/',
 };
