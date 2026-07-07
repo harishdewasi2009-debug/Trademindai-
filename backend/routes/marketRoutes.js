@@ -10,10 +10,7 @@ const ctrl = require('../controllers/marketController');
 // ── Upstox connection management (admin only) ──
 // One-time-per-day: an admin visits /login, approves on Upstox, gets
 // redirected to /callback which stores the token for everyone to use.
-router.get('/upstox/login', (req, res, next) => {
-  if (process.env.CRON_SECRET && req.query.secret === process.env.CRON_SECRET) return next();
-  return requireAuth(req, res, () => requireAdmin(req, res, next));
-}, adminLimiter, ctrl.upstoxLogin);
+router.get('/upstox/login', requireAuth, requireAdmin, adminLimiter, ctrl.upstoxLogin);
 router.get('/upstox/status', requireAuth, requireAdmin, adminLimiter, ctrl.upstoxStatus);
 
 // No requireAuth here — this is Upstox's own redirect back to us, not a
