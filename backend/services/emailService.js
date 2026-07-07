@@ -58,4 +58,22 @@ async function sendPasswordResetEmail(toEmail, resetUrl) {
   });
 }
 
-module.exports = { sendEmail, sendPasswordResetEmail, IS_CONFIGURED };
+async function sendUpstoxTokenAlert(toEmail, { connected, expiresAt, reason }) {
+  const subject = connected
+    ? 'TradeMind: Upstox reconnected'
+    : '⚠️ TradeMind: Upstox market data needs reconnecting';
+  const bodyText = connected
+    ? `Upstox reconnected successfully. Token valid until ${expiresAt}.`
+    : `Upstox's daily token refresh did not complete — ${reason || 'no approval was received in time'}. Live market data and AI analysis will show "Data Unavailable" until this is fixed.\n\nOpen the admin panel and tap Reconnect, or approve the pending request on your phone (Upstox app or WhatsApp) if one is still open.`;
+  return sendEmail({
+    to: toEmail,
+    subject,
+    text: bodyText,
+    html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto">
+      <h2 style="color:${connected ? '#0F3460' : '#B91C1C'}">${subject}</h2>
+      <p>${bodyText.replace(/\n/g, '<br/>')}</p>
+    </div>`,
+  });
+}
+
+module.exports = { sendEmail, sendPasswordResetEmail, sendUpstoxTokenAlert, IS_CONFIGURED };

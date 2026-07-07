@@ -146,6 +146,62 @@ async function upstoxStatus() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+//  SEMI-AUTOMATED DAILY REFRESH — Upstox's official "Access Token Request"
+//  API (https://upstox.com/developer/api-documentation/access-token-request)
+//
+//  This replaces the full login-redirect dance with: (1) we POST a request,
+//  (2) Upstox pushes an approve/reject notification to the admin's phone
+//  (in-app + WhatsApp), (3) on approval Upstox POSTs the access_token to
+//  our Notifier Webhook URL — which must be set once in the Upstox app
+//  dashboard to https://<your-backend>/api/market/upstox/notifier.
+//
+//  Still needs one human tap/day (Upstox doesn't offer a fully unattended
+//  official flow), but it's a single approve button — no typing password/
+//  PIN/TOTP into a login form. services/tokenScheduler.js calls
+//  requestAccessTokenApproval() automatically every day at 08:00 IST (see
+//  server.js, which starts it on boot); the notifier route below stores
+//  whatever token comes back, and a follow-up check at 08:45 IST emails
+//  the admin if the approval was missed.
+// ─────────────────────────────────────────────────────────────────────────
+
+async function requestAccessTokenApproval() {
+  assertConfigured();
+  const url = `${BASE_V3}/login/auth/token/request/${config.upstox.apiKey}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ client_secret: config.upstox.apiSecret }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.status !== 'success') {
+    throw new AppError(
+      `Upstox access-token request failed: ${data.errors?.[0]?.message || res.statusText}`,
+      502
+    );
+  }
+  // authorization_expiry is when the APPROVAL WINDOW closes (not the token
+  // itself) — the admin must tap approve on their phone before this.
+  return { authorizationExpiry: new Date(Number(data.data.authorization_expiry)) };
+}
+
+/** Called by the public notifier webhook once the admin approves on their phone. */
+async function storeNotifiedToken({ access_token, expires_at }) {
+  if (!access_token) throw new AppError('Notifier payload missing access_token.', 400);
+  const expiresAt = expires_at ? new Date(Number(expires_at)) : nextUpstoxExpiry();
+  await query(
+    `INSERT INTO broker_tokens (provider, access_token, expires_at)
+     VALUES ('upstox', $1, $2)
+     ON CONFLICT (provider) DO UPDATE SET
+       access_token = EXCLUDED.access_token,
+       expires_at   = EXCLUDED.expires_at,
+       created_at   = now()`,
+    [access_token, expiresAt]
+  );
+  return { connected: true, expiresAt };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 //  INSTRUMENT RESOLUTION
 //  Upstox identifies instruments by instrument_key (exchange|ISIN), not by
 //  plain trading symbol. We keep a small built-in seed of frequently-used
@@ -171,20 +227,32 @@ const SEED_INSTRUMENTS = {
   AXISBANK:  'NSE_EQ|INE238A01034',
 };
 
-let instrumentMasterCache = null; // { bySymbol: Map, fetchedAt: Date } — in-memory, process lifetime
+// Upstox publishes one instrument-master file per exchange. NSE is checked
+// first by default (better liquidity/data quality for the same company),
+// BSE is the fallback — see resolveInstrumentKey().
+const EXCHANGE_FILES = {
+  NSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz',
+  BSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/BSE.json.gz',
+};
+
+const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...} } — in-memory, process lifetime
 
 /**
- * Downloads and parses Upstox's NSE equity instrument master (gzipped JSON).
- * This is ~30MB uncompressed; we only do this on a cache miss, and cache
- * the parsed map in memory for the life of the process.
+ * Downloads and parses Upstox's equity instrument master for one exchange
+ * (gzipped JSON, ~30MB uncompressed for NSE). Cache miss only — cached in
+ * memory for the life of the process per exchange.
  */
-async function loadInstrumentMaster() {
-  if (instrumentMasterCache) return instrumentMasterCache;
+async function loadInstrumentMaster(exchange = 'NSE_EQ') {
+  const INSTRUMENT_MASTER_TTL_MS = 24 * 60 * 60 * 1000; // refresh once a day — Upstox republishes this file daily
+  if (instrumentMasterCache[exchange] && (Date.now() - instrumentMasterCache[exchange].fetchedAt.getTime() < INSTRUMENT_MASTER_TTL_MS)) {
+    return instrumentMasterCache[exchange];
+  }
 
-  const res = await fetch('https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz', {
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!res.ok) throw new AppError('Could not download Upstox instrument master.', 502);
+  const url = EXCHANGE_FILES[exchange];
+  if (!url) throw new AppError(`Unsupported exchange: ${exchange}`, 400);
+
+  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) throw new AppError(`Could not download Upstox ${exchange} instrument master.`, 502);
 
   const zlib = require('zlib');
   const buf = Buffer.from(await res.arrayBuffer());
@@ -193,7 +261,7 @@ async function loadInstrumentMaster() {
 
   const bySymbol = new Map();
   for (const row of list) {
-    // Only keep plain equities; Upstox's NSE file also includes indices/derivatives.
+    // Only keep plain equities; the exchange files also include indices/derivatives.
     if (row.instrument_type === 'EQ' && row.trading_symbol) {
       bySymbol.set(row.trading_symbol.toUpperCase(), {
         instrumentKey: row.instrument_key,
@@ -201,36 +269,87 @@ async function loadInstrumentMaster() {
       });
     }
   }
-  instrumentMasterCache = { bySymbol, fetchedAt: new Date() };
-  return instrumentMasterCache;
+  instrumentMasterCache[exchange] = { bySymbol, fetchedAt: new Date() };
+  return instrumentMasterCache[exchange];
 }
 
-/** Resolves a plain NSE trading symbol to an Upstox instrument_key, caching the result in Postgres. */
-async function resolveInstrumentKey(symbolRaw) {
+/**
+ * Resolves a plain trading symbol to an Upstox instrument_key, caching the
+ * result in Postgres. Tries NSE first (default), falls back to BSE if the
+ * symbol isn't listed on NSE. Pass exchange: 'BSE_EQ' to force BSE only.
+ */
+async function resolveInstrumentKey(symbolRaw, exchange) {
   const symbol = (symbolRaw || '').trim().toUpperCase();
   if (!symbol) throw new AppError('stockSymbol is required.', 400);
 
-  if (SEED_INSTRUMENTS[symbol]) return SEED_INSTRUMENTS[symbol];
+  if (!exchange && SEED_INSTRUMENTS[symbol]) return SEED_INSTRUMENTS[symbol];
 
-  const { rows } = await query(
-    `SELECT instrument_key FROM instrument_cache WHERE exchange = 'NSE_EQ' AND trading_symbol = $1`,
-    [symbol]
+  const exchangesToTry = exchange ? [exchange] : ['NSE_EQ', 'BSE_EQ'];
+
+  for (const ex of exchangesToTry) {
+    const { rows } = await query(
+      `SELECT instrument_key FROM instrument_cache WHERE exchange = $1 AND trading_symbol = $2`,
+      [ex, symbol]
+    );
+    if (rows.length) return rows[0].instrument_key;
+
+    const { bySymbol } = await loadInstrumentMaster(ex);
+    const hit = bySymbol.get(symbol);
+    if (!hit) continue; // not on this exchange — try the next one
+
+    await query(
+      `INSERT INTO instrument_cache (exchange, trading_symbol, instrument_key, name)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (exchange, trading_symbol) DO UPDATE SET
+         instrument_key = EXCLUDED.instrument_key, name = EXCLUDED.name, updated_at = now()`,
+      [ex, symbol, hit.instrumentKey, hit.name]
+    );
+
+    return hit.instrumentKey;
+  }
+
+  throw new AppError(
+    `Unknown or unsupported symbol: ${symbol} (checked ${exchangesToTry.join(', ')})`,
+    404
   );
-  if (rows.length) return rows[0].instrument_key;
+}
 
-  const { bySymbol } = await loadInstrumentMaster();
-  const hit = bySymbol.get(symbol);
-  if (!hit) throw new AppError(`Unknown or unsupported symbol: ${symbol}`, 404);
+/**
+ * Returns a page of ALL equities on one exchange (or both), for a full
+ * stock browser — as opposed to searchSymbols() which is prefix-matching
+ * for a search box. Sorted alphabetically for stable pagination.
+ */
+async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
+  const exchanges = exchange ? [exchange] : ['NSE_EQ', 'BSE_EQ'];
+  let all = [];
+  for (const ex of exchanges) {
+    const { bySymbol } = await loadInstrumentMaster(ex);
+    for (const [symbol, info] of bySymbol) {
+      all.push({ symbol, exchange: ex, name: info.name });
+    }
+  }
+  all.sort((a, b) => a.symbol.localeCompare(b.symbol));
 
-  await query(
-    `INSERT INTO instrument_cache (exchange, trading_symbol, instrument_key, name)
-     VALUES ('NSE_EQ', $1, $2, $3)
-     ON CONFLICT (exchange, trading_symbol) DO UPDATE SET
-       instrument_key = EXCLUDED.instrument_key, name = EXCLUDED.name, updated_at = now()`,
-    [symbol, hit.instrumentKey, hit.name]
-  );
+  const total = all.length;
+  const start = (Math.max(1, page) - 1) * limit;
+  const items = all.slice(start, start + limit);
+  return { items, total, page: Math.max(1, page), limit, totalPages: Math.ceil(total / limit) };
+}
+async function searchSymbols(prefixRaw, limit = 20) {
+  const prefix = (prefixRaw || '').trim().toUpperCase();
+  if (!prefix) return [];
 
-  return hit.instrumentKey;
+  const results = [];
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
+    const { bySymbol } = await loadInstrumentMaster(exchange);
+    for (const [symbol, info] of bySymbol) {
+      if (symbol.startsWith(prefix)) {
+        results.push({ symbol, exchange, name: info.name });
+        if (results.length >= limit) return results;
+      }
+    }
+  }
+  return results;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -283,8 +402,117 @@ async function getLtp(symbol) {
   };
 }
 
+/**
+ * Fetches quotes for MANY symbols in one Upstox call (comma-separated
+ * instrument_key) instead of one call per symbol. Each entry in `symbols`
+ * can optionally be { symbol, exchange } to force NSE or BSE; a plain
+ * string defaults to NSE-then-BSE resolution.
+ *
+ * Short-lived shared cache (3s): if many concurrent users request the same
+ * symbol set within a few seconds of each other — very likely, since the
+ * frontend ticker polls the same curated list every 15s — they share one
+ * upstream Upstox call instead of each triggering a fresh one. This is a
+ * real step toward supporting more concurrent users without hitting
+ * Upstox's per-app rate limit, though it's in-memory only (per Node
+ * process) — scaling to multiple Render instances would need a
+ * Redis-backed cache instead for it to stay shared across them.
+ */
+const quoteBatchCache = new Map(); // cacheKey -> { data, expiresAt }
+const QUOTE_CACHE_TTL_MS = 3000;
+
+async function getLtpBatch(symbols) {
+  if (!Array.isArray(symbols) || !symbols.length) {
+    throw new AppError('symbols must be a non-empty array.', 400);
+  }
+
+  const cacheKey = JSON.stringify(symbols.map((s) => (typeof s === 'string' ? s : `${s.symbol}:${s.exchange || ''}`)).sort());
+  const cached = quoteBatchCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  const accessToken = await getValidAccessToken();
+
+  // Resolve every symbol to an instrument_key, keeping a map back to the
+  // original symbol so we can shape the response the same way regardless
+  // of which exchange it was actually found on.
+  const entries = await Promise.all(
+    symbols.map(async (s) => {
+      const symbol = typeof s === 'string' ? s : s.symbol;
+      const exchange = typeof s === 'string' ? undefined : s.exchange;
+      try {
+        const instrumentKey = await resolveInstrumentKey(symbol, exchange);
+        return { symbol: symbol.toUpperCase(), instrumentKey, error: null };
+      } catch (err) {
+        return { symbol: symbol.toUpperCase(), instrumentKey: null, error: err.message };
+      }
+    })
+  );
+
+  const resolved = entries.filter((e) => e.instrumentKey);
+  const unresolved = entries.filter((e) => !e.instrumentKey);
+  if (!resolved.length) return { quotes: [], errors: unresolved };
+
+  const url = `${BASE_V3}/market-quote/quotes?${new URLSearchParams({
+    instrument_key: resolved.map((e) => e.instrumentKey).join(','),
+  })}`;
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new AppError(`Upstox batch quote request failed: ${errText.slice(0, 200)}`, 502);
+  }
+
+  const data = await res.json();
+  const byInstrumentKey = new Map(
+    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
+  );
+
+  const quotes = resolved.map(({ symbol, instrumentKey }) => {
+    // Upstox keys the response object by a slightly different string than
+    // the request instrument_key in some cases, so also try a loose match.
+    const quote =
+      byInstrumentKey.get(instrumentKey) ||
+      Object.values(data.data || {}).find((q) => q.instrument_token === instrumentKey);
+
+    if (!quote) return { symbol, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+
+    const lastPrice = quote.last_price;
+    const previousClose = quote.ohlc?.close ?? null;
+    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
+      ? ((lastPrice - previousClose) / previousClose) * 100
+      : null;
+
+    return { symbol, instrumentKey, lastPrice, previousClose, changePct };
+  });
+
+  const result = { quotes, errors: unresolved, fetchedAt: new Date().toISOString() };
+  quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
+  return result;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
-//  HISTORICAL CANDLES
+//  OPTION CHAIN (real Upstox v2 API — replaces fabricated OI/PCR data)
+// ─────────────────────────────────────────────────────────────────────────
+async function getOptionChain(underlyingInstrumentKey, expiryDate) {
+  assertConfigured();
+  const accessToken = await getValidAccessToken();
+  const url = `https://api.upstox.com/v2/option/chain?${new URLSearchParams({
+    instrument_key: underlyingInstrumentKey,
+    expiry_date: expiryDate,
+  })}`;
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new AppError(`Upstox option chain request failed: ${errText.slice(0, 200)}`, 502);
+  }
+  const data = await res.json();
+  return data.data || []; // array of {strike_price, pcr, underlying_spot_price, call_options, put_options}
+}
 //  unit: 'minutes' | 'hours' | 'days' | 'weeks' | 'months'  (Upstox v3 terms)
 //  interval: numeric step for minutes/hours (e.g. 1, 5, 15, 30); ignored
 //            for days/weeks/months.
@@ -292,6 +520,9 @@ async function getLtp(symbol) {
 
 const VALID_UNITS = ['minutes', 'hours', 'days', 'weeks', 'months'];
 
+// ─────────────────────────────────────────────────────────────────────────
+//  HISTORICAL CANDLES
+// ─────────────────────────────────────────────────────────────────────────
 async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from, to } = {}) {
   if (!VALID_UNITS.includes(unit)) {
     throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
@@ -340,7 +571,13 @@ module.exports = {
   buildLoginUrl,
   exchangeCodeForToken,
   upstoxStatus,
+  requestAccessTokenApproval,
+  storeNotifiedToken,
   resolveInstrumentKey,
+  searchSymbols,
+  listAllSymbols,
   getLtp,
+  getLtpBatch,
+  getOptionChain,
   getHistoricalCandles,
 };

@@ -247,6 +247,22 @@ CREATE TABLE IF NOT EXISTS broker_tokens (
   UNIQUE(provider)
 );
 
+-- Per-USER Upstox broker connection — separate from broker_tokens above,
+-- which is the one shared admin token that powers market data (quotes,
+-- candles, option chain) for every visitor. This table is for each
+-- individual trader connecting THEIR OWN Upstox account so we can show
+-- their real holdings/positions/orders — a different login than the
+-- shared market-data one.
+CREATE TABLE IF NOT EXISTS user_broker_tokens (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider        VARCHAR(30) NOT NULL DEFAULT 'upstox',
+  access_token    TEXT NOT NULL,
+  expires_at      TIMESTAMPTZ NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, provider)
+);
+
 -- ── INSTRUMENT CACHE (maps plain trading symbols, e.g. "RELIANCE", to the
 --    Upstox instrument_key, e.g. "NSE_EQ|INE002A01018". Upstox's full
 --    instrument master is a ~30MB JSON/CSV refreshed daily; we cache the

@@ -1,15 +1,15 @@
 // services/aiService.js
 // ══════════════════════════════════════════════════════════════════════════
 //  TradeMind Multi-Model AI Service
-//  Handles Gemini, Claude, GPT-4o, and DeepSeek calls directly from Node.
+//  Handles Gemini, Claude, ChatGPT, and DeepSeek calls directly from Node.
 //  No external AI engine process needed — just set the API keys in .env.
 //
 //  Plan → model routing:
 //   free    → Gemini Flash only (fallback: none)
 //   basic   → Gemini Flash primary, DeepSeek V3 fallback
-//   pro     → Gemini Flash + Claude Sonnet (limited) + GPT-4o (limited)
+//   pro     → Gemini Flash + Claude Sonnet (limited) + ChatGPT (limited)
 //             + DeepSeek V3 fallback; consensus result
-//   elite   → Gemini Pro + Claude Opus + GPT-4o (high) + DeepSeek R1
+//   elite   → Gemini Pro + Claude Opus + ChatGPT (high) + DeepSeek R1
 //             run in parallel, return consensus + per-model debate
 //
 //  Token limits:
@@ -24,6 +24,9 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const { getModelConfig } = require('../config/plans');
+const marketDataService = require('./marketDataService');
+const { computeAllIndicators } = require('../utils/indicators');
+const AppError = require('../utils/AppError');
 
 // ── Model identifiers ────────────────────────────────────────────────────
 const MODELS = {
@@ -73,23 +76,79 @@ function calcCost(model, tokIn, tokOut) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+//  REAL MARKET DATA FETCH
+//  Pulls a live quote + real historical candles from Upstox (via
+//  marketDataService) and computes real technical indicators from them.
+//  Throws if Upstox isn't connected or returns no data — callers must
+//  surface that as "Data Unavailable", never fall back to invented numbers.
+// ─────────────────────────────────────────────────────────────────────────
+async function fetchRealMarketContext(stockSymbol) {
+  const to = new Date();
+  const from = new Date();
+  from.setFullYear(from.getFullYear() - 1);
+
+  const [quote, candleData] = await Promise.all([
+    marketDataService.getLtp(stockSymbol),
+    marketDataService.getHistoricalCandles(stockSymbol, {
+      unit: 'days',
+      interval: 1,
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    }),
+  ]);
+
+  const candles = candleData?.candles || [];
+  const indicators = computeAllIndicators(candles);
+  if (!indicators) {
+    throw new AppError(
+      `Not enough real historical data returned by Upstox for ${stockSymbol} to compute indicators.`,
+      503
+    );
+  }
+
+  return { quote, indicators, candleCount: candles.length };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 //  PROMPT BUILDER
 //  Returns a structured system + user message pair for stock analysis.
+//  The AI is given REAL price + indicator data pulled from Upstox — it is
+//  explicitly told to analyze only the numbers provided, never to invent
+//  or estimate a price/indicator value on its own.
 // ─────────────────────────────────────────────────────────────────────────
-function buildPrompt(stockSymbol, horizon, riskTolerance) {
-  const system = `You are TradeMind AI, an expert Indian stock market analyst. 
-Analyse NSE/BSE stocks and return ONLY a JSON object — no prose, no markdown fences, no preamble.
-Be concise. Prices in INR. All percentage values as numbers (not strings).`;
+function buildPrompt(stockSymbol, horizon, riskTolerance, marketContext) {
+  const { quote, indicators } = marketContext;
+
+  const system = `You are TradeMind AI, an expert Indian stock market analyst.
+You will be given REAL, live market data (price, volume, and computed technical indicators) for one NSE/BSE stock, fetched moments ago from Upstox. Base your entire analysis strictly on the numbers provided below — never invent, estimate, or recall a price or indicator value from your own training data or general knowledge, even if you believe you know this stock. If the provided data seems insufficient for some part of the analysis, say so in "reasoning" rather than guessing.
+Return ONLY a JSON object — no prose, no markdown fences, no preamble. Prices in INR. All percentage values as numbers (not strings). The "currentPrice" field in your response MUST exactly equal the currentPrice given to you below.`;
 
   const user = `Analyse the stock: ${stockSymbol.toUpperCase()}
 Horizon: ${horizon || '1 month'}
 Risk tolerance: ${riskTolerance || 'moderate'}
 
+REAL LIVE MARKET DATA (fetched from Upstox just now — use these numbers, do not invent your own):
+- Current price (LTP): ${quote?.lastPrice ?? indicators.currentPrice}
+- Previous close: ${quote?.previousClose ?? 'n/a'}
+- Day change: ${quote?.changePct != null ? quote.changePct.toFixed(2) + '%' : 'n/a'}
+- Volume (last session): ${indicators.volume}
+- Avg. volume (20d): ${indicators.avgVolume20}
+- RSI (14): ${indicators.rsi}
+- MACD: ${indicators.macd} | Signal: ${indicators.macdSignal} | Histogram: ${indicators.macdHistogram}
+- EMA20: ${indicators.ema20} | EMA50: ${indicators.ema50}
+- SMA20: ${indicators.sma20} | SMA50: ${indicators.sma50}
+- Bollinger Bands: upper ${indicators.bollingerUpper} / mid ${indicators.bollingerMid} / lower ${indicators.bollingerLower}
+- VWAP: ${indicators.vwap}
+- ATR (14): ${indicators.atr}
+- Supertrend: ${indicators.supertrend} (${indicators.supertrendDirection})
+- Support: ${indicators.support} | Resistance: ${indicators.resistance}
+- Trend strength score (0-100): ${indicators.trendStrength}
+
 Return a JSON object with this exact structure:
 {
   "signal": "BUY" | "SELL" | "HOLD",
   "confidence": <integer 0-100>,
-  "currentPrice": <number>,
+  "currentPrice": <number, must equal the current price given above>,
   "priceTargets": {
     "oneWeek": <number>,
     "oneMonth": <number>,
@@ -98,20 +157,14 @@ Return a JSON object with this exact structure:
   "expectedReturn": <number, percentage>,
   "riskScore": <integer 1-10>,
   "technicals": {
-    "rsi": <number>,
+    "rsi": ${indicators.rsi},
     "rsiSignal": "oversold" | "neutral" | "overbought",
     "trend": "bullish" | "bearish" | "sideways",
-    "support": <number>,
-    "resistance": <number>,
+    "support": ${indicators.support},
+    "resistance": ${indicators.resistance},
     "macd": "bullish_crossover" | "bearish_crossover" | "neutral"
   },
-  "fundamentals": {
-    "pe": <number | null>,
-    "pb": <number | null>,
-    "marketCap": "<string, e.g. ₹2.4T>",
-    "sector": "<string>"
-  },
-  "reasoning": "<2-3 sentence investment thesis>",
+  "reasoning": "<2-3 sentence investment thesis grounded in the data above>",
   "risks": ["<risk 1>", "<risk 2>", "<risk 3>"],
   "catalysts": ["<catalyst 1>", "<catalyst 2>"]
 }`;
@@ -196,7 +249,7 @@ async function callClaude(model, system, user, maxTokens) {
   return { text, tokIn, tokOut, model };
 }
 
-// ── GPT-4o (OpenAI) ──────────────────────────────────────────────────────
+// ── ChatGPT (OpenAI) ──────────────────────────────────────────────────────
 async function callGPT(model, system, user, maxTokens) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
@@ -222,7 +275,7 @@ async function callGPT(model, system, user, maxTokens) {
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`GPT-4o ${res.status}: ${errText.slice(0, 200)}`);
+    throw new Error(`ChatGPT ${res.status}: ${errText.slice(0, 200)}`);
   }
 
   const data = await res.json();
@@ -282,6 +335,22 @@ function safeParseJSON(text) {
   }
 }
 
+// Safety net: even though the prompt instructs the model to use the real
+// price/indicator values verbatim, we don't trust an LLM to always comply
+// exactly — so the real, server-computed numbers are force-written back
+// into the result before it's ever returned to a user. This guarantees
+// currentPrice/RSI/support/resistance shown to the user are always the
+// real computed values, never whatever the model happened to output.
+function groundResult(result, indicators) {
+  if (!result || !indicators) return result;
+  result.currentPrice = indicators.currentPrice;
+  result.technicals = result.technicals || {};
+  result.technicals.rsi = indicators.rsi;
+  result.technicals.support = indicators.support;
+  result.technicals.resistance = indicators.resistance;
+  return result;
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 //  CONSENSUS BUILDER  (Pro + Elite — multiple models in parallel)
 //  Majority-vote on signal, average on numeric fields.
@@ -329,7 +398,6 @@ function buildConsensus(results) {
     expectedReturn: avgF('expectedReturn'),
     riskScore:      avg('riskScore'),
     technicals:     primary.technicals,
-    fundamentals:   primary.fundamentals,
     reasoning:      allReasonings.join(' | '),
     risks:          allRisks,
     catalysts:      allCatalysts,
@@ -354,7 +422,21 @@ function isAvailable(availableModelKeys, modelKey) {
 }
 
 async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, availableModelKeys }) {
-  const { system, user } = buildPrompt(stockSymbol, horizon, riskTolerance);
+  // Real data first — if this fails (Upstox not connected, symbol not
+  // found, no historical candles), we throw here and never reach an AI
+  // call at all. There is no fallback that lets the AI guess instead.
+  let marketContext;
+  try {
+    marketContext = await fetchRealMarketContext(stockSymbol);
+  } catch (err) {
+    console.error(`[aiService] Real market data fetch failed for ${stockSymbol}:`, err.message);
+    throw new AppError(
+      `Data Unavailable: could not load real market data for ${stockSymbol.toUpperCase()} from Upstox. ${err.message}`,
+      err.statusCode || 503
+    );
+  }
+
+  const { system, user } = buildPrompt(stockSymbol, horizon, riskTolerance, marketContext);
   const plan = (userPlan || 'free').toLowerCase();
 
   // ── FREE: Gemini Flash only ───────────────────────────────────────────
@@ -365,7 +447,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
     if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const maxTok = maxTokensFor(plan, 'gemini_flash');
     const raw = await callGemini(MODELS.GEMINI_FLASH, system, user, maxTok);
-    const result = safeParseJSON(raw.text);
+    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators);
     if (!result) throw new Error('AI returned unparseable JSON');
     const breakdown = [{ modelKey: 'gemini_flash', model: MODELS.GEMINI_FLASH, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(MODELS.GEMINI_FLASH, raw.tokIn, raw.tokOut) }];
     return {
@@ -400,7 +482,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
       raw = await callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3'));
     }
     if (!raw) throw new Error('NO_MODELS_AVAILABLE');
-    const result = safeParseJSON(raw.text);
+    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators);
     if (!result) throw new Error('AI returned unparseable JSON');
     const breakdown = [{ modelKey, model: modelLabel, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(modelLabel, raw.tokIn, raw.tokOut) }];
     return {
@@ -413,12 +495,12 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
     };
   }
 
-  // ── PRO: Gemini + Claude Sonnet + GPT-4o in parallel; DeepSeek fallback
+  // ── PRO: Gemini + Claude Sonnet + ChatGPT in parallel; DeepSeek fallback
   if (plan === 'pro') {
     const calls = [];
     if (process.env.GEMINI_API_KEY  && isAvailable(availableModelKeys, 'gemini_flash'))  calls.push(callGemini(MODELS.GEMINI_FLASH, system, user, maxTokensFor(plan, 'gemini_flash')).then(r => ({ ...r, modelKey: 'gemini_flash' })).catch(e => { console.warn('[Pro] Gemini failed:', e.message); return null; }));
     if (process.env.CLAUDE_API_KEY  && isAvailable(availableModelKeys, 'claude_sonnet')) calls.push(callClaude(MODELS.CLAUDE_SONNET, system, user, maxTokensFor(plan, 'claude_sonnet')).then(r => ({ ...r, modelKey: 'claude_sonnet' })).catch(e => { console.warn('[Pro] Claude failed:', e.message); return null; }));
-    if (process.env.OPENAI_API_KEY  && isAvailable(availableModelKeys, 'gpt4o'))         calls.push(callGPT(MODELS.GPT4O, system, user, maxTokensFor(plan, 'gpt4o')).then(r => ({ ...r, modelKey: 'gpt4o' })).catch(e => { console.warn('[Pro] GPT-4o failed:', e.message); return null; }));
+    if (process.env.OPENAI_API_KEY  && isAvailable(availableModelKeys, 'gpt4o'))         calls.push(callGPT(MODELS.GPT4O, system, user, maxTokensFor(plan, 'gpt4o')).then(r => ({ ...r, modelKey: 'gpt4o' })).catch(e => { console.warn('[Pro] ChatGPT failed:', e.message); return null; }));
 
     let raws = (await Promise.all(calls)).filter(Boolean);
 
@@ -438,7 +520,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
         console.warn('[Pro] DeepSeek fallback failed:', err.message);
         throw new Error('NO_MODELS_AVAILABLE');
       }
-      const result = safeParseJSON(dsRaw.text);
+      const result = groundResult(safeParseJSON(dsRaw.text), marketContext.indicators);
       if (!result) throw new Error('AI returned unparseable JSON');
       const breakdown = [{ modelKey: 'deepseek_v3', model: MODELS.DEEPSEEK_V3, tokIn: dsRaw.tokIn, tokOut: dsRaw.tokOut, cost: calcCost(MODELS.DEEPSEEK_V3, dsRaw.tokIn, dsRaw.tokOut) }];
       return {
@@ -452,7 +534,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
     }
 
     const parsed = raws.map(r => safeParseJSON(r.text));
-    const consensusResult = buildConsensus(parsed);
+    const consensusResult = groundResult(buildConsensus(parsed), marketContext.indicators);
     if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
 
     const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
@@ -476,7 +558,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
     const eliteCalls = [
       (process.env.GEMINI_API_KEY   && isAvailable(availableModelKeys, 'gemini_pro'))    ? callGemini(MODELS.GEMINI_PRO,   system, user, maxTokensFor(plan, 'gemini_pro')).then(r => ({ ...r, modelKey: 'gemini_pro' })).catch(e => { console.warn('[Elite] Gemini Pro failed:', e.message); return null; }) : Promise.resolve(null),
       (process.env.CLAUDE_API_KEY   && isAvailable(availableModelKeys, 'claude_opus4'))  ? callClaude(MODELS.CLAUDE_OPUS,  system, user, maxTokensFor(plan, 'claude_opus4')).then(r => ({ ...r, modelKey: 'claude_opus4' })).catch(e => { console.warn('[Elite] Claude Opus failed:', e.message); return null; }) : Promise.resolve(null),
-      (process.env.OPENAI_API_KEY   && isAvailable(availableModelKeys, 'gpt4o_high'))    ? callGPT(MODELS.GPT4O_HIGH,      system, user, maxTokensFor(plan, 'gpt4o_high')).then(r => ({ ...r, modelKey: 'gpt4o_high' })).catch(e => { console.warn('[Elite] GPT-4o failed:', e.message); return null; }) : Promise.resolve(null),
+      (process.env.OPENAI_API_KEY   && isAvailable(availableModelKeys, 'gpt4o_high'))    ? callGPT(MODELS.GPT4O_HIGH,      system, user, maxTokensFor(plan, 'gpt4o_high')).then(r => ({ ...r, modelKey: 'gpt4o_high' })).catch(e => { console.warn('[Elite] ChatGPT failed:', e.message); return null; }) : Promise.resolve(null),
       (process.env.DEEPSEEK_API_KEY && isAvailable(availableModelKeys, 'deepseek_r1'))   ? callDeepSeek(MODELS.DEEPSEEK_R1, system, user, maxTokensFor(plan, 'deepseek_r1')).then(r => ({ ...r, modelKey: 'deepseek_r1' })).catch(e => { console.warn('[Elite] DeepSeek R1 failed:', e.message); return null; }) : Promise.resolve(null),
     ];
 
@@ -492,7 +574,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
       reasoning:  parsed[i]?.reasoning  || '',
     }));
 
-    const consensusResult = buildConsensus(parsed.filter(Boolean));
+    const consensusResult = groundResult(buildConsensus(parsed.filter(Boolean)), marketContext.indicators);
     if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
 
     consensusResult.modelDebate = modelDebate;  // Elite-only field
@@ -517,4 +599,55 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
   return analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan: 'free', availableModelKeys });
 }
 
-module.exports = { analyzeStock, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor };
+// ─────────────────────────────────────────────────────────────────────────
+//  GENERIC AI INSIGHT — powers Trade Ideas, Portfolio Health, Market Brief,
+//  Option Strategy Advisor, Backtest Advisor, Multi-Timeframe Confluence.
+//  Unlike analyzeStock() this returns plain commentary text, not a forced
+//  JSON signal — these features are about explaining/synthesizing REAL data
+//  already fetched from Upstox, not generating a new Buy/Sell/Hold verdict.
+// ─────────────────────────────────────────────────────────────────────────
+const INSIGHT_PROMPTS = {
+  tradeIdeas: (ctx) => `You are a trading assistant. Below are REAL scan results from a live NSE/BSE market scanner (real prices, real volume, real technical conditions — not simulated). Pick the 3-5 most compelling setups and explain briefly why each stands out, in plain language a retail trader would understand. Be direct about risk too, don't just hype. Scan type: ${ctx.scanType}. Results:\n${JSON.stringify(ctx.matches)}`,
+
+  portfolioHealth: (ctx) => `You are a portfolio risk reviewer. Below is a trader's REAL current holdings with real live prices (not simulated). Comment on: concentration risk (any single stock or sector too large?), correlated positions, and 2-3 concrete suggestions. Be specific using the actual numbers given, not generic advice. Holdings:\n${JSON.stringify(ctx.holdings)}`,
+
+  marketBrief: (ctx) => `You are a markets writer. Write a 3-4 sentence morning market brief for Indian traders using ONLY these REAL numbers (not simulated) — today's NIFTY/SENSEX/BANKNIFTY levels and change%, plus the real top gainers/losers given. Be concise and factual, no invented reasons for moves unless obvious from the data. Data:\n${JSON.stringify(ctx.marketData)}`,
+
+  optionStrategy: (ctx) => `You are an options strategy advisor. Below is a REAL option chain snapshot (real spot price, real PCR, real Max Pain, real OI, not simulated) for ${ctx.underlying} expiring ${ctx.expiry}. Suggest 1-2 strategies (e.g. straddle, bull call spread, iron condor) that fit this real setup, with brief reasoning grounded in the actual PCR/Max Pain/OI values given. Include the key risk. Data:\n${JSON.stringify(ctx.chainSummary)}`,
+
+  backtestAdvisor: (ctx) => `You are a quant strategy reviewer. Below are REAL backtest results (real historical trades on real Upstox candle data, not simulated) for a ${ctx.strategy} strategy on ${ctx.symbol}. Critique the strategy in plain English: what does the win rate/drawdown/avg-return actually tell us, and what's the biggest weakness a trader should know before using this live? Results:\n${JSON.stringify(ctx.results)}`,
+
+  multiTimeframe: (ctx) => `You are a technical analyst. Below are REAL daily and weekly indicator readings (real RSI/MACD/trend from real Upstox candles, not simulated) for ${ctx.symbol}. Synthesize a short multi-timeframe view — e.g. "bullish daily momentum but weak weekly trend" if that's what the data shows. Be honest if the timeframes agree or conflict. Data:\n${JSON.stringify(ctx.timeframes)}`,
+};
+
+async function getAIInsight(kind, context) {
+  const promptFn = INSIGHT_PROMPTS[kind];
+  if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('AI is not configured on the server (GEMINI_API_KEY missing).');
+
+  const prompt = promptFn(context);
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.GEMINI_FLASH}:generateContent?key=${apiKey}`;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: 'You are a careful, honest markets assistant. You only comment on the real data given to you — never invent numbers, news, or reasons not present in the input. If the data is insufficient to say something meaningful, say so plainly.' }] },
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!text) throw new Error('AI returned an empty response.');
+  return text.trim();
+}
+
+module.exports = { analyzeStock, getAIInsight, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor };

@@ -137,6 +137,23 @@ const validateMarketCandles = [
   handleValidationErrors,
 ];
 
+const validateMarketQuotes = [
+  query('symbols')
+    .trim().notEmpty().withMessage('symbols is required (comma-separated).')
+    .isLength({ max: 2000 }).withMessage('symbols list too long.')
+    .matches(/^[A-Za-z0-9&_,-]+$/).withMessage('symbols contains invalid characters.'),
+  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
+  handleValidationErrors,
+];
+
+const validateMarketSearch = [
+  query('q')
+    .trim().notEmpty().withMessage('q is required.')
+    .isLength({ min: 1, max: 30 }).withMessage('q must be 1-30 characters.')
+    .matches(/^[A-Za-z0-9&_-]+$/).withMessage('q contains invalid characters.'),
+  handleValidationErrors,
+];
+
 module.exports = {
   validateSignup,
   validateLogin,
@@ -152,4 +169,6 @@ module.exports = {
   validateUpdateUserPlan,
   validateMarketSymbol,
   validateMarketCandles,
+  validateMarketQuotes,
+  validateMarketSearch,
 };

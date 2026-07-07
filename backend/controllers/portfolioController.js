@@ -88,4 +88,56 @@ const deleteHolding = asyncHandler(async (req, res) => {
   res.json({ message: 'Holding removed.' });
 });
 
-module.exports = { getPortfolio, addHolding, updateHolding, deleteHolding };
+// ─────────────────────────────────────────────────────────────────────────
+//  REAL UPSTOX BROKER SYNC — per-user, separate from the manual tracker
+//  above. Requires the individual user to connect their own Upstox account.
+// ─────────────────────────────────────────────────────────────────────────
+const userBrokerService = require('../services/userBrokerService');
+
+// ── GET /api/portfolio/broker/connect  (requireAuth) ─────────────────────
+// Returns the Upstox login URL as JSON rather than redirecting directly —
+// the frontend fetches this with its normal Bearer-authenticated apiFetch,
+// then navigates the browser to the returned URL itself. A direct redirect
+// here would rely on the httpOnly cookie instead, which is SameSite=Strict
+// in production and won't be sent on a cross-site browser navigation
+// (frontend and backend are on different domains — Netlify vs Render).
+const connectBroker = asyncHandler(async (req, res) => {
+  const url = userBrokerService.buildUserConnectUrl(req.user.id);
+  res.json({ url });
+});
+
+// ── GET /api/portfolio/broker/status  (requireAuth) ───────────────────────
+const brokerStatus = asyncHandler(async (req, res) => {
+  const status = await userBrokerService.getUserStatus(req.user.id);
+  res.json(status);
+});
+
+// ── DELETE /api/portfolio/broker  (requireAuth) — disconnect ─────────────
+const disconnectBroker = asyncHandler(async (req, res) => {
+  await query(`DELETE FROM user_broker_tokens WHERE user_id = $1 AND provider = 'upstox'`, [req.user.id]);
+  res.json({ message: 'Upstox account disconnected.' });
+});
+
+// ── GET /api/portfolio/broker/holdings  (requireAuth) ─────────────────────
+const realHoldings = asyncHandler(async (req, res) => {
+  const holdings = await userBrokerService.getRealHoldings(req.user.id);
+  res.json({ holdings });
+});
+
+// ── GET /api/portfolio/broker/positions  (requireAuth) ────────────────────
+const realPositions = asyncHandler(async (req, res) => {
+  const positions = await userBrokerService.getRealPositions(req.user.id);
+  res.json({ positions });
+});
+
+// ── GET /api/portfolio/broker/orders  (requireAuth) ───────────────────────
+const realOrders = asyncHandler(async (req, res) => {
+  const orders = await userBrokerService.getRealOrders(req.user.id);
+  res.json({ orders });
+});
+
+module.exports = {
+  getPortfolio, addHolding, updateHolding, deleteHolding,
+  connectBroker, brokerStatus, disconnectBroker,
+  realHoldings, realPositions, realOrders,
+};

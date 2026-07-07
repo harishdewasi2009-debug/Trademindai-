@@ -98,6 +98,11 @@ const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
     max:      parseInt(process.env.RATE_LIMIT_MAX,        10) || 100,
   },
+
+  // Backup notification channel for the Upstox daily token refresh — used
+  // by services/tokenScheduler.js if the phone push/WhatsApp approval
+  // wasn't tapped in time, so the admin isn't relying on a single channel.
+  adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || null,
 };
 
 module.exports = { config, assertRequiredEnv };

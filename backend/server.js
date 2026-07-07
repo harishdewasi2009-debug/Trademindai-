@@ -20,6 +20,7 @@ const aiRoutes = require('./routes/aiRoutes');
 const marketRoutes = require('./routes/marketRoutes');
 const referralRoutes = require('./routes/referralRoutes');
 const { handleWebhook } = require('./controllers/paymentController');
+const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
 
 const app = express();
 
@@ -84,6 +85,7 @@ app.use(errorHandler);
 app.listen(config.port, () => {
   console.log(`✅ TradeMind backend running on port ${config.port} [${config.nodeEnv}]`);
   console.log(`   Health check: http://localhost:${config.port}/health`);
+  startUpstoxTokenScheduler();
 });
 
 module.exports = app;

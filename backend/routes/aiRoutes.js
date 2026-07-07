@@ -127,6 +127,10 @@ router.post(
           429
         );
       }
+      // Data Unavailable errors (Upstox not connected, symbol not found, no
+      // real candles) come through as AppError already — surface the real
+      // message so the user knows to connect Upstox, not a vague retry note.
+      if (err instanceof AppError) throw err;
       throw new AppError(
         'AI analysis is temporarily unavailable. Please try again in a moment.',
         503
@@ -292,6 +296,49 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
     }
 
     res.json({ reply, model: isElite ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6' });
+  })
+);
+
+// ── POST /api/ai/insight — real-data-grounded AI commentary ──────────────
+// Powers: Trade Idea Generator, Portfolio Health Check, Morning Market
+// Brief, Option Strategy Advisor, Backtest Advisor, Multi-Timeframe view.
+// Unlike /analyze, this doesn't produce a new Buy/Sell/Hold signal — it
+// only explains/synthesizes REAL data the frontend already fetched from
+// Upstox and passes in as `context`. Kept to one shared endpoint since all
+// 6 features are the same shape: real data in, AI commentary out.
+const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe'];
+router.post(
+  '/insight',
+  requireAuth,
+  requireFeature('ai_chat'), // reuse the existing chat-tier gate — same cost class as chat
+  aiLimiter,
+  asyncHandler(async (req, res) => {
+    const { kind, context } = req.body || {};
+    if (!VALID_INSIGHT_KINDS.includes(kind)) {
+      throw new AppError(`kind must be one of: ${VALID_INSIGHT_KINDS.join(', ')}`, 400);
+    }
+    if (!context || typeof context !== 'object') {
+      throw new AppError('context object is required.', 400);
+    }
+
+    const { getAIInsight } = require('../services/aiService');
+    let text;
+    try {
+      text = await getAIInsight(kind, context);
+    } catch (err) {
+      console.error(`[/api/ai/insight:${kind}] failed:`, err.message);
+      throw new AppError('AI insight is temporarily unavailable.', 503);
+    }
+
+    await query(
+      `INSERT INTO ai_requests
+         (user_id, stock_symbol, request_type, model_used,
+          tokens_input, tokens_output, cost_usd, latency_ms)
+       VALUES ($1, NULL, $2, $3, 0, 0, 0, 0)`,
+      [req.user.id, `insight_${kind}`, 'gemini-2.5-flash']
+    );
+
+    res.json({ kind, text });
   })
 );
 

@@ -41,7 +41,6 @@ const PLANS = {
       },
     },
     features: [
-      'news_sentiment',
       'watchlist_5',
     ],
   },
@@ -75,9 +74,7 @@ const PLANS = {
       },
     },
     features: [
-      'news_sentiment',
       'prediction_history',
-      'earnings_calendar',
       'watchlist_10',
     ],
   },
@@ -89,7 +86,7 @@ const PLANS = {
     // Token limits
     // UPDATED: quota raised from 800,000 → 1,000,000 (×1.25). Per-model splits
     // below are scaled by the same 1.25 factor to preserve the original
-    // cost-weighted ratios (expensive models — Sonnet, GPT-4o — still get
+    // cost-weighted ratios (expensive models — Sonnet, ChatGPT — still get
     // smaller individual ceilings than Gemini/DeepSeek). Combined worst-case
     // (every model maxing its own quota the same month) scales from ~₹289
     // to ~₹361 — still comfortably under the ₹999 price.
@@ -97,13 +94,13 @@ const PLANS = {
     maxTokensPerRequest: 5_000,       // 5,000 tokens max per single request
     monthlyAiQueries:    400,         // ~300–400 analyses/month
 
-    // Pro calls Gemini Flash + Claude Sonnet + GPT-4o IN PARALLEL on every
+    // Pro calls Gemini Flash + Claude Sonnet + ChatGPT IN PARALLEL on every
     // request (see aiService.js), with DeepSeek as a fallback if all three
-    // fail. Per-model quotas are split unevenly — Claude Sonnet and GPT-4o
+    // fail. Per-model quotas are split unevenly — Claude Sonnet and ChatGPT
     // (the two expensive models) get smaller individual ceilings than
     // Gemini/DeepSeek.
-    // Models on this plan: Gemini Flash, Claude Sonnet, GPT-4o (DeepSeek V3
-    // fallback only). Combined worst-case ~₹361/mo (Sonnet ~₹160 + GPT-4o
+    // Models on this plan: Gemini Flash, Claude Sonnet, ChatGPT (DeepSeek V3
+    // fallback only). Combined worst-case ~₹361/mo (Sonnet ~₹160 + ChatGPT
     // ~₹179 + Gemini ~₹6 + DeepSeek ~₹16) against the ₹999 price.
     aiModels: {
       gemini_flash: {
@@ -128,19 +125,16 @@ const PLANS = {
       },
     },
     features: [
-      // NOTE: 'news_sentiment', 'telegram_alerts', 'whatsapp_alerts' are NOT
-      // implemented in this backend yet (no route/service exists — see
-      // backend/README.md and frontend "Coming Soon" badges). They're kept
-      // here as planned features so requireFeature() checks won't break once
-      // they ARE built, but nothing currently gates on them. Don't wire a
-      // route to these without first building the actual integration.
-      'news_sentiment',
+      // NOTE: 'telegram_alerts', 'whatsapp_alerts' are NOT implemented in
+      // this backend yet (no route/service exists — see backend/README.md
+      // and frontend "Coming Soon" badges). They're kept here as planned
+      // features so requireFeature() checks won't break once they ARE
+      // built, but nothing currently gates on them. Don't wire a route to
+      // these without first building the actual integration.
       'prediction_history',
-      'earnings_calendar',
       'price_targets',
       'portfolio_tracker',
       'screener',
-      'ipo_analyzer',
       'telegram_alerts',
       'whatsapp_alerts',
       'watchlist_50',
@@ -168,13 +162,13 @@ const PLANS = {
     // Elite calls ALL FOUR flagship models IN PARALLEL on every request
     // (see aiService.js consensus + debate logic). Claude Opus is by far
     // the most expensive model in the lineup, so it gets the smallest
-    // individual quota; Gemini Pro, GPT-4o (high), and DeepSeek R1 get
+    // individual quota; Gemini Pro, ChatGPT (high), and DeepSeek R1 get
     // proportionally more room since they're cheaper per token.
-    // Models on this plan: Gemini Pro, Claude Opus 4, GPT-4o (high),
+    // Models on this plan: Gemini Pro, Claude Opus 4, ChatGPT (high),
     // DeepSeek R1 — all four called on every request.
     // Combined worst-case ~₹1,895/mo against the ₹2,999 price. Only Opus's
     // share is independently verifiable from a known per-token rate
-    // (~₹267 at its 375,000-token quota); Gemini Pro / GPT-4o-high /
+    // (~₹267 at its 375,000-token quota); Gemini Pro / ChatGPT-high /
     // DeepSeek R1 don't have documented per-token rates in this codebase,
     // so their individual shares of the ~₹1,895 total are estimates, not
     // a precise breakdown.
@@ -201,13 +195,10 @@ const PLANS = {
       },
     },
     features: [
-      'news_sentiment',
       'prediction_history',
-      'earnings_calendar',
       'price_targets',
       'portfolio_tracker',
       'screener',
-      'ipo_analyzer',
       'telegram_alerts',
       'whatsapp_alerts',
       'watchlist_unlimited',
@@ -216,7 +207,6 @@ const PLANS = {
       'consensus_analysis',
       'backtesting',
       'options_analysis',
-      'fii_dii_tracker',
       'pdf_reports',
       'portfolio_advisor',
       'api_access',

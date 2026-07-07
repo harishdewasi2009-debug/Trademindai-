@@ -28,7 +28,14 @@ async function main() {
   }
 
   const expiresAt = decodeJwtExpiry(token);
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  // ssl:true is required here because this script is meant to be run from
+  // anywhere (your laptop, Render Shell, CI) against a hosted Postgres like
+  // Supabase — unlike db/pool.js, it can't assume it's running inside
+  // Render's trusted network where NODE_ENV=production implies that.
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
 
   await pool.query(
     `INSERT INTO broker_tokens (provider, access_token, expires_at)
