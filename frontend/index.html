@@ -4414,10 +4414,20 @@ function drawLineChart(canvas,series,opts={}){
 }
 
 // ── HERO CHART — real NIFTY 50 intraday candles (no synthetic data) ──
+const HERO_TF_PARAMS={
+  '1D':{unit:'minutes',interval:5},
+  '5D':{unit:'minutes',interval:15},
+  '1M':{unit:'days',interval:1},
+  '1Y':{unit:'days',interval:1},
+};
+let heroTF='5D';
 let heroCandles=null;
 async function loadHeroChart(){
   try{
-    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit=minutes&interval=5',{cache:'no-store'});
+    const {unit,interval}=HERO_TF_PARAMS[heroTF]||HERO_TF_PARAMS['5D'];
+    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit='+unit+'&interval='+interval,{cache:'no-store'});
+  try{
+
     if(!res.ok)throw new Error('HTTP '+res.status);
     const q=await res.json();
     if(q.candles&&q.candles.length){ heroCandles=q.candles; renderHeroChart(); return; }
@@ -4449,8 +4459,17 @@ function renderHeroChart(){
   const pillEl=document.getElementById('hc-live-pill');
   if(pillEl)pillEl.innerHTML='<span class="live-dot"></span>Live';
 }
+document.querySelectorAll('.hc-tabs .hc-tab[data-tf]').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.hc-tabs .hc-tab[data-tf]').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    heroTF=tab.dataset.tf;
+    loadHeroChart();
+  });
+});
 loadHeroChart();
 setInterval(loadHeroChart,REFRESH_MS); // real refresh cadence, same as the rest of live market data — no fake ticks
+
 window.addEventListener('resize',()=>{renderHeroChart();if(document.getElementById('page-charts')?.classList.contains('active'))renderMainChart();});
 
 // ── CHARTS PAGE ──
