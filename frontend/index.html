@@ -2255,6 +2255,8 @@ liveSocket.onmessage=(evt)=>{
   };
   liveSocket.onclose=()=>{ scheduleReconnect(); };
   liveSocket.onerror=()=>{ try{liveSocket.close();}catch{} };
+}
+  function scheduleReconnect(){
     if(msg.feeds?.[chartCurrentSymbol]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
       if(lwLastBar&&lwCandleSeries){
