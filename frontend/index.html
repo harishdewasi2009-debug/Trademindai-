@@ -2183,13 +2183,18 @@ async function refreshIndices(){
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     let okCount=0;
-    (data.quotes||[]).forEach(q=>{
-      if(typeof q.lastPrice==='number'){
-        const changePct=typeof q.changePct==='number'?q.changePct:0;
-        liveQuoteCache[q.label]={price:q.lastPrice,changePct,up:changePct>=0};
+    (data.indices||[]).forEach(idx=>{
+      if(typeof idx.lastPrice==='number'){
+        const changePct=typeof idx.changePct==='number'?idx.changePct:0;
+        liveQuoteCache[idx.label]={price:idx.lastPrice,changePct,up:changePct>=0};
         okCount++;
       }
     });
+    if(okCount>0 && marketStatus==='connecting') marketStatus='live';
+  }catch(e){ /* keep last known values on failure */ }
+  renderIndices();
+  updateMarketStatusUI();
+}
     if(okCount>0 && marketStatus==='connecting') marketStatus='live';
   }catch(e){ /* keep last-known values; don't wipe UI over one failed poll */ }
   renderIndices();
@@ -4417,7 +4422,9 @@ function drawLineChart(canvas,series,opts={}){
 let heroCandles=null;
 async function loadHeroChart(){
   try{
-    const q=await fetchYahooChart('%5ENSEI');
+    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit=minutes&interval=5',{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const q=await res.json();
     if(q.candles&&q.candles.length){ heroCandles=q.candles; renderHeroChart(); return; }
     throw new Error('no candle data in response');
   }catch(e){
