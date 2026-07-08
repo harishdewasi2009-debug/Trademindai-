@@ -104,6 +104,18 @@ const getIndices = asyncHandler(async (req, res) => {
 // ── GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50  (any authenticated user) ──
 // Full paginated browse across all NSE + BSE equities (~5,000+), for an
 // "all stocks" page — distinct from /search, which is prefix search.
+const getIndices = asyncHandler(async (req, res) => {
+  const result = await marketDataService.getIndexQuotes();
+  res.json(result);
+});
+
+const getIndexCandles = asyncHandler(async (req, res) => {
+  const { underlying = 'NIFTY 50', unit, interval, from, to } = req.query;
+  const data = await marketDataService.getIndexCandles(underlying, {
+    unit, interval: interval ? Number(interval) : undefined, from, to,
+  });
+  res.json(data);
+});
 const listStocks = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
@@ -152,4 +164,4 @@ const getCandles = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getIndices, searchSymbols, listStocks, getOptionsChain, getCandles };
+module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getIndices, getIndexCandles, searchSymbols, listStocks, getOptionsChain, getCandles };
