@@ -4426,7 +4426,6 @@ async function loadHeroChart(){
   try{
     const {unit,interval}=HERO_TF_PARAMS[heroTF]||HERO_TF_PARAMS['5D'];
     const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit='+unit+'&interval='+interval,{cache:'no-store'});
-  try{
 
     if(!res.ok)throw new Error('HTTP '+res.status);
     const q=await res.json();
