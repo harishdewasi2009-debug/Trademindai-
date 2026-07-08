@@ -2206,7 +2206,7 @@ async function refreshLiveMarket(){
   if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
   updateMarketStatusUI();
 }
-
+const INDEX_NAME_TO_KEY={'NIFTY 50':'%5ENSEI','NIFTY BANK':'%5ENSEBANK','SENSEX':'%5EBSESN'};
 // ══════════════ LIVE WEBSOCKET FEED (real-time, no polling) ══════════════
 // Connects to our backend's /ws/market, which relays Upstox's live tick
 // feed the instant a price changes — replaces the old 4s/15s REST polling
@@ -2227,10 +2227,12 @@ function connectLiveFeed(){
     let got=false;
     for(const [sym,q] of Object.entries(msg.feeds||{})){
       if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
+      else if(INDEX_NAME_TO_KEY[sym]){ liveQuoteCache[INDEX_NAME_TO_KEY[sym]]=q; got=true; }
     }
     if(got){
       marketStatus='live';
       renderTicker();
+      renderIndices();
       if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
       updateMarketStatusUI();
     }
