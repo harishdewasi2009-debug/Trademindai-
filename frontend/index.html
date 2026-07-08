@@ -4455,6 +4455,9 @@ function initChartsPage(){
   document.getElementById('chart-sym-inp').value=chartCurrentSymbol;
   renderMainChart();
 }
+  setInterval(()=>{
+  if(document.getElementById('page-charts')?.classList.contains('active'))renderMainChart();
+}, REFRESH_MS);
 function tfToCandles(tf){ return {'1D':78,'1M':30,'6M':90,'1Y':180}[tf]||30; }
 
 // Maps the UI's timeframe buttons to Upstox's { unit, interval } query params.
