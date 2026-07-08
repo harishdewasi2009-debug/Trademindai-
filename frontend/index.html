@@ -2253,10 +2253,16 @@ liveSocket.onmessage=(evt)=>{
       updateMarketStatusUI();
     }
   };
-  liveSocket.onclose=()=>{ scheduleReconnect(); };
+ liveSocket.onclose=()=>{ scheduleReconnect(); };
   liveSocket.onerror=()=>{ try{liveSocket.close();}catch{} };
 }
-  function scheduleReconnect(){
+
+function scheduleReconnect(){
+  setTimeout(connectLiveFeed, liveSocketRetryMs);
+  liveSocketRetryMs=Math.min(liveSocketRetryMs*2, 30000); // back off up to 30s
+}
+
+function renderTicker(){
     if(msg.feeds?.[chartCurrentSymbol]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
       if(lwLastBar&&lwCandleSeries){
