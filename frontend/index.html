@@ -2195,12 +2195,7 @@ async function refreshIndices(){
   renderIndices();
   updateMarketStatusUI();
 }
-    if(okCount>0 && marketStatus==='connecting') marketStatus='live';
-  }catch(e){ /* keep last-known values; don't wipe UI over one failed poll */ }
-  renderIndices();
-  updateMarketStatusUI();
-}
-
+  
 // One-time REST fetch used only as a fallback for the very first paint
 // (before the WebSocket has sent its first snapshot) and if the socket
 // stays disconnected for a while.
