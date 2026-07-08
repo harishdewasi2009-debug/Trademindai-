@@ -2108,7 +2108,7 @@ const TICKER_SYMBOLS=[
   'BAJAJFINSV','CIPLA','APOLLOHOSP','ASTRAL','DMART','POLYCAB','ABFRL','NESTLEIND','ULTRACEMCO','ONGC',
 ];
 const INDEX_SYMBOLS=[{sym:'%5ENSEI',label:'NIFTY 50'},{sym:'%5EBSESN',label:'SENSEX'},{sym:'%5ENSEBANK',label:'NIFTY BANK'}];
-
+const INDEX_LABELS=INDEX_SYMBOLS.map(i=>i.label);
 let liveQuoteCache={};   // symbol -> {price, changePct, up}
 let marketStatus='connecting'; // connecting | live | stale | offline
 const REFRESH_MS=4000; // was 15000 — now polls close to the backend's 3s quote cache, so ticks feel near-live
@@ -2207,6 +2207,7 @@ async function refreshLiveMarket(){
   updateMarketStatusUI();
 }
 const INDEX_NAME_TO_KEY={'NIFTY 50':'%5ENSEI','NIFTY BANK':'%5ENSEBANK','SENSEX':'%5EBSESN'};
+  
 // ══════════════ LIVE WEBSOCKET FEED (real-time, no polling) ══════════════
 // Connects to our backend's /ws/market, which relays Upstox's live tick
 // feed the instant a price changes — replaces the old 4s/15s REST polling
@@ -2224,11 +2225,15 @@ function connectLiveFeed(){
   liveSocket.onmessage=(evt)=>{
     let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
     if(msg.type!=='tick' && msg.type!=='snapshot')return;
-    let got=false;
+   let got=false;
     for(const [sym,q] of Object.entries(msg.feeds||{})){
       if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
-      else if(INDEX_NAME_TO_KEY[sym]){ liveQuoteCache[INDEX_NAME_TO_KEY[sym]]=q; got=true; }
+      else if(INDEX_LABELS.includes(sym)){ liveQuoteCache[sym]=q; got=true; }
     }
+    if(got){
+      marketStatus='live';
+      renderTicker();
+      renderIndices();
     if(msg.feeds?.[chartCurrentSymbol]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
       if(lwLastBar&&lwCandleSeries){
@@ -2279,7 +2284,7 @@ function renderTicker(){
   }
   const rows=TICKER_SYMBOLS
     .map(s=>{
-      const q=liveQuoteCache[s+'.NS'];
+      const q=live?(liveQuoteCache[idx.label]||liveQuoteCache[idx.sym]):null;
       if(!q)return null; // no fake fallback — just skip symbols we don't have a real quote for yet
       return {s,p:fmtINR(q.price),c:(q.up?'+':'')+q.changePct.toFixed(2)+'%',up:q.up};
     })
