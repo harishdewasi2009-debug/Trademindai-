@@ -3,6 +3,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const marketDataService = require('../services/marketDataService');
 const userBrokerService = require('../services/userBrokerService');
+const liveFeedService = require('../services/liveFeedService');
 
 // ── GET /api/market/upstox/login  (admin only) ───────────────────────────
 // Redirects the admin to Upstox's login dialog to approve TradeMind's
@@ -35,9 +36,10 @@ const upstoxCallback = asyncHandler(async (req, res) => {
     return res.redirect(`${frontendUrl}?upstox_connected=1#portfolio`);
   }
 
-  const result = await marketDataService.exchangeCodeForToken(code);
-  res.json({ message: 'Upstox connected successfully.', ...result });
-});
+ const result = await marketDataService.exchangeCodeForToken(code);
+const token = await marketDataService.getValidAccessToken();
+liveFeedService.startLiveFeed(token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
+res.json({ message: 'Upstox connected successfully.', ...result });
 
 // ── GET /api/market/upstox/status  (admin only) ──────────────────────────
 const upstoxStatus = asyncHandler(async (req, res) => {
@@ -69,9 +71,9 @@ const upstoxNotifier = asyncHandler(async (req, res) => {
   if (client_id && client_id !== process.env.UPSTOX_API_KEY) {
     throw new AppError('Notifier payload client_id does not match this app.', 400);
   }
-  const result = await marketDataService.storeNotifiedToken({ access_token, expires_at });
-  res.json({ message: 'Token received and stored.', ...result });
-});
+const result = await marketDataService.storeNotifiedToken({ access_token, expires_at });
+liveFeedService.startLiveFeed(access_token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
+res.json({ message: 'Token received and stored.', ...result });
 
 // ── GET /api/market/quote/:symbol  (any authenticated user) ─────────────
 const getQuote = asyncHandler(async (req, res) => {
