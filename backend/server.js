@@ -2,14 +2,17 @@
 const { assertRequiredEnv, config } = require('./config');
 assertRequiredEnv();
 
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const { WebSocketServer } = require('ws');
 
 const { apiLimiter } = require('./middleware/rateLimit');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { verifyAccessToken } = require('./utils/jwt');
 
 const authRoutes = require('./routes/authRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
@@ -21,6 +24,8 @@ const marketRoutes = require('./routes/marketRoutes');
 const referralRoutes = require('./routes/referralRoutes');
 const { handleWebhook } = require('./controllers/paymentController');
 const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
+const marketDataService = require('./services/marketDataService');
+const liveFeedService = require('./services/liveFeedService');
 
 const app = express();
 
@@ -82,10 +87,56 @@ app.use('/api/referral', referralRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(config.port, () => {
+// ══ Live market WebSocket — real-time ticks, no more polling ══
+// Browsers connect to wss://<backend>/ws/market and get pushed price
+// updates the instant Upstox sends them (see services/liveFeedService.js).
+// Auth reuses the same httpOnly `accessToken` cookie as the REST API — a
+// WS "upgrade" request from the browser carries cookies automatically, so
+// we verify it by hand here (cookie-parser doesn't run on upgrade requests).
+function readCookie(req, name) {
+  const header = req.headers.cookie;
+  if (!header) return null;
+  const match = header.split(';').map((c) => c.trim()).find((c) => c.startsWith(name + '='));
+  return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+}
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+  if (!req.url.startsWith('/ws/market')) {
+    socket.destroy();
+    return;
+  }
+  const token = readCookie(req, 'accessToken');
+  try {
+    if (!token) throw new Error('no token');
+    verifyAccessToken(token); // just needs to be valid — payload unused here
+  } catch {
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    liveFeedService.registerBrowserClient(ws);
+  });
+});
+
+server.listen(config.port, () => {
   console.log(`✅ TradeMind backend running on port ${config.port} [${config.nodeEnv}]`);
   console.log(`   Health check: http://localhost:${config.port}/health`);
+  console.log(`   Live market WebSocket: ws://localhost:${config.port}/ws/market`);
   startUpstoxTokenScheduler();
+
+  // If Upstox is already connected (token cached from a previous approval),
+  // start the live feed immediately instead of waiting for the next login.
+  marketDataService.upstoxStatus()
+    .then(async (status) => {
+      if (!status.connected) return;
+      const token = await marketDataService.getValidAccessToken();
+      await liveFeedService.startLiveFeed(token);
+    })
+    .catch((err) => console.warn('[liveFeed] not started at boot:', err.message));
 });
 
 module.exports = app;
