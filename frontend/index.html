@@ -2222,18 +2222,37 @@ function connectLiveFeed(){
 
   liveSocket.onopen=()=>{ liveSocketRetryMs=1000; };
 
-  liveSocket.onmessage=(evt)=>{
+ liveSocket.onmessage=(evt)=>{
     let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
     if(msg.type!=='tick' && msg.type!=='snapshot')return;
-   let got=false;
+    let got=false;
     for(const [sym,q] of Object.entries(msg.feeds||{})){
       if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
       else if(INDEX_LABELS.includes(sym)){ liveQuoteCache[sym]=q; got=true; }
+    }
+    if(msg.feeds?.[chartCurrentSymbol]){
+      lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
+      if(lwLastBar&&lwCandleSeries){
+        const p=lastChartTick.price;
+        lwLastBar.close=p;
+        lwLastBar.high=Math.max(lwLastBar.high,p);
+        lwLastBar.low=Math.min(lwLastBar.low,p);
+        lwCandleSeries.update(lwLastBar);
+        const priceEl=document.querySelector('#chart-panel-title .hc-price');
+        if(priceEl){
+          priceEl.textContent='₹'+p.toFixed(2);
+          priceEl.style.color=(p>=lwLastBar.open)?'var(--green2)':'var(--rose2)';
+        }
+      }
     }
     if(got){
       marketStatus='live';
       renderTicker();
       renderIndices();
+      if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
+      updateMarketStatusUI();
+    }
+  };
     if(msg.feeds?.[chartCurrentSymbol]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
       if(lwLastBar&&lwCandleSeries){
@@ -2284,7 +2303,7 @@ function renderTicker(){
   }
   const rows=TICKER_SYMBOLS
     .map(s=>{
-      const q=live?(liveQuoteCache[idx.label]||liveQuoteCache[idx.sym]):null;
+      const q=liveQuoteCache[s+'.NS'];
       if(!q)return null; // no fake fallback — just skip symbols we don't have a real quote for yet
       return {s,p:fmtINR(q.price),c:(q.up?'+':'')+q.changePct.toFixed(2)+'%',up:q.up};
     })
