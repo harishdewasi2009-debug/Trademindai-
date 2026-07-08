@@ -35,6 +35,7 @@ router.post('/upstox/notifier', ctrl.upstoxNotifier);
 router.get('/quote/:symbol', requireAuth, marketLimiter, validateMarketSymbol, ctrl.getQuote);
 // Batch: GET /api/market/quotes?symbols=RELIANCE,TCS,INFY&exchange=BSE_EQ
 router.get('/quotes', requireAuth, marketLimiter, validateMarketQuotes, ctrl.getQuotes);
+router.get('/indices', requireAuth, marketLimiter, ctrl.getIndices);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
 router.get('/search', requireAuth, marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
