@@ -2229,6 +2229,13 @@ function connectLiveFeed(){
       if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
       else if(INDEX_NAME_TO_KEY[sym]){ liveQuoteCache[INDEX_NAME_TO_KEY[sym]]=q; got=true; }
     }
+    if(lwLastBar&&lwCandleSeries&&msg.feeds?.[chartCurrentSymbol]){
+      const p=msg.feeds[chartCurrentSymbol].price;
+      lwLastBar.close=p;
+      lwLastBar.high=Math.max(lwLastBar.high,p);
+      lwLastBar.low=Math.min(lwLastBar.low,p);
+      lwCandleSeries.update(lwLastBar);
+    }
     if(got){
       marketStatus='live';
       renderTicker();
@@ -4475,7 +4482,7 @@ function tfToUpstoxParams(tf){
 // Small in-memory cache so toggling an indicator or resizing the window doesn't
 // refetch from the backend — only a real symbol/timeframe change does.
 const realCandleCache={}; // key: `${symbol}|${tf}` -> { candles, fetchedAt }
-const REAL_CANDLE_CACHE_MS=60000;
+const REAL_CANDLE_CACHE_MS=50000;
 
 /** Tries the real backend (Upstox-backed) candle endpoint. Returns null on any
  *  failure — not configured (501), not authenticated, network error, etc. —
@@ -4517,7 +4524,7 @@ function renderMainChart(){
 // One chart instance is created lazily and reused; toggling indicators or
 // changing symbol/timeframe just calls .setData() again instead of
 // recreating the whole chart (keeps zoom/scroll state and is much cheaper).
-let lwChart=null, lwCandleSeries=null;
+let lwChart=null, lwCandleSeries=null, lwLastBar=null;
 const lwOverlaySeries={}; // { ema: series, vwapUpper: series, ... } — created/removed as toggled
 
 function ensureLightweightChart(){
@@ -4583,7 +4590,8 @@ function renderLightweightMainChart(candles,isRealData,indicators){
   const closes=candles.map(c=>c.c);
   const timeSeries=toLwTimeSeries(candles,isRealData);
   lwCandleSeries.setData(timeSeries.map(({time},i)=>({time,open:candles[i].o,high:candles[i].h,low:candles[i].l,close:candles[i].c})));
-
+const lastRow=timeSeries[timeSeries.length-1];
+  lwLastBar=lastRow?{time:lastRow.time,open:candles[candles.length-1].o,high:candles[candles.length-1].h,low:candles[candles.length-1].l,close:candles[candles.length-1].c}:null;
   if(indicators.ema)setLwOverlay('ema',timeSeries,calcEMA(closes,50)); else clearLwOverlay('ema');
   if(indicators.vwap)setLwOverlay('vwap',timeSeries,calcVWAP(candles)); else clearLwOverlay('vwap');
   if(indicators.bb){
