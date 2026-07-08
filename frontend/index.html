@@ -2230,6 +2230,7 @@ function connectLiveFeed(){
       else if(INDEX_NAME_TO_KEY[sym]){ liveQuoteCache[INDEX_NAME_TO_KEY[sym]]=q; got=true; }
     }
     if(msg.feeds?.[chartCurrentSymbol]){
+  if(msg.feeds?.[chartCurrentSymbol]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
       if(lwLastBar&&lwCandleSeries){
         const p=lastChartTick.price;
