@@ -552,13 +552,34 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   // Upstox returns candles newest-first as
   //   [timestamp, open, high, low, close, volume, openInterest]
   // The frontend's drawCandles() expects oldest-first { o,h,l,c,v,t }.
-  const candles = rawCandles
+const candles = rawCandles
     .map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v }))
     .reverse();
 
-  return { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles };
-}
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const intraday = await getIntradayCandles(instrumentKey, unit, interval);
+  const merged = [...candles.filter((c) => !c.t.startsWith(todayStr)), ...intraday];
 
+  return { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
+}
+/** Fetches TODAY's candles (Upstox's separate intraday endpoint — historical never includes today). */
+async function getIntradayCandles(instrumentKey, unit, interval) {
+  try {
+    const accessToken = await getValidAccessToken();
+    const encodedKey = encodeURIComponent(instrumentKey);
+    const url = `${BASE_V3}/historical-candle/intraday/${encodedKey}/${unit}/${interval}`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return []; // e.g. market closed — don't break the whole chart over this
+    const data = await res.json();
+    const raw = data.data?.candles || [];
+    return raw.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+  } catch {
+    return [];
+  }
+}
 function defaultFromDate(unit) {
   const d = new Date();
   if (unit === 'minutes' || unit === 'hours') d.setDate(d.getDate() - 30);
