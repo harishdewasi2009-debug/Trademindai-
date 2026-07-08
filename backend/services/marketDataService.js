@@ -571,6 +571,7 @@ module.exports = {
   buildLoginUrl,
   exchangeCodeForToken,
   upstoxStatus,
+  getValidAccessToken,
   requestAccessTokenApproval,
   storeNotifiedToken,
   resolveInstrumentKey,
