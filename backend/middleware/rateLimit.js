@@ -25,12 +25,12 @@ const authLimiter = rateLimit({
 // Payment routes — tighter to deter card-testing
 const paymentLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 10, // FIX: was 15
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.method === 'OPTIONS',
   message: { error: 'Too many payment attempts. Please wait a few minutes and try again.' },
 });
-
 // FIX: new limiter — AI routes are expensive, tighter cap per IP
 const aiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
