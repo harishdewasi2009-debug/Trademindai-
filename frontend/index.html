@@ -2230,7 +2230,6 @@ function connectLiveFeed(){
       else if(INDEX_NAME_TO_KEY[sym]){ liveQuoteCache[INDEX_NAME_TO_KEY[sym]]=q; got=true; }
     }
     if(msg.feeds?.[chartCurrentSymbol]){
-  if(msg.feeds?.[chartCurrentSymbol]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
       if(lwLastBar&&lwCandleSeries){
         const p=lastChartTick.price;
@@ -2238,6 +2237,11 @@ function connectLiveFeed(){
         lwLastBar.high=Math.max(lwLastBar.high,p);
         lwLastBar.low=Math.min(lwLastBar.low,p);
         lwCandleSeries.update(lwLastBar);
+        const priceEl=document.querySelector('#chart-panel-title .hc-price');
+        if(priceEl){
+          priceEl.textContent='₹'+p.toFixed(2);
+          priceEl.style.color=(p>=lwLastBar.open)?'var(--green2)':'var(--rose2)';
+        }
       }
     }
     if(lwLastBar&&lwCandleSeries&&msg.feeds?.[chartCurrentSymbol]){
