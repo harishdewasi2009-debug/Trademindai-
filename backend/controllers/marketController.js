@@ -37,10 +37,10 @@ const upstoxCallback = asyncHandler(async (req, res) => {
   }
 
  const result = await marketDataService.exchangeCodeForToken(code);
-const token = await marketDataService.getValidAccessToken();
-liveFeedService.startLiveFeed(token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
-res.json({ message: 'Upstox connected successfully.', ...result });
-
+  const token = await marketDataService.getValidAccessToken();
+  liveFeedService.startLiveFeed(token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
+  res.json({ message: 'Upstox connected successfully.', ...result });
+});
 // ── GET /api/market/upstox/status  (admin only) ──────────────────────────
 const upstoxStatus = asyncHandler(async (req, res) => {
   const status = await marketDataService.upstoxStatus();
@@ -72,8 +72,9 @@ const upstoxNotifier = asyncHandler(async (req, res) => {
     throw new AppError('Notifier payload client_id does not match this app.', 400);
   }
 const result = await marketDataService.storeNotifiedToken({ access_token, expires_at });
-liveFeedService.startLiveFeed(access_token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
-res.json({ message: 'Token received and stored.', ...result });
+  liveFeedService.startLiveFeed(access_token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
+  res.json({ message: 'Token received and stored.', ...result });
+});
 
 // ── GET /api/market/quote/:symbol  (any authenticated user) ─────────────
 const getQuote = asyncHandler(async (req, res) => {
