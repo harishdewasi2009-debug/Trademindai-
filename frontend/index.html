@@ -1715,7 +1715,7 @@ html{scroll-behavior:smooth}
 //                          the backend's .env file, never here)
 // ══════════════════════════════════════════════════════════════════════════
 const APP_CONFIG = {
-  API_BASE_URL:      'https://trademindai-backend-78ky.onrender.com',
+  API_BASE_URL:      'https://trademindai.co.in',
   GOOGLE_CLIENT_ID:  '708129325781-cv77hsg7dovs0klevipdj885pv6clgsl.apps.googleusercontent.com',
   RAZORPAY_KEY_ID:   'rzp_live_T3BljltuYfiqmy',
 };
@@ -2111,7 +2111,7 @@ const INDEX_SYMBOLS=[{sym:'%5ENSEI',label:'NIFTY 50'},{sym:'%5EBSESN',label:'SEN
 
 let liveQuoteCache={};   // symbol -> {price, changePct, up}
 let marketStatus='connecting'; // connecting | live | stale | offline
-const REFRESH_MS=15000;
+const REFRESH_MS=4000; // was 15000 — now polls close to the backend's 3s quote cache, so ticks feel near-live
 
 // UPDATED: indices (NIFTY 50 / SENSEX / NIFTY BANK) still go through Yahoo —
 // the backend's Upstox integration only resolves individual NSE/BSE equity
@@ -2174,30 +2174,75 @@ async function fetchBackendQuotesBatch(symbols){
   return out;
 }
 
-async function refreshLiveMarket(){
+// Indices still come from Yahoo via REST (see comment above) — this part
+// of refreshLiveMarket stays on a slow poll. Stock quotes now arrive
+// instantly over the WebSocket below instead of being fetched here.
+async function refreshIndices(){
   const indexSymbols=INDEX_SYMBOLS.map(i=>i.sym);
-
-  const [stockQuotes,indexResults]=await Promise.all([
-    fetchBackendQuotesBatch(TICKER_SYMBOLS).catch(()=>({})),
-    Promise.allSettled(indexSymbols.map(sym=>fetchYahooChart(sym))),
-  ]);
-
+  const indexResults=await Promise.allSettled(indexSymbols.map(sym=>fetchYahooChart(sym)));
   let okCount=0;
-  TICKER_SYMBOLS.forEach(sym=>{
-    // cache key keeps the old '.NS' suffix convention so renderTicker/
-    // renderScreener (which look up `symbol+'.NS'`) don't need to change.
-    if(stockQuotes[sym]){ liveQuoteCache[sym+'.NS']=stockQuotes[sym]; okCount++; }
-  });
   indexResults.forEach((r,i)=>{
     const sym=indexSymbols[i];
     if(r.status==='fulfilled'){ liveQuoteCache[sym]=r.value; okCount++; }
   });
+  if(okCount>0 && marketStatus==='connecting') marketStatus='live';
+  renderIndices();
+  updateMarketStatusUI();
+}
 
+// One-time REST fetch used only as a fallback for the very first paint
+// (before the WebSocket has sent its first snapshot) and if the socket
+// stays disconnected for a while.
+async function refreshLiveMarket(){
+  const stockQuotes=await fetchBackendQuotesBatch(TICKER_SYMBOLS).catch(()=>({}));
+  let okCount=0;
+  TICKER_SYMBOLS.forEach(sym=>{
+    if(stockQuotes[sym]){ liveQuoteCache[sym+'.NS']=stockQuotes[sym]; okCount++; }
+  });
+  await refreshIndices();
   marketStatus = okCount>0 ? 'live' : (Object.keys(liveQuoteCache).length ? 'stale' : 'offline');
   renderTicker();
   renderIndices();
   if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
   updateMarketStatusUI();
+}
+
+// ══════════════ LIVE WEBSOCKET FEED (real-time, no polling) ══════════════
+// Connects to our backend's /ws/market, which relays Upstox's live tick
+// feed the instant a price changes — replaces the old 4s/15s REST polling
+// for stock quotes. Auth reuses the same login cookie as the REST API.
+let liveSocket=null;
+let liveSocketRetryMs=1000;
+
+function connectLiveFeed(){
+  if(isPlaceholder(APP_CONFIG.API_BASE_URL))return;
+  const wsUrl=APP_CONFIG.API_BASE_URL.replace(/^http/,'ws')+'/ws/market';
+  try{ liveSocket=new WebSocket(wsUrl); }catch{ return scheduleReconnect(); }
+
+  liveSocket.onopen=()=>{ liveSocketRetryMs=1000; };
+
+  liveSocket.onmessage=(evt)=>{
+    let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
+    if(msg.type!=='tick' && msg.type!=='snapshot')return;
+    let got=false;
+    for(const [sym,q] of Object.entries(msg.feeds||{})){
+      if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
+    }
+    if(got){
+      marketStatus='live';
+      renderTicker();
+      if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
+      updateMarketStatusUI();
+    }
+  };
+
+  liveSocket.onclose=()=>{ scheduleReconnect(); };
+  liveSocket.onerror=()=>{ try{liveSocket.close();}catch{} };
+}
+
+function scheduleReconnect(){
+  setTimeout(connectLiveFeed, liveSocketRetryMs);
+  liveSocketRetryMs=Math.min(liveSocketRetryMs*2, 30000); // back off up to 30s
 }
 
 function renderTicker(){
@@ -2261,10 +2306,15 @@ function updateMarketStatusUI(){
   pill.innerHTML=`<span class="live-dot" style="${cfg.dot}"></span>${cfg.text}`;
 }
 
-// kick off live polling — no demo-data fallback; the UI shows a
+// kick off the live feed — no demo-data fallback; the UI shows a
 // "connecting" state until Upstox is actually returning real quotes.
+// Stock prices arrive instantly over the WebSocket (connectLiveFeed);
+// refreshLiveMarket() only runs once for the first paint, then repeats
+// slowly (30s) as a safety net for indices + in case the socket drops.
 refreshLiveMarket();
-setInterval(refreshLiveMarket,REFRESH_MS);
+connectLiveFeed();
+setInterval(refreshIndices,REFRESH_MS);
+setInterval(()=>{ if(!liveSocket||liveSocket.readyState!==1) refreshLiveMarket(); },30000);
 
 // ══════════════ FAQ ══════════════
 const faqs=[
