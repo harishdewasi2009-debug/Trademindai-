@@ -2107,7 +2107,7 @@ const TICKER_SYMBOLS=[
   'TATAMOTORS','ADANIENT','MARUTI','SUNPHARMA','LTIM','TITAN','KOTAKBANK','LT','ITC','HINDUNILVR',
   'BAJAJFINSV','CIPLA','APOLLOHOSP','ASTRAL','DMART','POLYCAB','ABFRL','NESTLEIND','ULTRACEMCO','ONGC',
 ];
-const INDEX_SYMBOLS=[{sym:'%5ENSEI',label:'NIFTY 50'},{sym:'%5EBSESN',label:'SENSEX'},{sym:'%5ENSEBANK',label:'NIFTY BANK'}];
+const INDEX_SYMBOLS=[{sym:'NIFTY 50',label:'NIFTY 50'},{sym:'SENSEX',label:'SENSEX'},{sym:'NIFTY BANK',label:'NIFTY BANK'}];
 const INDEX_LABELS=INDEX_SYMBOLS.map(i=>i.label);
 let liveQuoteCache={};   // symbol -> {price, changePct, up}
 let marketStatus='connecting'; // connecting | live | stale | offline
@@ -2178,14 +2178,20 @@ async function fetchBackendQuotesBatch(symbols){
 // of refreshLiveMarket stays on a slow poll. Stock quotes now arrive
 // instantly over the WebSocket below instead of being fetched here.
 async function refreshIndices(){
-  const indexSymbols=INDEX_SYMBOLS.map(i=>i.sym);
-  const indexResults=await Promise.allSettled(indexSymbols.map(sym=>fetchYahooChart(sym)));
-  let okCount=0;
-  indexResults.forEach((r,i)=>{
-    const sym=indexSymbols[i];
-    if(r.status==='fulfilled'){ liveQuoteCache[sym]=r.value; okCount++; }
-  });
-  if(okCount>0 && marketStatus==='connecting') marketStatus='live';
+  try{
+    const res=await apiFetch('/api/market/indices',{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    let okCount=0;
+    (data.quotes||[]).forEach(q=>{
+      if(typeof q.lastPrice==='number'){
+        const changePct=typeof q.changePct==='number'?q.changePct:0;
+        liveQuoteCache[q.label]={price:q.lastPrice,changePct,up:changePct>=0};
+        okCount++;
+      }
+    });
+    if(okCount>0 && marketStatus==='connecting') marketStatus='live';
+  }catch(e){ /* keep last-known values; don't wipe UI over one failed poll */ }
   renderIndices();
   updateMarketStatusUI();
 }
