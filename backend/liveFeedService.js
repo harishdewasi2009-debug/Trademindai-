@@ -25,6 +25,11 @@ const DEFAULT_SYMBOLS = [
   'TATAMOTORS', 'ADANIENT', 'MARUTI', 'SUNPHARMA', 'LTIM', 'TITAN', 'KOTAKBANK', 'LT', 'ITC', 'HINDUNILVR',
   'BAJAJFINSV', 'CIPLA', 'APOLLOHOSP', 'ASTRAL', 'DMART', 'POLYCAB', 'ABFRL', 'NESTLEIND', 'ULTRACEMCO', 'ONGC',
 ];
+const INDEX_INSTRUMENT_KEYS = {
+  'NIFTY 50': 'NSE_INDEX|Nifty 50',
+  'NIFTY BANK': 'NSE_INDEX|Nifty Bank',
+  'SENSEX': 'BSE_INDEX|SENSEX',
+};
 
 let streamer = null;
 const browserClients = new Set();       // Set<ws.WebSocket> — connected frontend tabs
@@ -74,7 +79,10 @@ async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS) {
   const valid = resolved.filter(Boolean);
   instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, v.symbol]));
   const instrumentKeys = valid.map((v) => v.instrumentKey);
-
+for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
+    instrumentKeyToSymbol.set(instrumentKey, symbol);
+    instrumentKeys.push(instrumentKey);
+  }
   if (!instrumentKeys.length) {
     console.warn('[liveFeedService] No symbols resolved — live feed not started.');
     return;
@@ -131,4 +139,4 @@ function stopLiveFeed() {
   }
 }
 
-module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, DEFAULT_SYMBOLS };
+module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, DEFAULT_SYMBOLS, INDEX_INSTRUMENT_KEYS };
