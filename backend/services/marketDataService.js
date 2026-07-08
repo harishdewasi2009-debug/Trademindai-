@@ -540,11 +540,6 @@ async function getIndexQuotes() {
 }// ─────────────────────────────────────────────────────────────────────────
 //  INDEX QUOTES (NIFTY 50 / SENSEX / NIFTY BANK)
 // ─────────────────────────────────────────────────────────────────────────
-const INDEX_INSTRUMENT_KEYS = {
-  'NIFTY 50':   'NSE_INDEX|Nifty 50',
-  'SENSEX':     'BSE_INDEX|SENSEX',
-  'NIFTY BANK': 'NSE_INDEX|Nifty Bank',
-};
 
 async function getIndexQuotes() {
   const accessToken = await getValidAccessToken();
