@@ -537,6 +537,77 @@ async function getIndexQuotes() {
   const result = { quotes, fetchedAt: new Date().toISOString() };
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
   return result;
+}// ─────────────────────────────────────────────────────────────────────────
+//  INDEX QUOTES (NIFTY 50 / SENSEX / NIFTY BANK)
+// ─────────────────────────────────────────────────────────────────────────
+const INDEX_INSTRUMENT_KEYS = {
+  'NIFTY 50':   'NSE_INDEX|Nifty 50',
+  'SENSEX':     'BSE_INDEX|SENSEX',
+  'NIFTY BANK': 'NSE_INDEX|Nifty Bank',
+};
+
+async function getIndexQuotes() {
+  const accessToken = await getValidAccessToken();
+  const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
+
+  const url = `${BASE_V3}/market-quote/quotes?${new URLSearchParams({
+    instrument_key: entries.map(([, key]) => key).join(','),
+  })}`;
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
+  }
+
+  const data = await res.json();
+  const values = Object.values(data.data || {});
+
+  const indices = entries.map(([label, instrumentKey]) => {
+    const quote =
+      values.find((q) => q.instrument_token === instrumentKey) ||
+      values.find((q) => q.instrument_token?.replace('%7C', '|') === instrumentKey);
+
+    if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+
+    const lastPrice = quote.last_price;
+    const previousClose = quote.ohlc?.close ?? null;
+    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
+      ? ((lastPrice - previousClose) / previousClose) * 100
+      : null;
+
+    return { label, instrumentKey, lastPrice, previousClose, changePct };
+  });
+
+  return { indices, fetchedAt: new Date().toISOString() };
+}
+
+async function getIndexCandles(label, { unit = 'minutes', interval = 5, from, to } = {}) {
+  const instrumentKey = INDEX_INSTRUMENT_KEYS[label.toUpperCase()];
+  if (!instrumentKey) throw new AppError(`Unknown index: ${label}`, 400);
+  if (!VALID_UNITS.includes(unit)) {
+    throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
+  }
+  const accessToken = await getValidAccessToken();
+  const toDate = to || new Date().toISOString().slice(0, 10);
+  const fromDate = from || defaultFromDate(unit);
+  const encodedKey = encodeURIComponent(instrumentKey);
+  const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
+
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new AppError(`Upstox index candle request failed: ${errText.slice(0, 200)}`, 502);
+  }
+  const data = await res.json();
+  const rawCandles = data.data?.candles || [];
+  const candles = rawCandles.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+  return { label, instrumentKey, unit, interval, candles };
 }
 // ─────────────────────────────────────────────────────────────────────────
 //  OPTION CHAIN (real Upstox v2 API — replaces fabricated OI/PCR data)
@@ -635,6 +706,8 @@ function defaultFromDate(unit) {
 }
 
 module.exports = {
+ getIndexQuotes,
+  getIndexCandles,
   getIndexQuotes,
   buildLoginUrl,
   exchangeCodeForToken,
