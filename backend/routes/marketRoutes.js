@@ -32,17 +32,17 @@ router.post('/upstox/request-token', requireAdminOrCronSecret, adminLimiter, ctr
 router.post('/upstox/notifier', ctrl.upstoxNotifier);
 
 // ── Quotes & candles (any logged-in user) ──
-router.get('/quote/:symbol', requireAuth, marketLimiter, validateMarketSymbol, ctrl.getQuote);
-// Batch: GET /api/market/quotes?symbols=RELIANCE,TCS,INFY&exchange=BSE_EQ
-router.get('/quotes', requireAuth, marketLimiter, validateMarketQuotes, ctrl.getQuotes);
+ router.get('/quote/:symbol', marketLimiter, validateMarketSymbol, ctrl.getQuote);
+ // Batch: GET /api/market/quotes?symbols=RELIANCE,TCS,INFY&exchange=BSE_EQ
+router.get('/quotes', marketLimiter, validateMarketQuotes, ctrl.getQuotes);
 router.get('/indices', marketLimiter, ctrl.getIndices);
 router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
-router.get('/search', requireAuth, marketLimiter, validateMarketSearch, ctrl.searchSymbols);
+router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
-router.get('/stocks', requireAuth, marketLimiter, ctrl.listStocks);
+router.get('/stocks', marketLimiter, ctrl.listStocks);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
-router.get('/options-chain', requireAuth, marketLimiter, ctrl.getOptionsChain);
-router.get('/candles/:symbol', requireAuth, marketLimiter, validateMarketCandles, ctrl.getCandles);
+router.get('/options-chain', marketLimiter, ctrl.getOptionsChain);
+router.get('/candles/:symbol', marketLimiter, validateMarketCandles, ctrl.getCandles);
 
 module.exports = router;
