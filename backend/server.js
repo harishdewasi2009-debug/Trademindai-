@@ -108,15 +108,6 @@ server.on('upgrade', (req, socket, head) => {
     socket.destroy();
     return;
   }
-  const token = readCookie(req, 'accessToken');
-  try {
-    if (!token) throw new Error('no token');
-    verifyAccessToken(token); // just needs to be valid — payload unused here
-  } catch {
-    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-    socket.destroy();
-    return;
-  }
   wss.handleUpgrade(req, socket, head, (ws) => {
     liveFeedService.registerBrowserClient(ws);
   });
