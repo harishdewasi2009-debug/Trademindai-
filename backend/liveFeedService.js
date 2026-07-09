@@ -41,11 +41,31 @@ function registerBrowserClient(ws) {
   browserClients.add(ws);
   ws.on('close', () => browserClients.delete(ws));
   ws.on('error', () => browserClients.delete(ws));
+  ws.on('message', (raw) => {
+    let msg;
+    try { msg = JSON.parse(raw.toString('utf-8')); } catch { return; }
+    if (msg.type === 'watch' && typeof msg.symbol === 'string') {
+      watchSymbol(msg.symbol).catch((err) => console.warn('[liveFeedService] watchSymbol failed:', err.message));
+    }
+  });
   if (lastKnownFeed.size) {
     ws.send(JSON.stringify({ type: 'snapshot', feeds: Object.fromEntries(lastKnownFeed) }));
   }
 }
 
+/** Called when a browser asks to watch a symbol that isn't already in the
+ *  live feed (e.g. searched/charted but not in DEFAULT_SYMBOLS). Resolves
+ *  its instrument key and adds it to the running Upstox subscription. */
+async function watchSymbol(symbolRaw) {
+  if (!streamer) return; // live feed not started yet — nothing to add to
+  const symbol = symbolRaw.toUpperCase();
+  if ([...instrumentKeyToSymbol.values()].includes(symbol)) return; // already watching
+
+  const instrumentKey = await resolveInstrumentKey(symbol);
+  instrumentKeyToSymbol.set(instrumentKey, symbol);
+  streamer.subscribe([instrumentKey], 'full');
+  console.log(`[liveFeedService] Added ${symbol} to live feed on demand.`);
+}
 function broadcast(payload) {
   const msg = JSON.stringify(payload);
   for (const client of browserClients) {
@@ -140,4 +160,4 @@ function stopLiveFeed() {
   }
 }
 
-module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, DEFAULT_SYMBOLS, INDEX_INSTRUMENT_KEYS };
+module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, DEFAULT_SYMBOLS, INDEX_INSTRUMENT_KEYS };
