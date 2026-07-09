@@ -4532,13 +4532,10 @@ async function fetchRealCandles(symbol,tf){
   const cached=realCandleCache[cacheKey];
   if(cached&&(Date.now()-cached.fetchedAt)<REAL_CANDLE_CACHE_MS)return cached.candles;
   try{
-   const res=await apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?${qs}`);
-    if(!res.ok){
-      const errBody=await res.text().catch(()=>'');
-      console.error(`[fetchRealCandles] ${symbol} failed with ${res.status}:`, errBody);
-      return null;
-    }
-    // includes 501 "not configured" — silent fallback by design
+    const {unit,interval}=tfToUpstoxParams(tf);
+    const qs=new URLSearchParams({unit,interval:String(interval)});
+    const res=await apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?${qs}`);
+    if(!res.ok)return null; // includes 501 "not configured" — silent fallback by design
     const data=await res.json();
     if(!Array.isArray(data.candles)||!data.candles.length)return null;
     // Backend returns oldest-first {t,o,h,l,c,v} already — matches drawCandles() input directly.
