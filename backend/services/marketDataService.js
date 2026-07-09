@@ -510,48 +510,6 @@ async function getIndexQuotes() {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(10_000),
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
-  }
-
-  const data = await res.json();
-  const byInstrumentKey = new Map(
-    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
-  );
-
-  const quotes = entries.map(([label, instrumentKey]) => {
-    const quote = byInstrumentKey.get(instrumentKey);
-    if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
-
-    const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
-    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
-      ? ((lastPrice - previousClose) / previousClose) * 100
-      : null;
-
-    return { label, instrumentKey, lastPrice, previousClose, changePct };
-  });
-
-  const result = { quotes, fetchedAt: new Date().toISOString() };
-  quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
-  return result;
-}// ─────────────────────────────────────────────────────────────────────────
-//  INDEX QUOTES (NIFTY 50 / SENSEX / NIFTY BANK)
-// ─────────────────────────────────────────────────────────────────────────
-
-async function getIndexQuotes() {
-  const accessToken = await getValidAccessToken();
-  const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
-
-  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
-    instrument_key: entries.map(([, key]) => key).join(','),
-  })}`;
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(10_000),
-  });
   if (!res.ok) {
     const errText = await res.text();
     throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
@@ -561,14 +519,25 @@ async function getIndexQuotes() {
   const values = Object.values(data.data || {});
 
   const indices = entries.map(([label, instrumentKey]) => {
+    // Upstox can key/tag a quote by instrument_token OR instrument_key,
+    // and sometimes uses ':' instead of '|' — try every combination
+    // instead of one exact match, so we don't silently drop SENSEX/BANKNIFTY.
+    const altKey = instrumentKey.replace('|', ':');
     const quote =
+      data.data?.[instrumentKey] ||
+      data.data?.[altKey] ||
       values.find((q) => q.instrument_token === instrumentKey) ||
-      values.find((q) => q.instrument_token?.replace('%7C', '|') === instrumentKey);
+      values.find((q) => q.instrument_key === instrumentKey) ||
+      values.find((q) => q.instrument_token === altKey) ||
+      values.find((q) => q.instrument_key === altKey);
 
-    if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    if (!quote) {
+      console.warn(`[getIndexQuotes] no match for ${label} (${instrumentKey}). Raw keys:`, Object.keys(data.data || {}));
+      return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    }
 
     const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
+    const previousClose = quote.ohlc?.close ?? quote.close_price ?? null;
     const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
       ? ((lastPrice - previousClose) / previousClose) * 100
       : null;
@@ -576,9 +545,10 @@ async function getIndexQuotes() {
     return { label, instrumentKey, lastPrice, previousClose, changePct };
   });
 
-  return { indices, fetchedAt: new Date().toISOString() };
+  const result = { indices, fetchedAt: new Date().toISOString() };
+  quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
+  return result;
 }
-
 async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5, from, to } = {}) {
   const instrumentKey = INDEX_INSTRUMENT_KEYS[label.toUpperCase()];
   if (!instrumentKey) throw new AppError(`Unknown index: ${label}`, 400);
