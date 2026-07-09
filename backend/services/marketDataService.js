@@ -579,7 +579,7 @@ async function getIndexQuotes() {
   return { indices, fetchedAt: new Date().toISOString() };
 }
 
-async function getIndexCandles(label, { unit = 'minutes', interval = 5, from, to } = {}) {
+async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5, from, to } = {}) {
   const instrumentKey = INDEX_INSTRUMENT_KEYS[label.toUpperCase()];
   if (!instrumentKey) throw new AppError(`Unknown index: ${label}`, 400);
   if (!VALID_UNITS.includes(unit)) {
