@@ -701,9 +701,6 @@ function defaultFromDate(unit) {
 }
 
 module.exports = {
- getIndexQuotes,
-  getIndexCandles,
-  getIndexQuotes,
   buildLoginUrl,
   exchangeCodeForToken,
   upstoxStatus,
@@ -717,4 +714,6 @@ module.exports = {
   getLtpBatch,
   getOptionChain,
   getHistoricalCandles,
+  getIndexQuotes,
+  getIndexHistoricalCandles,
 };
