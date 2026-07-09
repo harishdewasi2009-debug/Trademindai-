@@ -4538,12 +4538,6 @@ async function fetchRealCandles(symbol,tf){
       console.error(`[fetchRealCandles] ${symbol} failed with ${res.status}:`, errBody);
       return null;
     }
-    const data=await res.json();
-    if(!Array.isArray(data.candles)||!data.candles.length){
-      console.error(`[fetchRealCandles] ${symbol} returned no candles:`, data);
-      return null;
-    }
-    
     // includes 501 "not configured" — silent fallback by design
     const data=await res.json();
     if(!Array.isArray(data.candles)||!data.candles.length)return null;
