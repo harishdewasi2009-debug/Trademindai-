@@ -25,6 +25,7 @@
     "cookie-parser": "^1.4.6",
     "morgan": "^1.10.0",
     "uuid": "^9.0.1",
+    "upstox-js-sdk": "^2.23.0",
    "ws": "^8.18.0",
 "upstox-js-sdk": "*",
     "nodemailer": "^6.9.14",
