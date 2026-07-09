@@ -2226,7 +2226,10 @@ function connectLiveFeed(){
   const wsUrl=APP_CONFIG.API_BASE_URL.replace(/^http/,'ws')+'/ws/market';
   try{ liveSocket=new WebSocket(wsUrl); }catch{ return scheduleReconnect(); }
 
-  liveSocket.onopen=()=>{ liveSocketRetryMs=1000; };
+liveSocket.onopen=()=>{
+    liveSocketRetryMs=1000;
+    if(chartCurrentSymbol)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol}));
+  };
 
 liveSocket.onmessage=(evt)=>{
     let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
@@ -4490,10 +4493,12 @@ function setChartTF(el,tf){
 function loadChartSymbol(){
   const v=(document.getElementById('chart-sym-inp').value||'RELIANCE').toUpperCase().trim();
   chartCurrentSymbol=v||'RELIANCE';
+  if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol}));
   renderMainChart();
 }
 function initChartsPage(){
   document.getElementById('chart-sym-inp').value=chartCurrentSymbol;
+  if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol}));
   renderMainChart();
 }
   setInterval(()=>{
