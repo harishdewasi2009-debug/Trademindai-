@@ -4537,7 +4537,7 @@ async function fetchRealCandles(symbol,tf){
       const errBody=await res.text().catch(()=>'');
       console.error(`[fetchRealCandles] ${symbol} failed with ${res.status}:`, errBody);
       return null;
-    }
+    
     const data=await res.json();
     if(!Array.isArray(data.candles)||!data.candles.length){
       console.error(`[fetchRealCandles] ${symbol} returned no candles:`, data);
