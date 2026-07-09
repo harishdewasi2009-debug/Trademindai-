@@ -2209,7 +2209,7 @@ async function refreshLiveMarket(){
   marketStatus = okCount>0 ? 'live' : (Object.keys(liveQuoteCache).length ? 'stale' : 'offline');
   renderTicker();
   renderIndices();
-  if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
+  if(typeof renderScreener==='function' && document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
   updateMarketStatusUI();
 }
 const INDEX_NAME_TO_KEY={'NIFTY 50':'%5ENSEI','NIFTY BANK':'%5ENSEBANK','SENSEX':'%5EBSESN'};
@@ -2255,7 +2255,7 @@ liveSocket.onmessage=(evt)=>{
       marketStatus='live';
       renderTicker();
       renderIndices();
-      if(typeof renderScreener==='function' && document.getElementById('screener-results'))renderScreener();
+      if(typeof renderScreener==='function' && document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
       updateMarketStatusUI();
     }
   };
