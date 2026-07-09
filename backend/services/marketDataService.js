@@ -545,7 +545,7 @@ async function getIndexQuotes() {
   const accessToken = await getValidAccessToken();
   const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
 
-  const url = `${BASE_V3}/market-quote/quotes?${new URLSearchParams({
+  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
     instrument_key: entries.map(([, key]) => key).join(','),
   })}`;
   const res = await fetch(url, {
