@@ -468,7 +468,7 @@ async function getLtpBatch(symbols) {
     throw new AppError(`Upstox batch quote request failed: ${errText.slice(0, 200)}`, 502);
   }
 
-  const data = await res.json();
+const data = await res.json();
   const byInstrumentKey = new Map(
     Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
   );
@@ -490,7 +490,6 @@ async function getLtpBatch(symbols) {
 
     return { symbol, instrumentKey, lastPrice, previousClose, changePct };
   });
-
   const result = { quotes, errors: unresolved, fetchedAt: new Date().toISOString() };
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
   return result;
