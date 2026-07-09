@@ -4522,7 +4522,7 @@ const REAL_CANDLE_CACHE_MS=50000;
  *  failure — not configured (501), not authenticated, network error, etc. —
  *  so the caller can fall back to the synthetic generator without breaking. */
 async function fetchRealCandles(symbol,tf){
-  if(isPlaceholder(APP_CONFIG.API_BASE_URL)||!currentUser)return null;
+ if(isPlaceholder(APP_CONFIG.API_BASE_URL))return null;
   const cacheKey=symbol+'|'+tf;
   const cached=realCandleCache[cacheKey];
   if(cached&&(Date.now()-cached.fetchedAt)<REAL_CANDLE_CACHE_MS)return cached.candles;
