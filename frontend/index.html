@@ -2336,7 +2336,7 @@ function updateMarketStatusUI(){
 // slowly (30s) as a safety net for indices + in case the socket drops.
 refreshLiveMarket();
 connectLiveFeed();
-setInterval(refreshIndices,REFRESH_MS);
+setInterval(()=>{ if(!liveSocket||liveSocket.readyState!==1) refreshIndices(); },REFRESH_MS);
 setInterval(()=>{ if(!liveSocket||liveSocket.readyState!==1) refreshLiveMarket(); },30000);
 
 // ══════════════ FAQ ══════════════
