@@ -108,7 +108,7 @@ const getIndices = asyncHandler(async (req, res) => {
 
 const getIndexCandles = asyncHandler(async (req, res) => {
   const { underlying = 'NIFTY 50', unit, interval, from, to } = req.query;
-  const data = await marketDataService.getIndexCandles(underlying, {
+  const data = await marketDataService.getIndexHistoricalCandles(underlying, {
     unit, interval: interval ? Number(interval) : undefined, from, to,
   });
   res.json(data);
