@@ -98,7 +98,7 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     streamer.subscribe(instrumentKeys, 'full');
   });
 
-  streamer.on('message', (raw) => {
+ streamer.on('message', (raw) => {
     let parsed;
     try {
       parsed = JSON.parse(raw.toString('utf-8'));
@@ -106,6 +106,7 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
       return; // ping/keepalive or non-JSON frame — ignore
     }
     const feeds = parsed.feeds || {};
+    console.log('[liveFeedService] tick for:', Object.keys(feeds).map((k) => instrumentKeyToSymbol.get(k) || k).join(', '));
     const out = {};
     for (const [instrumentKey, feed] of Object.entries(feeds)) {
       const symbol = instrumentKeyToSymbol.get(instrumentKey);
