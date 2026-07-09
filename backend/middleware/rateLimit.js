@@ -45,7 +45,7 @@ const aiLimiter = rateLimit({
 // from being hammered by one client.
 const marketLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 200, //was 60
+  max: 400, //was 60
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many market data requests. Please slow down polling.' },
