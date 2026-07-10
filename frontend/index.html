@@ -1258,9 +1258,7 @@ html{scroll-behavior:smooth}
       <button class="filter-chip" onclick="toggleExchangeFilter(this,'BSE_EQ')"><i class="ti ti-building"></i> BSE only</button>
     </div>
     <div id="screener-results"></div>
-    <div style="text-align:center;margin-top:24px">
-      <button class="btn-lg-ghost" onclick="loadMoreScreener()" style="padding:10px 32px;font-size:13px">Load more stocks</button>
-    </div>
+
   </div>
 </div>
 
@@ -2726,10 +2724,7 @@ function setScreenerExchange(ex){
   screenerPage=1;
   renderScreener();
 }
-function loadMoreScreener(){
-  document.getElementById('screener-search-inp')?.focus();
-  document.getElementById('screener-search-inp')?.scrollIntoView({behavior:'smooth',block:'center'});
-}
+
 
 // ══════════════ SCREENER SEARCH (all 5,000+ NSE + BSE stocks) ══════════════
 // Complements the paginated browser above with instant symbol lookup —
