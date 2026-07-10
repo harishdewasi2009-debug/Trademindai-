@@ -577,19 +577,19 @@ async function getIndexQuotes() {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(10_000),
   });
+
   if (!res.ok) {
     const errText = await res.text();
     throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
   }
 
   const data = await res.json();
-  const values = Object.values(data.data || {});
+  const byInstrumentKey = new Map(
+    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
+  );
 
-  const indices = entries.map(([label, instrumentKey]) => {
-    const quote =
-      values.find((q) => q.instrument_token === instrumentKey) ||
-      values.find((q) => q.instrument_token?.replace('%7C', '|') === instrumentKey);
-
+  const quotes = entries.map(([label, instrumentKey]) => {
+    const quote = byInstrumentKey.get(instrumentKey);
     if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
 
     const lastPrice = quote.last_price;
@@ -601,7 +601,7 @@ async function getIndexQuotes() {
     return { label, instrumentKey, lastPrice, previousClose, changePct };
   });
 
-  const result = { indices, fetchedAt: new Date().toISOString() };
+  const result = { quotes, fetchedAt: new Date().toISOString() };
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
   return result;
 }
