@@ -281,13 +281,23 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
 
     const segment = (row.segment || '').toUpperCase();
     const instrumentType = (row.instrument_type || '').toUpperCase();
-    const looksLikeEquity =
-      instrumentType === 'EQ' ||
-      segment === exchange ||
-      segment === `${exchange.split('_')[0]}_EQ`;
+    const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
+
+    // Only trust instrument_type when it's present — that's the reliable
+    // equity marker. Fall back to segment ONLY when instrument_type is
+    // missing: relying on segment alone lets BSE bonds/NCDs through too
+    // (their segment is also "BSE_EQ"), which is why junk symbols like
+    // "HCCL-0.01%-31-3-29-PVT" were showing up in the screener.
+    const looksLikeEquity = instrumentType
+      ? instrumentType === 'EQ'
+      : (segment === exchange || segment === `${exchange.split('_')[0]}_EQ`);
     if (!looksLikeEquity) continue;
 
-    const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
+    // Extra safety net: skip anything that still looks like a bond/
+    // debenture code (coupon %, "PVT" placement suffix) even if it
+    // slipped past the check above.
+    if (tradingSymbol && /%|PVT$/i.test(String(tradingSymbol))) continue;
+
     const instrumentKey = row.instrument_key || row.instrumentKey;
     if (!tradingSymbol || !instrumentKey) { skippedNoSymbol++; continue; }
 
