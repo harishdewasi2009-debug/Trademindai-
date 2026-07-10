@@ -31,10 +31,20 @@ const INDEX_INSTRUMENT_KEYS = {
   'SENSEX': 'BSE_INDEX|SENSEX',
 };
 
+// A plain symbol ("RELIANCE") can be listed on both NSE and BSE. The
+// default/DEFAULT_SYMBOLS feed is always NSE, so it keeps the old bare
+// "RELIANCE" key for backward compatibility with the ticker/watchlist,
+// which never send an exchange. An explicit BSE watch (from the Charts
+// page's NSE/BSE switch) gets its own "BSE:RELIANCE" key so its ticks never
+// get confused with — or overwritten by — the NSE feed for the same symbol.
+function feedKeyFor(symbol, exchange) {
+  return exchange === 'BSE_EQ' ? `BSE:${symbol}` : symbol;
+}
+
 let streamer = null;
 const browserClients = new Set();       // Set<ws.WebSocket> — connected frontend tabs
-let instrumentKeyToSymbol = new Map();  // "NSE_EQ|INE..." -> "RELIANCE"
-const lastKnownFeed = new Map();        // symbol -> last tick, sent as an instant snapshot to new clients
+let instrumentKeyToSymbol = new Map();  // "NSE_EQ|INE..." -> { symbol, feedKey }
+const lastKnownFeed = new Map();        // feedKey -> last tick, sent as an instant snapshot to new clients
 
 /** Call from server.js when a browser opens a WS connection to /ws/market (after auth). */
 function registerBrowserClient(ws) {
@@ -45,7 +55,7 @@ function registerBrowserClient(ws) {
     let msg;
     try { msg = JSON.parse(raw.toString('utf-8')); } catch { return; }
     if (msg.type === 'watch' && typeof msg.symbol === 'string') {
-      watchSymbol(msg.symbol).catch((err) => console.warn('[liveFeedService] watchSymbol failed:', err.message));
+      watchSymbol(msg.symbol, msg.exchange).catch((err) => console.warn('[liveFeedService] watchSymbol failed:', err.message));
     }
   });
   if (lastKnownFeed.size) {
@@ -55,16 +65,20 @@ function registerBrowserClient(ws) {
 
 /** Called when a browser asks to watch a symbol that isn't already in the
  *  live feed (e.g. searched/charted but not in DEFAULT_SYMBOLS). Resolves
- *  its instrument key and adds it to the running Upstox subscription. */
-async function watchSymbol(symbolRaw) {
+ *  its instrument key and adds it to the running Upstox subscription.
+ *  Pass exchange: 'BSE_EQ' to watch the BSE listing specifically (otherwise
+ *  resolveInstrumentKey tries NSE first, same default as everywhere else). */
+async function watchSymbol(symbolRaw, exchangeRaw) {
   if (!streamer) return; // live feed not started yet — nothing to add to
   const symbol = symbolRaw.toUpperCase();
-  if ([...instrumentKeyToSymbol.values()].includes(symbol)) return; // already watching
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(exchangeRaw) ? exchangeRaw : undefined;
+  const feedKey = feedKeyFor(symbol, exchange);
+  if ([...instrumentKeyToSymbol.values()].some((v) => v.feedKey === feedKey)) return; // already watching
 
-  const instrumentKey = await resolveInstrumentKey(symbol);
-  instrumentKeyToSymbol.set(instrumentKey, symbol);
+  const instrumentKey = await resolveInstrumentKey(symbol, exchange);
+  instrumentKeyToSymbol.set(instrumentKey, { symbol, feedKey });
   streamer.subscribe([instrumentKey], 'full');
-  console.log(`[liveFeedService] Added ${symbol} to live feed on demand.`);
+  console.log(`[liveFeedService] Added ${feedKey} to live feed on demand.`);
 }
 function broadcast(payload) {
   const msg = JSON.stringify(payload);
@@ -97,10 +111,10 @@ async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS) {
     }
   }));
   const valid = resolved.filter(Boolean);
-  instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, v.symbol]));
+  instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, { symbol: v.symbol, feedKey: v.symbol }]));
   const instrumentKeys = valid.map((v) => v.instrumentKey);
 for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
-    instrumentKeyToSymbol.set(instrumentKey, symbol);
+    instrumentKeyToSymbol.set(instrumentKey, { symbol, feedKey: symbol });
     instrumentKeys.push(instrumentKey);
   }
   if (!instrumentKeys.length) {
@@ -126,12 +140,12 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
       return; // ping/keepalive or non-JSON frame — ignore
     }
     const feeds = parsed.feeds || {};
-    console.log('[liveFeedService] tick for:', Object.keys(feeds).map((k) => instrumentKeyToSymbol.get(k) || k).join(', '));
+    console.log('[liveFeedService] tick for:', Object.keys(feeds).map((k) => instrumentKeyToSymbol.get(k)?.feedKey || k).join(', '));
     const out = {};
     for (const [instrumentKey, feed] of Object.entries(feeds)) {
-      const symbol = instrumentKeyToSymbol.get(instrumentKey);
+      const info = instrumentKeyToSymbol.get(instrumentKey);
       const ltpc = extractLtpc(feed);
-      if (!symbol || !ltpc || typeof ltpc.ltp !== 'number') continue;
+      if (!info || !ltpc || typeof ltpc.ltp !== 'number') continue;
 
       const price = ltpc.ltp;
       const prevClose = ltpc.cp;
@@ -140,8 +154,8 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
         : 0;
 
       const entry = { price, changePct, up: changePct >= 0 };
-      out[symbol] = entry;
-      lastKnownFeed.set(symbol, entry);
+      out[info.feedKey] = entry;
+      lastKnownFeed.set(info.feedKey, entry);
     }
     if (Object.keys(out).length) broadcast({ type: 'tick', feeds: out });
   });

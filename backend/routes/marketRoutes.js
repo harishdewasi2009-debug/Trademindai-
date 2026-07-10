@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminCheck');
+const { requireFeature } = require('../middleware/planCheck');
 const { marketLimiter, adminLimiter } = require('../middleware/rateLimit');
 const { validateMarketSymbol, validateMarketCandles, validateMarketQuotes, validateMarketSearch } = require('../middleware/validate');
 const ctrl = require('../controllers/marketController');
@@ -40,9 +41,17 @@ router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
 router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
-router.get('/stocks', marketLimiter, ctrl.listStocks);
+// FIX: this is sold as a Pro/Elite-only feature on the pricing page and
+// comparison table ("AI Stock Screener" — cross for Free/Basic, check for
+// Pro/Elite) but had no backend gate at all, so any authenticated Free/Basic
+// user (or a direct API call) could pull the full paginated stock list for
+// free. requireFeature('screener') matches config/plans.js exactly.
+router.get('/stocks', requireAuth, requireFeature('screener'), marketLimiter, ctrl.listStocks);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
-router.get('/options-chain', marketLimiter, ctrl.getOptionsChain);
+// FIX: sold as Elite-only on the pricing page/comparison table but had no
+// backend gate — requireFeature('options_analysis') matches config/plans.js
+// (only elite.features includes it).
+router.get('/options-chain', requireAuth, requireFeature('options_analysis'), marketLimiter, ctrl.getOptionsChain);
 router.get('/candles/:symbol', marketLimiter, validateMarketCandles, ctrl.getCandles);
 
 module.exports = router;

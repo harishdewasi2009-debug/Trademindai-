@@ -97,7 +97,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
     planName,
   });
 
-  await creditReferralIfEligible(req.user.id);
+  await creditReferralIfEligible(req.user.id, planName);
 
   res.json({ message: 'Payment verified and plan activated.', alreadyProcessed: result.alreadyProcessed });
 });
@@ -138,7 +138,7 @@ const handleWebhook = asyncHandler(async (req, res) => {
         paymentId: payment.id,
         planName: paymentRows[0].plan_name,
       });
-      await creditReferralIfEligible(paymentRows[0].user_id);
+      await creditReferralIfEligible(paymentRows[0].user_id, paymentRows[0].plan_name);
     }
   } else if (event.event === 'payment.failed') {
     const payment = event.payload.payment.entity;
