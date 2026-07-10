@@ -2447,11 +2447,9 @@ function scheduleReconnect(){
 function renderTicker(){
   const el=document.getElementById('ticker');
   if(!el)return;
-  const live=marketStatus==='live'||marketStatus==='stale';
-  if(!live){
-    el.innerHTML=`<div class="t-item" style="opacity:.6">Connecting to live NSE/BSE data via Upstox…</div>`;
-    return;
-  }
+  // Show whatever real quotes are cached (including last-close data after
+  // market hours) instead of hiding everything just because the live
+  // WebSocket isn't ticking right now.
   const rows=TICKER_SYMBOLS
     .map(s=>{
       const q=liveQuoteCache[s+'.NS'];
@@ -2459,8 +2457,8 @@ function renderTicker(){
       return {s,p:fmtINR(q.price),c:(q.up?'+':'')+q.changePct.toFixed(2)+'%',up:q.up};
     })
     .filter(Boolean);
-  if(!rows.length){
-    el.innerHTML=`<div class="t-item" style="opacity:.6">Live quotes unavailable right now.</div>`;
+ if(!rows.length){
+    el.innerHTML=`<div class="t-item" style="opacity:.6">Connecting to live NSE/BSE data via Upstox…</div>`;
     return;
   }
   const doubled=[...rows,...rows];
@@ -2475,9 +2473,12 @@ function renderTicker(){
 function renderIndices(){
   const el=document.getElementById('indices-strip');
   if(!el)return;
-  const live=marketStatus==='live'||marketStatus==='stale';
+  // Same fix as renderTicker(): use whatever's cached for this index —
+  // including the last-session-close fallback — instead of hiding it just
+  // because marketStatus isn't "live"/"stale". This is what made the
+  // trend arrows vanish right after market close.
   el.innerHTML=INDEX_SYMBOLS.map(idx=>{
-    const q=live?liveQuoteCache[idx.sym]:null;
+    const q=liveQuoteCache[idx.sym];
     if(!q){
       return `<div class="idx-cell">
         <div class="idx-name">${idx.label}</div>
