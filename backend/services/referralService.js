@@ -14,12 +14,8 @@ async function generateUniqueReferralCode(name) {
   return `${base}-${Date.now().toString(36).toUpperCase()}`;
 }
 
-/** Credits the referrer once the referred user's first PRO or ELITE payment succeeds.
- *  Basic-plan purchases don't trigger a referral credit — only Pro and Elite do.
- *  Call this from the payment webhook/verify handler, passing the plan just purchased. */
-async function creditReferralIfEligible(referredUserId, planName) {
-  if (!['pro', 'elite'].includes((planName || '').toLowerCase())) return;
-
+/** Credits the referrer once the referred user's first payment succeeds. Call this from the payment webhook/verify handler. */
+async function creditReferralIfEligible(referredUserId) {
   const { rows: userRows } = await query('SELECT referred_by FROM users WHERE id = $1', [referredUserId]);
   const referredBy = userRows[0]?.referred_by;
   if (!referredBy) return;

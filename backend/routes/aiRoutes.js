@@ -104,7 +104,7 @@ router.post(
   attachAvailableModels,    // TERTIARY: skip individual models whose own sub-quota is exhausted
   validateAiAnalyze,
   asyncHandler(async (req, res) => {
-    const { stockSymbol, horizon, riskTolerance, exchange } = req.body;
+    const { stockSymbol, horizon, riskTolerance } = req.body;
     const start = Date.now();
 
     let analysisResult;
@@ -113,7 +113,6 @@ router.post(
         stockSymbol,
         horizon,
         riskTolerance,
-        exchange, // 'NSE_EQ' | 'BSE_EQ' | undefined (undefined = try NSE then BSE, same as before)
         userPlan: req.user.plan,
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
       });

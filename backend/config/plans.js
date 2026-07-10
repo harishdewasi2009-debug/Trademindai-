@@ -42,7 +42,6 @@ const PLANS = {
     },
     features: [
       'watchlist_5',
-      'screener',
     ],
   },
 
@@ -77,7 +76,6 @@ const PLANS = {
     features: [
       'prediction_history',
       'watchlist_10',
-      'screener',
     ],
   },
 

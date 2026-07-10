@@ -263,47 +263,37 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   const json = zlib.gunzipSync(buf).toString('utf-8');
   const list = JSON.parse(json);
 
-  // NOTE: Upstox's NSE.json.gz and BSE.json.gz are NOT guaranteed to use
-  // identical field names/values row-to-row (reported by multiple devs on
-  // the Upstox community forum). Relying on a single exact field match
-  // (instrument_type === 'EQ') silently produced ZERO rows for BSE_EQ on
-  // some instrument-master snapshots — that's why "BSE only" in the
-  // screener came back empty even though API access was fine. To be
-  // resilient to schema drift we now:
-  //   1) Accept either `segment` (e.g. "BSE_EQ") or `instrument_type` as
-  //      the equity marker.
-  //   2) Accept a few known aliases for the trading-symbol/key fields.
-  //   3) Skip obvious derivative/options rows (expiry/strike present).
+  // Only keep plain equities; the exchange files also include indices/derivatives.
+  // FIX: this used to require instrument_type === 'EQ' (exact match) only,
+  // which could silently return ZERO rows for BSE on some Upstox instrument
+  // snapshots — BSE equities aren't always tagged instrument_type:'EQ' the
+  // same way NSE ones are; some rows only carry a reliable segment:'BSE_EQ'
+  // (or a lowercase / whitespace variant of instrument_type). Match on either
+  // signal, case-insensitively, so BSE stocks actually show up everywhere
+  // (screener, search, charts) instead of the list quietly coming back empty.
+  const isEquityRow = (row) => {
+    const type = (row.instrument_type || '').toString().trim().toUpperCase();
+    const segment = (row.segment || '').toString().trim().toUpperCase();
+    return (type === 'EQ' || segment === exchange) && !!row.trading_symbol;
+  };
+
   const bySymbol = new Map();
-  let skippedNoSymbol = 0;
   for (const row of list) {
-    if (row.expiry || row.strike_price) continue; // derivatives/options rows
-
-    const segment = (row.segment || '').toUpperCase();
-    const instrumentType = (row.instrument_type || '').toUpperCase();
-    const looksLikeEquity =
-      instrumentType === 'EQ' ||
-      segment === exchange ||
-      segment === `${exchange.split('_')[0]}_EQ`;
-    if (!looksLikeEquity) continue;
-
-    const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
-    const instrumentKey = row.instrument_key || row.instrumentKey;
-    if (!tradingSymbol || !instrumentKey) { skippedNoSymbol++; continue; }
-
-    bySymbol.set(String(tradingSymbol).toUpperCase(), {
-      instrumentKey,
-      name: row.name || String(tradingSymbol),
-    });
+    if (isEquityRow(row)) {
+      bySymbol.set(row.trading_symbol.toUpperCase(), {
+        instrumentKey: row.instrument_key,
+        name: row.name,
+      });
+    }
   }
 
-  if (bySymbol.size === 0) {
-    // Don't cache an empty result — a transient/malformed download shouldn't
-    // black out an entire exchange for the next 24h TTL. Throw so the route
-    // surfaces a real error instead of a silent "no stocks found".
-    throw new AppError(
-      `Upstox ${exchange} instrument master parsed to 0 equities (downloaded ${list.length} rows, ${skippedNoSymbol} missing symbol/key). The file format may have changed.`,
-      502
+  if (bySymbol.size === 0 && list.length > 0) {
+    // Don't fail silently — this is exactly the class of bug that made BSE
+    // stocks disappear from every page ("Page 1 of 1", zero rows, no error).
+    // Log a sample so a real mismatch in Upstox's schema is easy to spot.
+    console.warn(
+      `[marketDataService] loadInstrumentMaster(${exchange}): 0 equities matched out of ${list.length} rows. ` +
+      `Sample row keys: ${Object.keys(list[0] || {}).join(', ')} — instrument_type sample: ${list[0]?.instrument_type}, segment sample: ${list[0]?.segment}`
     );
   }
 
@@ -331,12 +321,7 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
     );
     if (rows.length) return rows[0].instrument_key;
 
-    let bySymbol;
-    try {
-      ({ bySymbol } = await loadInstrumentMaster(ex));
-    } catch (e) {
-      continue; // this exchange's file failed to download/parse — still try the other one
-    }
+    const { bySymbol } = await loadInstrumentMaster(ex);
     const hit = bySymbol.get(symbol);
     if (!hit) continue; // not on this exchange — try the next one
 
@@ -365,20 +350,10 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
 async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
   const exchanges = exchange ? [exchange] : ['NSE_EQ', 'BSE_EQ'];
   let all = [];
-  const failures = [];
   for (const ex of exchanges) {
-    try {
-      const { bySymbol } = await loadInstrumentMaster(ex);
-      for (const [symbol, info] of bySymbol) {
-        all.push({ symbol, exchange: ex, name: info.name });
-      }
-    } catch (e) {
-      // If the person asked for one specific exchange, surface the error —
-      // that's the only data source they wanted. If they asked for "both",
-      // still return whichever exchange succeeded rather than blanking the
-      // whole screener because e.g. BSE's file had a bad day.
-      if (exchange) throw e;
-      failures.push(ex);
+    const { bySymbol } = await loadInstrumentMaster(ex);
+    for (const [symbol, info] of bySymbol) {
+      all.push({ symbol, exchange: ex, name: info.name });
     }
   }
   all.sort((a, b) => a.symbol.localeCompare(b.symbol));
@@ -386,10 +361,7 @@ async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
   const total = all.length;
   const start = (Math.max(1, page) - 1) * limit;
   const items = all.slice(start, start + limit);
-  return {
-    items, total, page: Math.max(1, page), limit, totalPages: Math.ceil(total / limit),
-    ...(failures.length ? { partialFailure: failures } : {}),
-  };
+  return { items, total, page: Math.max(1, page), limit, totalPages: Math.ceil(total / limit) };
 }
 async function searchSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
@@ -397,12 +369,7 @@ async function searchSymbols(prefixRaw, limit = 20) {
 
   const results = [];
   for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
-    let bySymbol;
-    try {
-      ({ bySymbol } = await loadInstrumentMaster(exchange));
-    } catch (e) {
-      continue; // let the other exchange still return results
-    }
+    const { bySymbol } = await loadInstrumentMaster(exchange);
     for (const [symbol, info] of bySymbol) {
       if (symbol.startsWith(prefix)) {
         results.push({ symbol, exchange, name: info.name });
@@ -427,9 +394,9 @@ async function searchSymbols(prefixRaw, limit = 20) {
 // it's changed since. If ohlc.close turns out to be missing/different,
 // changePct below will just come back null and the frontend already
 // handles that (falls back to 0% rather than crashing).
-async function getLtp(symbol, exchange) {
+async function getLtp(symbol) {
   const accessToken = await getValidAccessToken();
-  const instrumentKey = await resolveInstrumentKey(symbol, exchange);
+  const instrumentKey = await resolveInstrumentKey(symbol);
 
   const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({ instrument_key: instrumentKey })}`;
   const res = await fetch(url, {
@@ -697,6 +664,9 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
     throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
   }
   const accessToken = await getValidAccessToken();
+  // exchange: 'NSE_EQ' | 'BSE_EQ' — lets the chart's NSE/BSE switch force a
+  // specific listing for dual-listed symbols instead of always defaulting
+  // to whichever one resolveInstrumentKey finds first (NSE).
   const instrumentKey = await resolveInstrumentKey(symbol, exchange);
 
   const toDate = to || new Date().toISOString().slice(0, 10);
