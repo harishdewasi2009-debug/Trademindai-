@@ -530,27 +530,56 @@ async function getLtpBatch(symbols) {
     Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
   );
 
-  const quotes = resolved.map(({ symbol, instrumentKey }) => {
+ const quotes = await Promise.all(resolved.map(async ({ symbol, instrumentKey }) => {
     // Upstox keys the response object by a slightly different string than
     // the request instrument_key in some cases, so also try a loose match.
     const quote =
       byInstrumentKey.get(instrumentKey) ||
       Object.values(data.data || {}).find((q) => q.instrument_token === instrumentKey);
 
-    if (!quote) return { symbol, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    const lastPrice = quote?.last_price;
+    const previousClose = quote?.ohlc?.close ?? null;
 
-    const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
-    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
-      ? ((lastPrice - previousClose) / previousClose) * 100
-      : null;
+    // After market hours Upstox's live quote endpoint can return nothing for
+    // a symbol (no fresh tick to serve) — this is the same gap already
+    // handled for the index strip in the frontend's refreshIndices(). Fall
+    // back to the last two daily candles so the Screener's Up/Down filter
+    // still has real data instead of silently excluding every stock.
+    if (typeof lastPrice !== 'number' || typeof previousClose !== 'number' || previousClose <= 0) {
+      const fallback = await getDailyCloseFallback(instrumentKey).catch(() => null);
+      if (fallback) return { symbol, instrumentKey, ...fallback, closed: true };
+      return { symbol, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    }
 
+    const changePct = ((lastPrice - previousClose) / previousClose) * 100;
     return { symbol, instrumentKey, lastPrice, previousClose, changePct };
-  });
-
+  }));
   const result = { quotes, errors: unresolved, fetchedAt: new Date().toISOString() };
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
   return result;
+}
+async function getDailyCloseFallback(instrumentKey) {
+  const accessToken = await getValidAccessToken();
+  const toDate = new Date().toISOString().slice(0, 10);
+  const fromDate = defaultFromDate('days');
+  const encodedKey = encodeURIComponent(instrumentKey);
+  const url = `${BASE_V3}/historical-candle/${encodedKey}/days/1/${toDate}/${fromDate}`;
+
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  const rawCandles = (data.data?.candles || []).slice(0, 2);
+  if (rawCandles.length < 2) return null;
+
+  const lastClose = rawCandles[0][4];
+  const prevClose = rawCandles[1][4];
+  if (typeof lastClose !== 'number' || typeof prevClose !== 'number' || prevClose <= 0) return null;
+
+  return { lastPrice: lastClose, previousClose: prevClose, changePct: ((lastClose - prevClose) / prevClose) * 100 };
 }
 async function getIndexQuotes() {
   const cacheKey = 'INDICES';
