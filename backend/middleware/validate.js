@@ -106,6 +106,10 @@ const validateAiAnalyze = [
     .optional()
     .isIn(['low', 'moderate', 'high'])
     .withMessage('riskTolerance must be low, moderate, or high.'),
+  body('exchange')
+    .optional()
+    .isIn(['NSE_EQ', 'BSE_EQ'])
+    .withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   handleValidationErrors,
 ];
 
@@ -134,9 +138,6 @@ const validateMarketCandles = [
   query('interval').optional().isInt({ min: 1, max: 300 }).withMessage('interval must be a positive integer.'),
   query('from').optional().isISO8601().withMessage('from must be a date in YYYY-MM-DD format.'),
   query('to').optional().isISO8601().withMessage('to must be a date in YYYY-MM-DD format.'),
-  // Lets the chart's NSE/BSE switch force a specific listing for
-  // dual-listed symbols instead of always defaulting to NSE-first.
-  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   handleValidationErrors,
 ];
 

@@ -306,6 +306,7 @@ nav{
 
 /* ── SCREENER ── */
 .screener-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;padding:16px;background:var(--bg3);border-radius:var(--radius-lg);border:1px solid var(--border)}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .filter-chip{padding:7px 16px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:6px}
 .filter-chip.active{background:rgba(0,194,168,.15);color:#2EECD4;border-color:rgba(0,194,168,.5)}
 .filter-chip:hover{border-color:var(--border3);color:var(--text)}
@@ -539,25 +540,18 @@ nav{
 .ind-chip.sel{background:rgba(0,194,168,.15);border-color:rgba(0,194,168,.5);color:#2EECD4}
 .ind-chip .dot{width:6px;height:6px;border-radius:50%}
 .chart-panel{border:1px solid var(--border);border-left:2px solid rgba(124,92,252,.5);border-radius:var(--radius-lg);background:var(--bg2);overflow:hidden;margin-bottom:16px}
-.chart-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
-.chart-canvas-wrap{position:relative;width:100%;height:380px}
-.chart-draw-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
-.chart-draw-overlay.active{pointer-events:auto;cursor:crosshair}
-.chart-zoom-ctrls{display:flex;align-items:center;gap:4px}
-.chart-zoom-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:13px;transition:all .15s}
-.chart-zoom-btn:hover{color:var(--text);border-color:var(--border3)}
-.chart-zoom-btn.on{background:rgba(0,194,168,.15);border-color:rgba(0,194,168,.5);color:#2EECD4}
-.interval-btn{position:relative;font-size:11px;padding:4px 10px;border-radius:6px;color:var(--text2);cursor:pointer;border:1px solid var(--border2);background:var(--bg3);display:flex;align-items:center;gap:5px}
-.interval-btn:hover{color:var(--text);border-color:var(--border3)}
-.interval-sheet{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:40;width:220px;max-height:340px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.4)}
-.interval-sheet.open{display:block}
-.interval-sheet-group{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:10px 14px 4px}
-.interval-sheet-item{font-size:13px;color:var(--text2);padding:9px 14px;cursor:pointer}
-.interval-sheet-item:hover{background:var(--bg3);color:var(--text)}
-.interval-sheet-item.active{background:rgba(124,92,252,.15);color:#A78BFA;font-weight:600}
+.chart-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
 #mainChart{display:block;width:100%;height:380px}
 #rsiChart,#macdChart{display:block;width:100%;height:110px;border-top:1px solid var(--border)}
 .sub-chart-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:6px 18px 0}
+/* ── chart drawing / zoom toolbar ── */
+.chart-draw-toolbar{display:flex;align-items:center;gap:4px;padding:8px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.chart-tool-btn{font-size:11px;padding:5px 10px;border-radius:6px;color:var(--text3);cursor:pointer;border:1px solid transparent;display:flex;align-items:center;gap:5px;user-select:none;background:transparent}
+.chart-tool-btn:hover{background:rgba(255,255,255,.06);color:var(--text2)}
+.chart-tool-btn.active{background:rgba(56,189,248,.15);color:#38bdf8;border-color:rgba(56,189,248,.4)}
+.chart-tool-sep{width:1px;align-self:stretch;background:var(--border2);margin:2px 4px}
+.chart-tool-hint{font-size:10.5px;color:var(--text3);padding:0 18px 8px;display:none}
+.chart-tool-hint.show{display:block}
 
 /* ── OPTIONS CHAIN ── */
 .opt-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
@@ -1173,8 +1167,8 @@ html{scroll-behavior:smooth}
     <div class="footer-bottom">
       <div class="footer-disclaimer">© 2025 TradeMind AI · Not SEBI registered · AI-generated analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
       <div class="social-links">
-        <a class="social-link" href="https://instagram.com/_trademind.ai" target="_blank" rel="noopener"><i class="ti ti-brand-instagram"></i></a>
-        <a class="social-link" href="https://www.linkedin.com/in/harish-dewasi-98a75a367?utm_source=share_via&amp;utm_content=profile&amp;utm_medium=member_android" target="_blank" rel="noopener"><i class="ti ti-brand-linkedin"></i></a>
+        <a class="social-link" href="https://instagram.com/_trademind.ai" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+        <a class="social-link" href="https://www.linkedin.com/in/harish-dewasi-98a75a367?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11v5"/><path d="M8 8v.01"/><path d="M12 16v-5"/><path d="M16 16v-3a2 2 0 1 0 -4 0"/><path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10"/></svg></a>
       </div>
     </div>
   </div>
@@ -1205,15 +1199,33 @@ html{scroll-behavior:smooth}
           </div>
         </div>
         <div class="inp-group" style="margin-bottom:16px">
+          <label class="inp-lbl">Exchange</label>
+          <div style="display:flex;gap:8px">
+            <span class="chart-tool-btn active" id="analysis-ex-auto" onclick="setAnalysisExchange(undefined,this)" title="Try NSE first, fall back to BSE"><i class="ti ti-sparkles"></i> Auto</span>
+            <span class="chart-tool-btn" id="analysis-ex-nse" onclick="setAnalysisExchange('NSE_EQ',this)" title="Analyse this symbol's NSE listing"><i class="ti ti-building"></i> NSE</span>
+            <span class="chart-tool-btn" id="analysis-ex-bse" onclick="setAnalysisExchange('BSE_EQ',this)" title="Analyse this symbol's BSE listing"><i class="ti ti-building"></i> BSE</span>
+          </div>
+        </div>
+        <div class="inp-row" id="compare-row-2" style="display:none">
+          <div class="inp-group">
+            <label class="inp-lbl">Stock name (2nd stock to compare)</label>
+            <input class="tm-inp" id="inp-name2" placeholder="e.g. TCS" onkeydown="if(event.key==='Enter')handleAnalyseClick()"/>
+          </div>
+          <div class="inp-group">
+            <label class="inp-lbl">NSE / BSE Symbol (2nd stock)</label>
+            <input class="tm-inp" id="inp-sym2" placeholder="e.g. TCS" onkeydown="if(event.key==='Enter')handleAnalyseClick()"/>
+          </div>
+        </div>
+        <div class="inp-group" style="margin-bottom:16px">
           <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
           <div class="ai-chips" id="ai-model-chips">
             <button class="ai-chip sel" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
-            <button class="ai-chip sel" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3</button>
-            <button class="ai-chip" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6</button>
-            <button class="ai-chip" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o</button>
-            <button class="ai-chip locked" data-elite="1" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip locked" data-elite="1" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip locked" data-elite="1" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="basic" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="pro" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="pro" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
           </div>
           <span style="font-size:11px;color:var(--text3)">Claude Sonnet 4.6 &amp; GPT-4o available on Pro and Elite plans · Gemini 2.5 Pro, Claude Opus 4.7 &amp; DeepSeek R1 run automatically on Elite — the models that actually ran are highlighted after each analysis.</span>
         </div>
@@ -1235,7 +1247,7 @@ html{scroll-behavior:smooth}
             </select>
           </div>
         </div>
-        <button class="btn-analyse" id="btn-analyse" onclick="runAnalysis()"><i class="ti ti-sparkles"></i> Analyse with AI</button>
+        <button class="btn-analyse" id="btn-analyse" onclick="handleAnalyseClick()"><i class="ti ti-sparkles"></i> Analyse with AI</button>
         <div class="load-wrap" id="load-wrap">
           <div class="load-bar"><div class="load-fill"></div></div>
           <div class="load-steps" id="load-steps">
@@ -1268,7 +1280,12 @@ html{scroll-behavior:smooth}
       <button class="filter-chip active" onclick="toggleExchangeFilter(this,undefined)"><i class="ti ti-sparkles"></i> All (NSE + BSE)</button>
       <button class="filter-chip" onclick="toggleExchangeFilter(this,'NSE_EQ')"><i class="ti ti-building"></i> NSE only</button>
       <button class="filter-chip" onclick="toggleExchangeFilter(this,'BSE_EQ')"><i class="ti ti-building"></i> BSE only</button>
+      <span style="width:1px;align-self:stretch;background:var(--border2);margin:0 2px"></span>
+      <button class="filter-chip active" id="scr-dir-all" onclick="setScreenerDirection(undefined,this)"><i class="ti ti-list"></i> All moves</button>
+      <button class="filter-chip" id="scr-dir-up" onclick="setScreenerDirection('up',this)"><i class="ti ti-trending-up" style="color:var(--green2)"></i> Up</button>
+      <button class="filter-chip" id="scr-dir-down" onclick="setScreenerDirection('down',this)"><i class="ti ti-trending-down" style="color:var(--rose2)"></i> Down</button>
     </div>
+    <div id="screener-market-note" style="font-size:11px;color:var(--text3);margin:-8px 0 14px"></div>
     <div id="screener-results"></div>
   </div>
 </div>
@@ -1284,7 +1301,7 @@ html{scroll-behavior:smooth}
       <span class="ind-chip" id="chart-idx-sensex" onclick="loadChartIndex('SENSEX',this)">SENSEX</span>
       <span class="ind-chip" id="chart-idx-banknifty" onclick="loadChartIndex('NIFTY BANK',this)">NIFTY BANK</span>
     </div>
-    <div class="inp-row" style="margin-bottom:16px;max-width:640px;position:relative">
+    <div class="inp-row" style="margin-bottom:8px;max-width:520px;position:relative">
       <div class="inp-group" style="position:relative">
         <label class="inp-lbl">Or search any NSE/BSE stock</label>
         <input class="tm-inp" id="chart-sym-inp" value="RELIANCE" placeholder="e.g. RELIANCE, TATASTEEL, 500325…" autocomplete="off" oninput="onChartSearchInput(this.value)" onkeydown="if(event.key==='Enter')loadChartSymbol()"/>
@@ -1294,11 +1311,10 @@ html{scroll-behavior:smooth}
         <button class="btn-analyse" style="height:44px;margin:0" onclick="loadChartSymbol()"><i class="ti ti-refresh"></i> Load</button>
       </div>
     </div>
-    <!-- NSE / BSE switch — forces which listing to load for dual-listed symbols -->
-    <div class="screener-filters" style="margin-bottom:14px" id="chart-exchange-filters">
-      <button class="filter-chip active" onclick="toggleChartExchangeFilter(this,undefined)"><i class="ti ti-sparkles"></i> Auto (NSE → BSE)</button>
-      <button class="filter-chip" onclick="toggleChartExchangeFilter(this,'NSE_EQ')"><i class="ti ti-building"></i> NSE</button>
-      <button class="filter-chip" onclick="toggleChartExchangeFilter(this,'BSE_EQ')"><i class="ti ti-building"></i> BSE</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;max-width:520px">
+      <span style="font-size:11px;color:var(--text3)">Exchange:</span>
+      <span class="chart-tool-btn active" id="chart-ex-nse" onclick="setChartExchange('NSE_EQ',this)" title="Show this symbol's NSE price/candles"><i class="ti ti-building"></i> NSE</span>
+      <span class="chart-tool-btn" id="chart-ex-bse" onclick="setChartExchange('BSE_EQ',this)" title="Show this symbol's BSE price/candles"><i class="ti ti-building"></i> BSE</span>
     </div>
     <div class="chart-toolbar">
       <span class="ind-chip sel" data-ind="ema" onclick="toggleIndicator(this)"><span class="dot" style="background:#f59e0b"></span> EMA 50</span>
@@ -1306,34 +1322,31 @@ html{scroll-behavior:smooth}
       <span class="ind-chip" data-ind="vwap" onclick="toggleIndicator(this)"><span class="dot" style="background:#06b6d4"></span> VWAP</span>
       <span class="ind-chip sel" data-ind="rsi" onclick="toggleIndicator(this)"><span class="dot" style="background:#3b82f6"></span> RSI</span>
       <span class="ind-chip sel" data-ind="macd" onclick="toggleIndicator(this)"><span class="dot" style="background:#ef4444"></span> MACD</span>
-      <span class="ind-chip" id="chart-draw-toggle" onclick="toggleTrendlineDraw()"><i class="ti ti-line" style="font-size:12px"></i> Draw Trendline</span>
-      <span class="ind-chip" onclick="clearTrendlines()"><i class="ti ti-eraser" style="font-size:12px"></i> Clear Drawings</span>
     </div>
     <div class="chart-panel">
       <div class="chart-panel-hdr">
         <div class="hc-sym" id="chart-panel-title">RELIANCE <span class="hc-price" id="chart-panel-price" style="color:var(--text3)">—</span></div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="hc-tabs">
-            <span class="hc-tab" onclick="setChartTF(this,'1D')">1D</span>
-            <span class="hc-tab active" onclick="setChartTF(this,'1M')">1M</span>
-            <span class="hc-tab" onclick="setChartTF(this,'6M')">6M</span>
-            <span class="hc-tab" onclick="setChartTF(this,'1Y')">1Y</span>
-          </div>
-          <div class="chart-zoom-ctrls">
-            <span class="chart-zoom-btn" title="Zoom in" onclick="zoomMainChart(0.7)"><i class="ti ti-zoom-in"></i></span>
-            <span class="chart-zoom-btn" title="Zoom out" onclick="zoomMainChart(1.4)"><i class="ti ti-zoom-out"></i></span>
-            <span class="chart-zoom-btn" title="Reset zoom" onclick="resetMainChartZoom()"><i class="ti ti-focus-2"></i></span>
-          </div>
-          <div style="position:relative">
-            <span class="interval-btn" id="interval-btn" onclick="toggleIntervalSheet(event)"><i class="ti ti-clock" style="font-size:12px"></i> <span id="interval-btn-label">1 day</span> <i class="ti ti-chevron-down" style="font-size:10px"></i></span>
-            <div class="interval-sheet" id="interval-sheet"></div>
-          </div>
+        <div class="hc-tabs" style="position:relative">
+          <span class="hc-tab" onclick="setChartTF(this,'1D')">1D</span>
+          <span class="hc-tab active" onclick="setChartTF(this,'1M')">1M</span>
+          <span class="hc-tab" onclick="setChartTF(this,'6M')">6M</span>
+          <span class="hc-tab" onclick="setChartTF(this,'1Y')">1Y</span>
+          <span style="width:1px;align-self:stretch;background:var(--border2);margin:0 2px"></span>
+          <span class="hc-tab" id="chart-interval-btn" onclick="toggleIntervalPicker(event)"><i class="ti ti-clock-hour-4" style="margin-right:4px;font-size:12px"></i><span id="chart-interval-label">Candle interval</span> <i class="ti ti-chevron-down" style="font-size:9px;margin-left:2px"></i></span>
+          <div id="chart-interval-dropdown" style="display:none;position:absolute;top:38px;right:0;width:200px;max-height:340px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:30;box-shadow:0 12px 32px rgba(0,0,0,.35);padding:6px 0"></div>
         </div>
       </div>
-      <div class="chart-canvas-wrap">
-        <div id="mainChart" style="width:100%;height:100%"></div>
-        <canvas id="chart-draw-overlay" class="chart-draw-overlay"></canvas>
+      <div class="chart-draw-toolbar">
+        <span class="chart-tool-btn" onclick="chartZoomIn()" title="Zoom in"><i class="ti ti-zoom-in"></i> Zoom In</span>
+        <span class="chart-tool-btn" onclick="chartZoomOut()" title="Zoom out"><i class="ti ti-zoom-out"></i> Zoom Out</span>
+        <span class="chart-tool-btn" onclick="chartZoomReset()" title="Fit all candles"><i class="ti ti-maximize"></i> Fit</span>
+        <span class="chart-tool-sep"></span>
+        <span class="chart-tool-btn" id="chart-draw-trend" onclick="setChartDrawMode('trend',this)" title="Draw a trendline between two points"><i class="ti ti-slash"></i> Draw Trendline</span>
+        <span class="chart-tool-btn" id="chart-draw-hline" onclick="setChartDrawMode('hline',this)" title="Click the chart to mark an entry/target/stop-loss level"><i class="ti ti-minus"></i> Price Level</span>
+        <span class="chart-tool-btn" onclick="clearChartDrawings()" title="Remove all drawings"><i class="ti ti-trash"></i> Clear Drawings</span>
       </div>
+      <div class="chart-tool-hint" id="chart-tool-hint"></div>
+      <div id="mainChart" style="width:100%;height:380px"></div>
       <div class="sub-chart-lbl" id="rsi-lbl">RSI (14)</div>
       <canvas id="rsiChart"></canvas>
       <div class="sub-chart-lbl" id="macd-lbl">MACD (12, 26, 9)</div>
@@ -1401,7 +1414,7 @@ html{scroll-behavior:smooth}
     <div class="backtest-controls">
       <div class="inp-group">
         <label class="inp-lbl">Stock / Index</label>
-        <input class="tm-inp" id="bt-sym" value="RELIANCE"/>
+        ${stockSearchBarHtml('bt-sym','Search any NSE or BSE stock…',{value:'RELIANCE',wrapStyle:'margin-bottom:0'})}
       </div>
       <div class="inp-group">
         <label class="inp-lbl">Strategy</label>
@@ -1447,6 +1460,7 @@ html{scroll-behavior:smooth}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash analysis · 50,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Buy / Sell / Hold signals</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Basic risk scoring</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>News sentiment analysis <span class="soon-badge">Coming Soon</span></span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (5 stocks)</span></li>
         </ul>
@@ -1466,6 +1480,7 @@ html{scroll-behavior:smooth}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash (primary) · 250,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>DeepSeek V3 (secondary) · 250,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Prediction history tracking</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (10 stocks)</span></li>
         </ul>
         <button class="btn-plan" onclick="openPay('Basic','149')">Get Basic</button>
@@ -1542,7 +1557,7 @@ html{scroll-behavior:smooth}
           <tr><td>Monthly Queries</td><td class="comp-partial">15</td><td class="comp-partial">150</td><td class="comp-partial">400</td><td class="comp-partial">Unlimited</td></tr>
           <tr><td>AI Price Targets</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
-          <tr><td>AI Stock Screener</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Stock Screener</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Telegram / WhatsApp Alerts</td><td colspan="4" class="comp-soon" style="text-align:center">Coming Soon — Pro &amp; Elite</td></tr>
           <tr><td>AI Trading Assistant Chat</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>4-Model Consensus Analysis</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
@@ -1595,7 +1610,6 @@ html{scroll-behavior:smooth}
       <div class="side-section-label">Account</div>
       <div class="side-nav-item" onclick="switchDash('referral')"><i class="ti ti-gift side-icon"></i> Referral</div>
       <div class="side-nav-item" onclick="switchDash('billing')"><i class="ti ti-receipt side-icon"></i> Billing</div>
-      <div class="side-nav-item" onclick="switchDash('settings')"><i class="ti ti-settings side-icon"></i> Settings</div>
       <div style="height:1px;background:var(--border);margin:12px 4px"></div>
       <div class="side-nav-item" onclick="logout()"><i class="ti ti-logout side-icon"></i> Sign out</div>
     </div>
@@ -1850,21 +1864,38 @@ async function apiFetch(path, opts={}){
     return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include'});
   };
   let res=await doFetch();
-  if(res.status===401 && authToken){
+  // Stay signed in: retry once via the refresh-token cookie on ANY 401 — not
+  // only when we already hold an in-memory access token. Without this, a
+  // request that fires before tryRestoreSession() finishes on page load (or
+  // any request after the short-lived access token has simply expired)
+  // would look "logged out" even though the 30-day refresh cookie is still
+  // valid, forcing the user to sign in again unnecessarily. The user should
+  // only be signed out when they explicitly click Sign out.
+  const skipRefresh=/\/api\/auth\/(refresh|login|signup|google)/.test(path);
+  if(res.status===401 && !skipRefresh){
     const refreshed=await tryRefreshToken();
     if(refreshed)res=await doFetch();
   }
   return res;
 }
 
+// De-dupe concurrent refresh calls (e.g. several API calls firing 401 at
+// once on page load) so we don't fire multiple simultaneous /refresh
+// requests — the backend rotates the refresh token on every use, so
+// overlapping calls could otherwise invalidate each other's token.
+let refreshInFlight=null;
 async function tryRefreshToken(){
-  try{
-    const res=await fetch(APP_CONFIG.API_BASE_URL+'/api/auth/refresh',{method:'POST',credentials:'include'});
-    if(!res.ok)return false;
-    const data=await res.json();
-    authToken=data.accessToken;
-    return true;
-  }catch(e){return false;}
+  if(refreshInFlight)return refreshInFlight;
+  refreshInFlight=(async()=>{
+    try{
+      const res=await fetch(APP_CONFIG.API_BASE_URL+'/api/auth/refresh',{method:'POST',credentials:'include'});
+      if(!res.ok)return false;
+      const data=await res.json();
+      authToken=data.accessToken;
+      return true;
+    }catch(e){return false;}
+  })();
+  try{ return await refreshInFlight; } finally{ refreshInFlight=null; }
 }
 
 /** On page load, see if we already have a valid session (refresh-token cookie). */
@@ -1895,6 +1926,7 @@ function updateAuthUI(){
     setText('dash-name',currentUser.name);
     setText('dash-ava',(currentUser.name||'U').split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase());
     setText('dash-plan-tag',`${(currentUser.plan||'free').charAt(0).toUpperCase()+(currentUser.plan||'free').slice(1)} Plan ${currentUser.subscription_status==='active'?'Active':'· Free tier'}`);
+    if(typeof refreshModelChipLocks==='function')refreshModelChipLocks();
   }else{
     if(navArea)navArea.innerHTML=`
       <button class="btn-ghost" onclick="show('login')">Sign in</button>
@@ -2365,7 +2397,7 @@ function connectLiveFeed(){
 
 liveSocket.onopen=()=>{
     liveSocketRetryMs=1000;
-    if(chartCurrentSymbol)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol}));
+    if(chartCurrentSymbol)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
   };
 
 liveSocket.onmessage=(evt)=>{
@@ -2376,8 +2408,12 @@ liveSocket.onmessage=(evt)=>{
       if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
       else if(INDEX_LABELS.includes(sym)){ liveQuoteCache[sym]=q; got=true; }
     }
-    if(msg.feeds?.[chartCurrentSymbol]){
-      lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartCurrentSymbol].price};
+    // Live ticks for a BSE-selected symbol arrive keyed "BSE:SYMBOL" (see
+    // liveFeedService's feedKeyFor) so they never get confused with the
+    // same symbol's NSE ticks.
+    const chartFeedKey=chartCurrentExchange==='BSE_EQ'?`BSE:${chartCurrentSymbol}`:chartCurrentSymbol;
+    if(msg.feeds?.[chartFeedKey]){
+      lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartFeedKey].price};
       if(lwLastBar&&lwCandleSeries){
         const p=lastChartTick.price;
         lwLastBar.close=p;
@@ -2512,20 +2548,30 @@ function toggleFaq(i){
 }
 
 // ══════════════ CHIP TOGGLE ══════════════
+const PLAN_RANK={free:0,basic:1,pro:2,elite:3};
 function toggleChip(el){
   if(el.classList.contains('locked')){
-    alert('This model runs automatically for Elite plan subscribers. Upgrade on the Pricing page to include it in every analysis.');
+    const need=el.dataset.plan||'elite';
+    const needLabel=need.charAt(0).toUpperCase()+need.slice(1);
+    alert(`This model runs automatically for ${needLabel} plan subscribers and above. Upgrade on the Pricing page to include it in every analysis.`);
     return;
   }
   el.classList.toggle('sel');
 }
-// Unlocks/locks the flagship-model chips based on the signed-in user's
-// plan, and clears any stale "ran this time" highlighting from a previous
-// analysis. Called on load and whenever the Analysis page is shown.
+// Unlocks/locks EVERY plan-gated model chip (not just the Elite-only ones)
+// based on the signed-in user's actual plan, matching backend/config/plans.js
+// aiModels per tier exactly — a Free/Basic user should see Claude Sonnet and
+// GPT-4o as locked too, not just the three flagship Elite models. Also
+// clears any stale "ran this time" highlighting from a previous analysis.
+// Called on load and whenever the Analysis page is shown.
 function refreshModelChipLocks(){
   const plan=(currentUser?.plan||'free').toLowerCase();
-  document.querySelectorAll('#ai-model-chips .ai-chip[data-elite]').forEach(chip=>{
-    chip.classList.toggle('locked',plan!=='elite');
+  const rank=PLAN_RANK[plan]??0;
+  document.querySelectorAll('#ai-model-chips .ai-chip[data-plan]').forEach(chip=>{
+    const needRank=PLAN_RANK[chip.dataset.plan]??3;
+    const locked=rank<needRank;
+    chip.classList.toggle('locked',locked);
+    if(locked)chip.classList.remove('sel'); // never show a locked model as "selected"
   });
 }
 // After a real analysis result comes back, reflect which models actually
@@ -2555,8 +2601,32 @@ function toggleExchangeFilter(el,exchange){
   el.classList.add('active');
   setScreenerExchange(exchange);
 }
+// Up/Down direction filter — independent of the exchange chips above, so
+// both can be active at once (e.g. "NSE only" + "Down").
+function setScreenerDirection(dir,el){
+  ['scr-dir-all','scr-dir-up','scr-dir-down'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  el.classList.add('active');
+  screenerDirection=dir;
+  renderScreener();
+}
+// Real IST market-hours check (Mon–Fri 9:15–15:30), used only to label the
+// screener correctly — up/down itself always comes from real previousClose
+// vs lastPrice data from the backend, whether the market is open or shut.
+function isIndianMarketOpenNow(){
+  const now=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));
+  const day=now.getDay();
+  if(day===0||day===6)return false;
+  const mins=now.getHours()*60+now.getMinutes();
+  return mins>=555 && mins<=930; // 09:15–15:30 IST
+}
 // ══════════════ AI ANALYSIS ══════════════
 let isAnalysing=false;
+let analysisExchange; // undefined='Auto' (NSE then BSE), or 'NSE_EQ'/'BSE_EQ'
+function setAnalysisExchange(ex,el){
+  ['analysis-ex-auto','analysis-ex-nse','analysis-ex-bse'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  el.classList.add('active');
+  analysisExchange=ex;
+}
 async function runAnalysis(){
   if(isAnalysing)return;
   const name=document.getElementById('inp-name').value.trim();
@@ -2585,22 +2655,25 @@ async function runAnalysis(){
   });
 
   const stockSym=sym||name.toUpperCase();
-  let result=null, errorMsg=null, quota=null;
+  let result=null, errorMsg=null, quota=null, isQuotaError=false;
 
   try{
     const res=await apiFetch('/api/ai/analyze',{
       method:'POST',
-      body:JSON.stringify({stockSymbol:stockSym,horizon:'1 month',riskTolerance:'moderate'}),
+      body:JSON.stringify({stockSymbol:stockSym,horizon:'1 month',riskTolerance:'moderate',...(analysisExchange?{exchange:analysisExchange}:{})}),
     });
     const data=await res.json();
     if(!res.ok){
-      throw new Error(data.error || 'AI analysis failed. Please try again.');
+      const err=new Error(data.error || 'AI analysis failed. Please try again.');
+      err.isQuota=res.status===429;
+      throw err;
     }
     result=data;
     quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
     syncModelChipsWithResult(result);
   }catch(e){
     errorMsg=e.message || 'AI analysis is temporarily unavailable.';
+    isQuotaError=!!e.isQuota;
   }
 
   setTimeout(()=>{
@@ -2609,7 +2682,7 @@ async function runAnalysis(){
     btn.disabled=false;isAnalysing=false;
 
     if(!result){
-      rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run analysis:</strong> ${errorMsg}</div>`;
+      rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run analysis:</strong> ${errorMsg}</div>${isQuotaError?'<div style="margin-top:12px"><button class="btn-lg" onclick="show(\'pricing\')">View plans</button></div>':''}`;
       rw.style.display='block';
       rw.scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
@@ -2719,33 +2792,70 @@ async function quickAddToWatchlist(sym){
 // exchange needs a backend job that isn't built yet (see chat notes), so
 // rather than fake it, this now shows real symbol/name/price/change% only,
 // paginated across the full NSE+BSE instrument list via /api/market/stocks.
-let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1;
+let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined;
 
 async function renderScreener(){
   const el=document.getElementById('screener-results');
+  const noteEl=document.getElementById('screener-market-note');
   if(!el)return;
 
-  const live=marketStatus==='live'||marketStatus==='stale';
-  if(!live){
-    el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">Live NSE + BSE data is starting up — this list will populate in a moment. This shows only real data, no placeholders.</div>`;
-    return;
+  // NOTE: this used to hard-block the whole screener ("starting up…") any
+  // time the WebSocket live-feed hadn't ticked yet, which meant the entire
+  // list (and up/down info) disappeared outside market hours even though
+  // /api/market/quotes returns real previousClose-based change% from
+  // Upstox regardless of whether the market is open right now. So we
+  // always attempt the real fetch below; the marketStatus check is gone.
+  const marketOpen=isIndianMarketOpenNow();
+  if(noteEl){
+    noteEl.innerHTML=marketOpen
+      ?''
+      :'<i class="ti ti-moon" style="margin-right:4px"></i>Market is closed right now — up/down % shown below is the change vs the last session\'s close.';
   }
 
-  el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Loading stocks…</div>`;
+  el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="font-size:18px;display:block;margin:0 auto 8px;animation:spin 1s linear infinite"></i>Loading stocks… <span style="opacity:.7">(first load of the day can take a few seconds)</span></div>`;
   try{
     const qs=new URLSearchParams({page:screenerPage,limit:50});
     if(screenerExchange)qs.set('exchange',screenerExchange);
     const res=await apiFetch('/api/market/stocks?'+qs.toString(),{cache:'no-store'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const {items,totalPages}=await res.json();
+    const body=await res.json().catch(()=>({}));
+    if(!res.ok){
+      // Surface the real backend reason (e.g. "requires a higher plan")
+      // instead of a bare HTTP status — this is what was showing as a
+      // generic, unexplained failure before.
+      const err=new Error(body.error||('HTTP '+res.status));
+      err.isPlanGate=res.status===403;
+      throw err;
+    }
+    const {items,totalPages,partialFailure}=body;
     screenerTotalPages=totalPages||1;
+    if(partialFailure&&partialFailure.length&&noteEl){
+      const failedLabel=partialFailure.map(ex=>ex==='BSE_EQ'?'BSE':'NSE').join(' and ');
+      noteEl.innerHTML=`<i class="ti ti-alert-triangle" style="margin-right:4px;color:var(--rose2)"></i>${failedLabel} data couldn't be loaded right now — showing what's available. Try again shortly.`;
+    }
 
     const quotes=await fetchBackendQuotesBatch(items.map(it=>it.symbol)).catch(()=>({}));
 
-    el.innerHTML=items.map((it,i)=>{
+    // Apply the Up/Down filter against real quote data (never guessed).
+    // Stocks with no quote yet are excluded when a direction filter is
+    // active, since we can't know their direction without real data.
+    const filtered=items.filter(it=>{
+      if(!screenerDirection)return true;
       const q=quotes[it.symbol];
+      if(!q)return false;
+      return screenerDirection==='up'?q.up:!q.up;
+    });
+
+    if(!filtered.length){
+      const dirLabel=screenerDirection==='up'?'up':screenerDirection==='down'?'down':null;
+      el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">${dirLabel?`No stocks ${dirLabel} on this page right now — try Next page or switch filters.`:'No stocks matched — this shows only real data, no placeholders.'}</div>`;
+      return;
+    }
+
+    el.innerHTML=filtered.map((it,i)=>{
+      const q=quotes[it.symbol];
+      const changeLabel=marketOpen?'today':'vs prev. close';
       const priceHtml=q
-        ?`<div style="text-align:right;min-width:90px"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--text)">₹${fmtINR(q.price)}</div><div style="font-size:10px;color:${q.up?'var(--green2)':'var(--rose2)'}">${q.up?'+':''}${q.changePct.toFixed(2)}% today</div></div>`
+        ?`<div style="text-align:right;min-width:90px"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--text)">₹${fmtINR(q.price)}</div><div style="font-size:10px;color:${q.up?'var(--green2)':'var(--rose2)'}">${q.up?'▲ +':'▼ '}${q.changePct.toFixed(2)}% ${changeLabel}</div></div>`
         :`<div style="text-align:right;min-width:90px;color:var(--text3);font-size:11px">No quote yet</div>`;
       const exLabel=it.exchange==='BSE_EQ'?'BSE':'NSE';
       return `
@@ -2764,7 +2874,9 @@ async function renderScreener(){
       <button class="btn-lg-ghost" style="padding:8px 20px;font-size:12px" ${screenerPage>=screenerTotalPages?'disabled':''} onclick="changeScreenerPage(1)">Next →</button>
     </div>`;
   }catch(e){
-    el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load stocks — ${e.message}</div>`;
+    el.innerHTML=e.isPlanGate
+      ? `<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-lock" style="font-size:22px;color:var(--text3);display:block;margin-bottom:10px"></i><strong>${e.message}</strong><div style="margin-top:14px"><button class="btn-lg" onclick="show('pricing')">View plans</button></div></div>`
+      : `<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load stocks — ${e.message}</div>`;
   }
 }
 function changeScreenerPage(delta){
@@ -2829,6 +2941,78 @@ document.addEventListener('click',(e)=>{
   const dropdown=document.getElementById('screener-search-dropdown');
   const input=document.getElementById('screener-search-inp');
   if(dropdown&&input&&!dropdown.contains(e.target)&&e.target!==input)dropdown.style.display='none';
+});
+
+// ══════════════ GENERIC STOCK SEARCH BAR ══════════════
+// Same "search any NSE/BSE stock" widget used on the Screener, reused
+// wherever a user needs to pick a stock: Watchlist, Portfolio, Backtesting,
+// Market Scanner, Technical Indicators and Alert Builder.
+function stockSearchBarHtml(inputId,placeholder,opts){
+  opts=opts||{};
+  const height=opts.height||'44px';
+  return `<div style="position:relative;${opts.wrapStyle||'margin-bottom:16px'}">
+    <input class="tm-inp" id="${inputId}" placeholder="${placeholder}" style="width:100%;height:${height};padding-left:40px;${opts.inputStyle||''}" value="${opts.value||''}" autocomplete="off"
+      oninput="onGenericStockSearchInput('${inputId}',this.value)"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();${opts.onEnter?opts.onEnter+'(this.value);':''}document.getElementById('${inputId}-dropdown').style.display='none';}"/>
+    <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
+    <div id="${inputId}-dropdown" style="display:none;position:absolute;top:${height==='44px'?'48px':'40px'};left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:30;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
+  </div>`;
+}
+
+const genericStockSearchHandlers={}; // inputId -> function(symbol,name,exchange)
+function registerStockSearch(inputId,onSelect){ genericStockSearchHandlers[inputId]=onSelect; }
+
+let genericSearchDebounce=null;
+function onGenericStockSearchInput(inputId,val){
+  clearTimeout(genericSearchDebounce);
+  const dropdown=document.getElementById(inputId+'-dropdown');
+  if(!val||val.trim().length<1){ if(dropdown)dropdown.style.display='none'; return; }
+  genericSearchDebounce=setTimeout(()=>runGenericStockSearch(inputId,val.trim()),300);
+}
+
+async function runGenericStockSearch(inputId,q){
+  const dropdown=document.getElementById(inputId+'-dropdown');
+  if(!dropdown)return;
+  dropdown.style.display='block';
+  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE…</div>`;
+  try{
+    const res=await apiFetch('/api/market/search?q='+encodeURIComponent(q),{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const {results}=await res.json();
+    if(!results||!results.length){
+      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE or BSE for "${q}".</div>`;
+      return;
+    }
+    const quotes=await fetchBackendQuotesBatch(results.map(r=>r.symbol)).catch(()=>({}));
+    dropdown.innerHTML=results.map(r=>{
+      const q2=quotes[r.symbol];
+      const priceHtml=q2?`<span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:${q2.up?'var(--green2)':'var(--rose2)'}">₹${fmtINR(q2.price)}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>';
+      const exLabel=r.exchange==='BSE_EQ'?'BSE':'NSE';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectGenericStockSearchResult('${inputId}','${r.symbol}','${(r.name||'').replace(/'/g,"\\'")}','${r.exchange}')">
+        <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
+        ${priceHtml}
+      </div>`;
+    }).join('');
+  }catch(e){
+    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search failed — ${e.message}</div>`;
+  }
+}
+
+function selectGenericStockSearchResult(inputId,sym,name,exchange){
+  const dropdown=document.getElementById(inputId+'-dropdown');
+  if(dropdown)dropdown.style.display='none';
+  const input=document.getElementById(inputId);
+  if(input)input.value=sym;
+  const handler=genericStockSearchHandlers[inputId];
+  if(handler)handler(sym,name,exchange);
+}
+
+document.addEventListener('click',(e)=>{
+  Object.keys(genericStockSearchHandlers).forEach(inputId=>{
+    const dropdown=document.getElementById(inputId+'-dropdown');
+    const input=document.getElementById(inputId);
+    if(dropdown&&input&&!dropdown.contains(e.target)&&e.target!==input)dropdown.style.display='none';
+  });
 });
 
 // ══════════════ DASHBOARD ══════════════
@@ -2916,25 +3100,29 @@ function renderDashboard(section){
         <button class="filter-chip" id="pf-tab-broker" onclick="switchPortfolioTab('broker')"><i class="ti ti-building-bank"></i> Real Upstox Account</button>
       </div>
       <div id="portfolio-manual-view">
+        ${stockSearchBarHtml('pf-search-inp','Search any NSE or BSE stock to add a holding (e.g. RELIANCE, TATASTEEL, 500325)…')}
         <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-          <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="promptAddHolding()"><i class="ti ti-plus"></i> Add holding</button>
+          <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="promptAddHolding()"><i class="ti ti-plus"></i> Add holding manually</button>
         </div>
         <div id="portfolio-content"><div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Loading your portfolio…</div></div>
       </div>
       <div id="portfolio-broker-view" style="display:none"></div>`;
+    registerStockSearch('pf-search-inp',(sym)=>{ document.getElementById('pf-search-inp').value=''; promptAddHoldingWithSymbol(sym); });
     loadPortfolioSection();
   }
 
   else if(section==='watchlist'){
     el.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">AI Watchlist</div>
         <div style="display:flex;gap:8px">
           <button class="btn-sm"><i class="ti ti-bell"></i> Manage alerts</button>
-          <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="promptAddWatchlist()"><i class="ti ti-plus"></i> Add stock</button>
+          <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="promptAddWatchlist()"><i class="ti ti-plus"></i> Add stock manually</button>
         </div>
       </div>
+      ${stockSearchBarHtml('wl-search-inp','Search any NSE or BSE stock to add to your watchlist (e.g. INFY, TCS, 500325)…')}
       <div id="watchlist-items"><div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Loading your watchlist…</div></div>`;
+    registerStockSearch('wl-search-inp',(sym)=>{ document.getElementById('wl-search-inp').value=''; addToWatchlistBySymbol(sym); });
     loadWatchlistSection();
   }
 
@@ -2961,7 +3149,7 @@ function renderDashboard(section){
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">Referral Programme</div>
       <div class="referral-card">
         <div style="font-size:22px;font-weight:700;color:var(--text)">Earn ₹500 per referral</div>
-        <div style="font-size:14px;color:var(--text2);margin-top:8px">Share your code and earn ₹500 credit for every friend who subscribes. No limit.</div>
+        <div style="font-size:14px;color:var(--text2);margin-top:8px">Share your code and earn ₹500 credit for every friend who subscribes to the <strong style="color:var(--text)">Pro or Elite</strong> plan. No limit. (Basic-plan signups don't trigger a credit.)</div>
         <div class="ref-code" id="ref-code">Loading…</div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
           <button class="btn-lg" style="font-size:12px;padding:10px 20px" onclick="copyReferralCode()"><i class="ti ti-copy"></i> Copy code</button>
@@ -3003,42 +3191,6 @@ function renderDashboard(section){
         <tbody id="billing-history-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody></table>
       </div>`;
     loadBillingHistory();
-  }
-
-  else if(section==='settings'){
-    const u=currentUser||{};
-    el.innerHTML=`
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">Account Settings</div>
-      <div class="two-col">
-        <div class="admin-panel">
-          <div class="sec-title">Profile</div>
-          <div class="inp-group" style="margin-bottom:12px"><label class="inp-lbl">Full name</label><input class="tm-inp" value="${u.name||''}" disabled/></div>
-          <div class="inp-group" style="margin-bottom:12px"><label class="inp-lbl">Email</label><input class="tm-inp" value="${u.email||''}" disabled/></div>
-          <div class="inp-group" style="margin-bottom:12px"><label class="inp-lbl">Plan</label><input class="tm-inp" value="${(u.plan||'free').charAt(0).toUpperCase()+(u.plan||'free').slice(1)}" disabled/></div>
-          <div style="font-size:11px;color:var(--text3)">Editing name/email isn't wired to a backend endpoint yet — these are read-only for now.</div>
-        </div>
-        <div class="admin-panel">
-          <div class="sec-title">Notifications</div>
-          ${[
-            ['Daily market report (7:30 AM)','on'],
-            ['Buy/Sell signal alerts','on'],
-            ['Portfolio P&L daily summary','on'],
-            ['Platform announcements','on'],
-          ].map(([label,state])=>`
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px">
-            <span style="color:var(--text2)">${label}</span>
-            <div style="width:38px;height:20px;border-radius:10px;background:${state==='on'?'var(--navy)':'var(--border2)'};cursor:pointer;position:relative;transition:background .2s">
-              <div style="width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:3px;${state==='on'?'right:3px':'left:3px'};transition:all .2s"></div>
-            </div>
-          </div>`).join('')}
-          <div style="font-size:11px;color:var(--text3);margin-top:8px">Notification preferences aren't wired to a backend endpoint yet — display only for now.</div>
-          <div style="margin-top:16px">
-            <div class="sec-title">Security</div>
-            <button class="btn-ghost" style="width:100%;font-size:13px" onclick="toggleSessionsPanel()"><i class="ti ti-devices"></i> View login sessions</button>
-            <div id="sessions-panel" style="display:none;margin-top:10px"></div>
-          </div>
-        </div>
-      </div>`;
   }
 
   else if(section==='alerts'){
@@ -3133,7 +3285,8 @@ function renderDashboard(section){
   else if(section==='scanner'){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Live Market Scanner</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE universe to scan, then pick a scan type below.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE universe to scan, then pick a scan type below. Or jump straight to any stock's full AI analysis using the search bar.</div>
+      ${stockSearchBarHtml('scanner-search-inp','Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…')}
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span class="ind-chip sel" id="scan-uni-30" onclick="setScanUniverse('curated30',this)">Curated 30 (fastest)</span>
         <span class="ind-chip" id="scan-uni-nse" onclick="setScanUniverse('NSE_EQ',this)">NSE — top 150</span>
@@ -3149,18 +3302,23 @@ function renderDashboard(section){
         </div>
         <div id="ai-trade-ideas" style="font-size:13px;color:var(--text2);line-height:1.7">Run a scan above, then click the button for AI commentary on the real matches — grounded in the actual scan data, not invented.</div>
       </div>`;
+    registerStockSearch('scanner-search-inp',(sym,name)=>{ show('analysis'); document.getElementById('inp-sym').value=sym; if(document.getElementById('inp-name'))document.getElementById('inp-name').value=name||''; });
     renderScannerCards('breakout');
   }
 
   // ══════════════ TECHNICAL INDICATORS ══════════════
   else if(section==='indicators'){
     el.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:12px;flex-wrap:wrap">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">Technical Indicators</div>
-        <div style="display:flex;gap:8px"><input class="tm-inp" id="ind-sym-inp" value="RELIANCE" style="width:160px;height:36px;font-size:12px" onkeydown="if(event.key==='Enter')renderIndicatorsPanel()"/><button class="btn-sm btn-sm-primary" onclick="renderIndicatorsPanel()"><i class="ti ti-refresh"></i> Run</button></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${stockSearchBarHtml('ind-sym-inp','Search any NSE or BSE stock…',{value:'RELIANCE',height:'36px',wrapStyle:'width:220px',inputStyle:'font-size:12px',onEnter:'renderIndicatorsPanel'})}
+          <button class="btn-sm btn-sm-primary" onclick="renderIndicatorsPanel()"><i class="ti ti-refresh"></i> Run</button>
+        </div>
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:20px">RSI, MACD, moving averages, VWAP, Bollinger Bands, Fibonacci, divergence and volatility — all in one panel.</div>
       <div id="indicators-panel"></div>`;
+    registerStockSearch('ind-sym-inp',()=>renderIndicatorsPanel());
     renderIndicatorsPanel();
   }
 
@@ -3197,37 +3355,35 @@ function renderDashboard(section){
   else if(section==='riskmgmt'){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Risk &amp; Position Sizing</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Know your position size and risk/reward before you click buy. Both calculators below run on real math on the numbers you enter.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Know your position size and risk/reward before you click buy. Enter your own numbers below — both calculators run on real math on whatever you type in, no example data pre-filled.</div>
       <div class="calc-grid">
         <div class="calc-panel">
           <div class="sec-title">Position size calculator</div>
           <div class="inp-row">
-            <div class="inp-group"><label class="inp-lbl">Capital (₹)</label><input class="tm-inp" id="ps-capital" value="100000"/></div>
-            <div class="inp-group"><label class="inp-lbl">Risk per trade (%)</label><input class="tm-inp" id="ps-riskpct" value="2"/></div>
+            <div class="inp-group"><label class="inp-lbl">Capital (₹)</label><input class="tm-inp" id="ps-capital" placeholder="e.g. 100000"/></div>
+            <div class="inp-group"><label class="inp-lbl">Risk per trade (%)</label><input class="tm-inp" id="ps-riskpct" placeholder="e.g. 2"/></div>
           </div>
           <div class="inp-row" style="margin-top:12px">
-            <div class="inp-group"><label class="inp-lbl">Entry price (₹)</label><input class="tm-inp" id="ps-entry" value="1450"/></div>
-            <div class="inp-group"><label class="inp-lbl">Stop loss (₹)</label><input class="tm-inp" id="ps-stop" value="1420"/></div>
+            <div class="inp-group"><label class="inp-lbl">Entry price (₹)</label><input class="tm-inp" id="ps-entry" placeholder="e.g. 1450"/></div>
+            <div class="inp-group"><label class="inp-lbl">Stop loss (₹)</label><input class="tm-inp" id="ps-stop" placeholder="e.g. 1420"/></div>
           </div>
           <button class="btn-analyse" style="margin-top:14px" onclick="calcPositionSize()"><i class="ti ti-calculator"></i> Calculate</button>
-          <div class="calc-result" id="ps-result"></div>
+          <div class="calc-result" id="ps-result"><div style="color:var(--text3);font-size:12px;padding:6px 0">Enter your capital, risk %, entry and stop loss, then click Calculate.</div></div>
         </div>
         <div class="calc-panel">
           <div class="sec-title">Risk / reward calculator</div>
           <div class="inp-row">
-            <div class="inp-group"><label class="inp-lbl">Entry (₹)</label><input class="tm-inp" id="rr-entry" value="1450"/></div>
-            <div class="inp-group"><label class="inp-lbl">Stop loss (₹)</label><input class="tm-inp" id="rr-stop" value="1420"/></div>
+            <div class="inp-group"><label class="inp-lbl">Entry (₹)</label><input class="tm-inp" id="rr-entry" placeholder="e.g. 1450"/></div>
+            <div class="inp-group"><label class="inp-lbl">Stop loss (₹)</label><input class="tm-inp" id="rr-stop" placeholder="e.g. 1420"/></div>
           </div>
           <div class="inp-row" style="margin-top:12px">
-            <div class="inp-group"><label class="inp-lbl">Target (₹)</label><input class="tm-inp" id="rr-target" value="1520"/></div>
-            <div class="inp-group"><label class="inp-lbl">Quantity</label><input class="tm-inp" id="rr-qty" value="30"/></div>
+            <div class="inp-group"><label class="inp-lbl">Target (₹)</label><input class="tm-inp" id="rr-target" placeholder="e.g. 1520"/></div>
+            <div class="inp-group"><label class="inp-lbl">Quantity</label><input class="tm-inp" id="rr-qty" placeholder="e.g. 30"/></div>
           </div>
           <button class="btn-analyse" style="margin-top:14px" onclick="calcRiskReward()"><i class="ti ti-scale"></i> Calculate</button>
-          <div class="calc-result" id="rr-result"></div>
+          <div class="calc-result" id="rr-result"><div style="color:var(--text3);font-size:12px;padding:6px 0">Enter entry, stop loss, target and quantity, then click Calculate.</div></div>
         </div>
       </div>`;
-    calcPositionSize();
-    calcRiskReward();
   }
 
   // ══════════════ ALERT BUILDER ══════════════
@@ -3240,7 +3396,7 @@ function renderDashboard(section){
           <div class="sec-title">Create new alert</div>
           <div class="inp-group" style="margin-bottom:12px">
             <label class="inp-lbl">Stock symbol</label>
-            <input class="tm-inp" id="al-sym" placeholder="e.g. TATAMOTORS"/>
+            ${stockSearchBarHtml('al-sym','Search any NSE or BSE stock (e.g. TATAMOTORS)…',{wrapStyle:'margin-bottom:0'})}
           </div>
           <div class="inp-group" style="margin-bottom:12px">
             <label class="inp-lbl">Alert type</label>
@@ -3264,6 +3420,7 @@ function renderDashboard(section){
           <div id="custom-alerts-list"></div>
         </div>
       </div>`;
+    registerStockSearch('al-sym',()=>{});
     renderCustomAlerts();
   }
 
@@ -3667,7 +3824,15 @@ async function promptAddHolding(){
   if(!currentUser){show('login');return;}
   const stockSymbol=prompt('Stock symbol (e.g. TCS):');
   if(!stockSymbol)return;
-  const quantity=prompt('Quantity:');
+  promptAddHoldingWithSymbol(stockSymbol);
+}
+
+// Same as promptAddHolding but skips the symbol prompt — used when the
+// symbol was already picked from the search-bar dropdown.
+async function promptAddHoldingWithSymbol(stockSymbol){
+  if(!currentUser){show('login');return;}
+  if(!stockSymbol)return;
+  const quantity=prompt(`Quantity of ${stockSymbol.toUpperCase()}:`);
   if(!quantity)return;
   const buyPrice=prompt('Average buy price (₹):');
   if(!buyPrice)return;
@@ -3717,6 +3882,14 @@ async function loadWatchlistSection(){
 async function promptAddWatchlist(){
   if(!currentUser){show('login');return;}
   const stockSymbol=prompt('Stock symbol to add (e.g. INFY):');
+  if(!stockSymbol)return;
+  addToWatchlistBySymbol(stockSymbol);
+}
+
+// Same as promptAddWatchlist but skips the prompt — used when the symbol
+// was already picked from the search-bar dropdown.
+async function addToWatchlistBySymbol(stockSymbol){
+  if(!currentUser){show('login');return;}
   if(!stockSymbol)return;
   try{
     const res=await apiFetch('/api/watchlist',{method:'POST',body:JSON.stringify({stockSymbol:stockSymbol.toUpperCase()})});
@@ -4167,10 +4340,22 @@ function renderStrategyLegs(){
 
 // ══════════════ RISK & POSITION SIZING ══════════════
 function calcPositionSize(){
-  const cap=parseFloat(document.getElementById('ps-capital').value)||0;
-  const riskPct=parseFloat(document.getElementById('ps-riskpct').value)||0;
-  const entry=parseFloat(document.getElementById('ps-entry').value)||0;
-  const stop=parseFloat(document.getElementById('ps-stop').value)||0;
+  const capRaw=document.getElementById('ps-capital').value.trim();
+  const riskRaw=document.getElementById('ps-riskpct').value.trim();
+  const entryRaw=document.getElementById('ps-entry').value.trim();
+  const stopRaw=document.getElementById('ps-stop').value.trim();
+  if(!capRaw||!riskRaw||!entryRaw||!stopRaw){
+    document.getElementById('ps-result').innerHTML=`<div style="color:var(--rose2);font-size:12px;padding:6px 0">Please fill in capital, risk %, entry price and stop loss.</div>`;
+    return;
+  }
+  const cap=parseFloat(capRaw)||0;
+  const riskPct=parseFloat(riskRaw)||0;
+  const entry=parseFloat(entryRaw)||0;
+  const stop=parseFloat(stopRaw)||0;
+  if(entry===stop){
+    document.getElementById('ps-result').innerHTML=`<div style="color:var(--rose2);font-size:12px;padding:6px 0">Entry price and stop loss can't be the same.</div>`;
+    return;
+  }
   const riskAmt=cap*riskPct/100;
   const perShareRisk=Math.abs(entry-stop)||1;
   const qty=Math.floor(riskAmt/perShareRisk);
@@ -4183,10 +4368,18 @@ function calcPositionSize(){
     <div class="calc-result-row"><span>% of capital deployed</span><span class="calc-result-val">${cap?((positionValue/cap)*100).toFixed(1):'0.0'}%</span></div>`;
 }
 function calcRiskReward(){
-  const entry=parseFloat(document.getElementById('rr-entry').value)||0;
-  const stop=parseFloat(document.getElementById('rr-stop').value)||0;
-  const target=parseFloat(document.getElementById('rr-target').value)||0;
-  const qty=parseFloat(document.getElementById('rr-qty').value)||0;
+  const entryRaw=document.getElementById('rr-entry').value.trim();
+  const stopRaw=document.getElementById('rr-stop').value.trim();
+  const targetRaw=document.getElementById('rr-target').value.trim();
+  const qtyRaw=document.getElementById('rr-qty').value.trim();
+  if(!entryRaw||!stopRaw||!targetRaw||!qtyRaw){
+    document.getElementById('rr-result').innerHTML=`<div style="color:var(--rose2);font-size:12px;padding:6px 0">Please fill in entry, stop loss, target and quantity.</div>`;
+    return;
+  }
+  const entry=parseFloat(entryRaw)||0;
+  const stop=parseFloat(stopRaw)||0;
+  const target=parseFloat(targetRaw)||0;
+  const qty=parseFloat(qtyRaw)||0;
   const risk=Math.abs(entry-stop)*qty;
   const reward=Math.abs(target-entry)*qty;
   const ratio=risk?(reward/risk).toFixed(2):'0.00';
@@ -4501,6 +4694,7 @@ async function openStockDetail(symbol,exchange,name){
     closeStockDetail();
     show('charts');
     document.getElementById('chart-sym-inp').value=symbol;
+    if(exchange)syncChartExchangeToggle(exchange);
     loadChartSymbol();
   };
   modal.classList.add('open');
@@ -4508,7 +4702,7 @@ async function openStockDetail(symbol,exchange,name){
   try{
     const [quoteRes,candles]=await Promise.all([
       fetchBackendQuotesBatch([symbol]).catch(()=>({})),
-      fetchRealCandles(symbol,stockDetailCurrent?.exchange,'days',1).catch(()=>null),
+      fetchRealCandles(symbol,'1M',exchange).catch(()=>null),
     ]);
     if(stockDetailCurrent?.symbol!==symbol)return; // user opened a different stock while this was in flight
     const q=quoteRes[symbol];
@@ -4567,8 +4761,16 @@ async function handlePay(){
 
     closePay();
 
+    // IMPORTANT: use the key_id the backend actually used to create this
+    // order (order.keyId), not a separately hardcoded frontend value. If
+    // those two ever drift apart (key rotated on one side only, stale
+    // deploy, etc.) Razorpay's checkout widget calls its own
+    // /v1/preferences?key_id=... endpoint to load account settings before
+    // showing the payment sheet, and rejects with 401 "Oops! Something
+    // went wrong / Payment Failed" — which looks like a payment failure
+    // but is really just a key mismatch, before the user even tries to pay.
     const rzp=new Razorpay({
-      key: APP_CONFIG.RAZORPAY_KEY_ID,
+      key: order.keyId || APP_CONFIG.RAZORPAY_KEY_ID,
       amount: order.amount,
       currency: order.currency||'INR',
       order_id: order.orderId,
@@ -4601,6 +4803,17 @@ async function handlePay(){
         ondismiss: function(){ /* user closed the Razorpay widget — nothing to do */ }
       },
     });
+    // Surface Razorpay's REAL failure reason instead of letting their
+    // generic "Oops! Something went wrong / Payment Failed" popup be the
+    // only thing the user (and us, debugging) ever sees.
+    rzp.on('payment.failed', function(resp){
+      const err=resp?.error||{};
+      console.error('[razorpay] payment.failed', err);
+      alert('Payment failed: '+(err.description||err.reason||'Unknown error')+
+        (err.code==='BAD_REQUEST_ERROR' && /key/i.test(err.description||'')
+          ? '\n\nThis usually means the Razorpay key isn\'t fully activated for live payments yet (check KYC/activation status in the Razorpay Dashboard).'
+          : ''));
+    });
     rzp.open();
   }catch(e){
     alert(e.message||'Payment could not be started. Please try again.');
@@ -4611,13 +4824,96 @@ async function handlePay(){
 document.getElementById('pay-modal').addEventListener('click',function(e){if(e.target===this)closePay();});
 
 // ══════════════ ANALYSIS TABS ══════════════
-document.querySelectorAll('.atab').forEach((tab,i)=>{
-  tab.onclick=()=>{
-    document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    if(i>0)setTimeout(()=>alert('This feature requires the Pro plan. Upgrade to unlock Deep Research, Stock Comparison, and Portfolio Scan.'),100);
+// analysisMode: 'quick' (default) or 'compare'. Deep Research and Portfolio
+// Scan aren't built yet (no backend endpoint exists for either), so those
+// two tabs still show a clear "coming soon" note instead of pretending to
+// work. Compare Stocks IS wired up for real — it just runs the existing
+// single-stock analysis endpoint twice and shows both results side by side.
+let analysisMode='quick';
+document.getElementById('tab-quick').onclick=()=>setAnalysisTab('quick');
+document.getElementById('tab-compare').onclick=()=>setAnalysisTab('compare');
+document.getElementById('tab-deep').onclick=()=>setAnalysisTab('deep');
+document.getElementById('tab-portfolio').onclick=()=>setAnalysisTab('portfolio');
+function setAnalysisTab(mode){
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+(mode==='quick'?'quick':mode)).classList.add('active');
+  const row2=document.getElementById('compare-row-2');
+  const btn=document.getElementById('btn-analyse');
+  const rw=document.getElementById('result-wrap');
+  if(mode==='deep'||mode==='portfolio'){
+    // Not implemented server-side yet — say so plainly instead of a fake flow.
+    row2.style.display='none';
+    rw.style.display='block';
+    rw.innerHTML=`<div class="disclaimer"><strong>${mode==='deep'?'Deep Research':'Portfolio Scan'} is coming soon.</strong> This isn't wired up on the backend yet. Use <strong>Quick Analysis</strong> for a full AI signal today, or <strong>Compare Stocks</strong> to run two side by side.</div>`;
+    analysisMode=mode;
+    return;
+  }
+  analysisMode=mode;
+  row2.style.display=mode==='compare'?'grid':'none';
+  btn.innerHTML=mode==='compare'?'<i class="ti ti-arrows-diff"></i> Compare with AI':'<i class="ti ti-sparkles"></i> Analyse with AI';
+  rw.style.display='none'; rw.innerHTML='';
+}
+function handleAnalyseClick(){
+  if(analysisMode==='compare')runCompareAnalysis();
+  else if(analysisMode==='quick')runAnalysis();
+  // deep/portfolio: button click does nothing extra, the tab click already
+  // explained these aren't available yet.
+}
+async function runCompareAnalysis(){
+  if(isAnalysing)return;
+  const symA=(document.getElementById('inp-sym').value.trim()||document.getElementById('inp-name').value.trim()).toUpperCase();
+  const symB=(document.getElementById('inp-sym2').value.trim()||document.getElementById('inp-name2').value.trim()).toUpperCase();
+  if(!symA||!symB){alert('Enter both stock symbols to compare.');return;}
+  if(!currentUser){
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
+    show('login');
+    return;
+  }
+  const lw=document.getElementById('load-wrap');
+  const rw=document.getElementById('result-wrap');
+  const btn=document.getElementById('btn-analyse');
+  lw.style.display='block';rw.style.display='none';rw.innerHTML='';
+  btn.disabled=true;isAnalysing=true;
+  ['ls1','ls2','ls3','ls4'].forEach(id=>document.getElementById(id).classList.add('active'));
+
+  const runOne=async(sym)=>{
+    try{
+      const res=await apiFetch('/api/ai/analyze',{
+        method:'POST',
+        body:JSON.stringify({stockSymbol:sym,horizon:'1 month',riskTolerance:'moderate',...(analysisExchange?{exchange:analysisExchange}:{})}),
+      });
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'AI analysis failed.');
+      return {ok:true,data};
+    }catch(e){
+      return {ok:false,error:e.message||'AI analysis failed.'};
+    }
   };
-});
+  const [a,b]=await Promise.all([runOne(symA),runOne(symB)]);
+
+  lw.style.display='none'; btn.disabled=false; isAnalysing=false;
+  rw.style.display='block';
+  const card=(sym,r)=>{
+    if(!r.ok)return `<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>${sym}:</strong> ${r.error}</div>`;
+    const d=r.data, sig=(d.signal||'HOLD').toUpperCase(), pt=d.priceTargets||{};
+    return `<div class="admin-panel" style="flex:1;min-width:260px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="res-sym-big" style="font-size:18px">${d.stockSymbol||sym}</div>
+        <span class="badge b-${sig.toLowerCase()}">${sig}</span>
+      </div>
+      <div class="meta-row" style="margin-bottom:10px">
+        <div class="mc"><div class="mc-lbl">Confidence</div><div class="mc-val">${d.confidence??'—'}%</div></div>
+        <div class="mc"><div class="mc-lbl">Price</div><div class="mc-val">${d.currentPrice?'₹'+Number(d.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
+        <div class="mc"><div class="mc-lbl">Risk</div><div class="mc-val">${d.riskScore??'—'}/10</div></div>
+      </div>
+      ${pt.oneMonth?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px">1M target: <strong style="color:var(--text)">₹${Number(pt.oneMonth).toLocaleString('en-IN')}</strong></div>`:''}
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">${d.reasoning||''}</div>
+    </div>`;
+  };
+  rw.innerHTML=`<div class="res-block-title" style="padding:0 0 10px">Comparison result</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">${card(symA,a)}${card(symB,b)}</div>`;
+  rw.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 
 // ══════════════ CANDLESTICK ENGINE HELPERS ══════════════
 function seedFromString(str){
@@ -4808,13 +5104,30 @@ document.querySelectorAll('.hc-tabs .hc-tab[data-tf]').forEach(tab=>{
 loadHeroChart();
 setInterval(loadHeroChart,REFRESH_MS); // real refresh cadence, same as the rest of live market data — no fake ticks
 
-window.addEventListener('resize',()=>{renderHeroChart();if(document.getElementById('page-charts')?.classList.contains('active')){syncOverlaySize();redrawTrendlines();}});
+window.addEventListener('resize',()=>{renderHeroChart();if(document.getElementById('page-charts')?.classList.contains('active'))renderMainChart();});
 
 // ── CHARTS PAGE ──
 let chartActiveIndicators={ema:true,bb:false,vwap:false,rsi:true,macd:true};
 let chartCurrentSymbol='RELIANCE';
+let chartCurrentExchange='NSE_EQ'; // 'NSE_EQ' | 'BSE_EQ' — which exchange's price/candles to show for the charted symbol
 let chartCurrentTF='1M';
-let chartCurrentExchange=undefined; // undefined = auto (NSE checked first, then BSE) | 'NSE_EQ' | 'BSE_EQ'
+function setChartExchange(ex,btn){
+  if(chartCurrentExchange===ex)return;
+  chartCurrentExchange=ex;
+  document.querySelectorAll('#chart-ex-nse,#chart-ex-bse').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  // Indices (NIFTY 50 / SENSEX / NIFTY BANK) aren't exchange-switchable —
+  // only re-fetch for a real equity symbol.
+  if(chartCurrentSymbol && !isChartIndexSymbol(chartCurrentSymbol)){
+    if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
+    renderMainChart();
+  }
+}
+function syncChartExchangeToggle(ex){
+  chartCurrentExchange=ex==='BSE_EQ'?'BSE_EQ':'NSE_EQ';
+  document.querySelectorAll('#chart-ex-nse,#chart-ex-bse').forEach(b=>b.classList.remove('active'));
+  document.getElementById(chartCurrentExchange==='BSE_EQ'?'chart-ex-bse':'chart-ex-nse')?.classList.add('active');
+}
 function toggleIndicator(el){
   const ind=el.dataset.ind;
   chartActiveIndicators[ind]=!chartActiveIndicators[ind];
@@ -4825,28 +5138,78 @@ function setChartTF(el,tf){
   document.querySelectorAll('#page-charts .hc-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   chartCurrentTF=tf;
-  // Picking a date-range tab also picks a sensible default candle size for
-  // that range, but the user can still override it with the Interval button.
-  const defaults={'1D':{unit:'minutes',interval:5,label:'5 minutes'},'1M':{unit:'days',interval:1,label:'1 day'},'6M':{unit:'days',interval:1,label:'1 day'},'1Y':{unit:'weeks',interval:1,label:'1 week'}}[tf]||{unit:'days',interval:1,label:'1 day'};
-  chartCurrentUnit=defaults.unit; chartCurrentInterval=defaults.interval; chartCurrentIntervalLabel=defaults.label;
-  updateIntervalBtnLabel();
+  // A quick-range preset (1D/1M/6M/1Y) and a specific candle interval are
+  // two different axes — picking a preset here goes back to that preset's
+  // own default candle size instead of whatever custom interval was chosen.
+  chartCustomInterval=null;
+  const lbl=document.getElementById('chart-interval-label');
+  if(lbl)lbl.textContent='Candle interval';
   renderMainChart();
 }
 
-// ── NSE / BSE switch for the charts page (forces a specific listing for
-// dual-listed symbols, e.g. RELIANCE trades on both NSE and BSE) ──
-function toggleChartExchangeFilter(el,exchange){
-  document.querySelectorAll('#chart-exchange-filters .filter-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  chartCurrentExchange=exchange||undefined;
+// ══════════════ CANDLE INTERVAL PICKER (separate from the 1D/1M/6M/1Y range tabs) ══════════════
+// Lets the user pick the actual candle size (1 minute, 15 minutes, 1 hour,
+// etc.) independently of the lookback range — mirrors Upstox/TradingView's
+// own interval picker. Only unit/interval combos the backend's Upstox v3
+// historical-candle endpoint actually supports are offered (minutes, hours,
+// days, weeks, months — Upstox's historical candle API has no seconds-level
+// granularity, only live tick data, so that's intentionally not offered here).
+const CANDLE_INTERVAL_GROUPS=[
+  {label:'MINUTES', options:[
+    {label:'1 minute',unit:'minutes',interval:1},
+    {label:'3 minutes',unit:'minutes',interval:3},
+    {label:'5 minutes',unit:'minutes',interval:5},
+    {label:'10 minutes',unit:'minutes',interval:10},
+    {label:'15 minutes',unit:'minutes',interval:15},
+    {label:'30 minutes',unit:'minutes',interval:30},
+  ]},
+  {label:'HOURS', options:[
+    {label:'1 hour',unit:'hours',interval:1},
+    {label:'2 hours',unit:'hours',interval:2},
+    {label:'3 hours',unit:'hours',interval:3},
+    {label:'4 hours',unit:'hours',interval:4},
+  ]},
+  {label:'DAYS / WEEKS / MONTHS', options:[
+    {label:'1 day',unit:'days',interval:1},
+    {label:'1 week',unit:'weeks',interval:1},
+    {label:'1 month',unit:'months',interval:1},
+  ]},
+];
+let chartCustomInterval=null; // {unit,interval,label} — overrides the 1D/1M/6M/1Y presets when set
+function toggleIntervalPicker(e){
+  e.stopPropagation();
+  const dd=document.getElementById('chart-interval-dropdown');
+  if(!dd)return;
+  if(dd.style.display==='block'){dd.style.display='none';return;}
+  dd.innerHTML=CANDLE_INTERVAL_GROUPS.map((g,gi)=>`
+    ${gi>0?'<div style="height:1px;background:var(--border);margin:4px 0"></div>':''}
+    <div style="padding:8px 14px 4px;font-size:10px;letter-spacing:.05em;color:var(--text3)">${g.label}</div>
+    ${g.options.map(o=>`<div style="padding:9px 14px;font-size:13px;cursor:pointer;color:var(--text2)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectCandleInterval('${o.unit}',${o.interval},'${o.label}')">${o.label}</div>`).join('')}
+  `).join('');
+  dd.style.display='block';
+}
+document.addEventListener('click',(e)=>{
+  const dd=document.getElementById('chart-interval-dropdown');
+  const btn=document.getElementById('chart-interval-btn');
+  if(dd&&dd.style.display==='block'&&!dd.contains(e.target)&&e.target!==btn&&!btn?.contains(e.target))dd.style.display='none';
+});
+function selectCandleInterval(unit,interval,label){
+  chartCustomInterval={unit,interval,label};
+  const dd=document.getElementById('chart-interval-dropdown');
+  if(dd)dd.style.display='none';
+  const lbl=document.getElementById('chart-interval-label');
+  if(lbl)lbl.textContent=label;
+  // Clear the 1D/1M/6M/1Y "active" highlight — the chart is now driven by
+  // this specific candle interval, not one of those presets.
+  document.querySelectorAll('#page-charts .hc-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('chart-interval-btn')?.classList.add('active');
   renderMainChart();
 }
-
 function loadChartSymbol(){
   const v=(document.getElementById('chart-sym-inp').value||'RELIANCE').toUpperCase().trim();
   chartCurrentSymbol=v||'RELIANCE';
   document.querySelectorAll('#chart-idx-nifty50,#chart-idx-sensex,#chart-idx-banknifty').forEach(c=>c.classList.remove('sel'));
-  if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol}));
+  if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
   renderMainChart();
 }
 
@@ -4855,8 +5218,6 @@ function loadChartSymbol(){
 // so users can jump straight to the index they care about.
 function loadChartIndex(indexName,el){
   chartCurrentSymbol=indexName;
-  chartCurrentExchange=undefined;
-  document.querySelectorAll('#chart-exchange-filters .filter-chip').forEach((c,i)=>c.classList.toggle('active',i===0));
   document.querySelectorAll('#chart-idx-nifty50,#chart-idx-sensex,#chart-idx-banknifty').forEach(c=>c.classList.remove('sel'));
   if(el)el.classList.add('sel');
   document.getElementById('chart-sym-inp').value='';
@@ -4898,88 +5259,49 @@ async function runChartSearch(q){
 function selectChartSearchResult(sym,exchange){
   document.getElementById('chart-search-dropdown').style.display='none';
   document.getElementById('chart-sym-inp').value=sym;
-  // Picking a specific search result also pins the chart to that exact
-  // listing (NSE or BSE) instead of leaving it on "Auto", since the user
-  // just explicitly chose which one they meant.
-  if(exchange==='NSE_EQ'||exchange==='BSE_EQ'){
-    chartCurrentExchange=exchange;
-    document.querySelectorAll('#chart-exchange-filters .filter-chip').forEach(c=>{
-      const isNse=c.textContent.trim()==='NSE', isBse=c.textContent.trim()==='BSE';
-      c.classList.toggle('active',(exchange==='NSE_EQ'&&isNse)||(exchange==='BSE_EQ'&&isBse));
-    });
-  }
+  if(exchange)syncChartExchangeToggle(exchange);
   loadChartSymbol();
 }
 document.addEventListener('click',(e)=>{
   const dropdown=document.getElementById('chart-search-dropdown');
   const input=document.getElementById('chart-sym-inp');
   if(dropdown&&input&&!dropdown.contains(e.target)&&e.target!==input)dropdown.style.display='none';
-  const sheet=document.getElementById('interval-sheet');
-  const ibtn=document.getElementById('interval-btn');
-  if(sheet&&ibtn&&!sheet.contains(e.target)&&!ibtn.contains(e.target))sheet.classList.remove('open');
 });
 function initChartsPage(){
   document.getElementById('chart-sym-inp').value=chartCurrentSymbol;
-  if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol}));
-  updateIntervalBtnLabel();
+  if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
   renderMainChart();
 }
   setInterval(()=>{
   if(document.getElementById('page-charts')?.classList.contains('active'))renderMainChart();
 }, REFRESH_MS);
-function tfToCandles(tf){ return {'1D':120,'1M':180,'6M':180,'1Y':180}[tf]||120; }
-
-// ── Dedicated Interval picker — separate from the 1D/1M/6M/1Y range tabs.
-// Controls actual CANDLE SIZE (1 minute, 5 minutes, 1 hour, 1 day, …),
-// independent of how much history is shown — same idea as most broker
-// apps' "add time interval" bottom sheet.
-let chartCurrentUnit='days', chartCurrentInterval=1, chartCurrentIntervalLabel='1 day';
-const CHART_INTERVAL_GROUPS=[
-  { group:'Minutes', items:[
-    {unit:'minutes',interval:1,label:'1 minute'},
-    {unit:'minutes',interval:3,label:'3 minutes'},
-    {unit:'minutes',interval:5,label:'5 minutes'},
-    {unit:'minutes',interval:15,label:'15 minutes'},
-    {unit:'minutes',interval:30,label:'30 minutes'},
-  ]},
-  { group:'Hours', items:[
-    {unit:'hours',interval:1,label:'1 hour'},
-    {unit:'hours',interval:2,label:'2 hours'},
-    {unit:'hours',interval:4,label:'4 hours'},
-  ]},
-  { group:'Days / Weeks / Months', items:[
-    {unit:'days',interval:1,label:'1 day'},
-    {unit:'weeks',interval:1,label:'1 week'},
-    {unit:'months',interval:1,label:'1 month'},
-  ]},
-];
-function toggleIntervalSheet(e){
-  e.stopPropagation();
-  const sheet=document.getElementById('interval-sheet');
-  if(!sheet)return;
-  if(!sheet.classList.contains('open')){
-    sheet.innerHTML=CHART_INTERVAL_GROUPS.map(g=>`
-      <div class="interval-sheet-group">${g.group}</div>
-      ${g.items.map(it=>`<div class="interval-sheet-item ${it.unit===chartCurrentUnit&&it.interval===chartCurrentInterval?'active':''}" onclick="selectChartInterval('${it.unit}',${it.interval},'${it.label}')">${it.label}</div>`).join('')}
-    `).join('');
+function tfToCandles(tf){
+  if(chartCustomInterval){
+    // Cap how much data we draw per interval so intraday granularities
+    // (1-minute etc.) don't try to render months of candles at once.
+    return {minutes:180,hours:120,days:120,weeks:104,months:60}[chartCustomInterval.unit]||120;
   }
-  sheet.classList.toggle('open');
-}
-function selectChartInterval(unit,interval,label){
-  chartCurrentUnit=unit; chartCurrentInterval=interval; chartCurrentIntervalLabel=label;
-  updateIntervalBtnLabel();
-  document.getElementById('interval-sheet')?.classList.remove('open');
-  renderMainChart();
-}
-function updateIntervalBtnLabel(){
-  const el=document.getElementById('interval-btn-label');
-  if(el)el.textContent=chartCurrentIntervalLabel;
+  return {'1D':78,'1M':30,'6M':90,'1Y':180}[tf]||30;
 }
 
-// Small in-memory cache so toggling an indicator or resizing the window
-// doesn't refetch from the backend — only a real symbol/interval/exchange
-// change does.
-const realCandleCache={}; // key: `${symbol}|${exchange}|${unit}|${interval}` -> { candles, fetchedAt }
+// Maps the UI's timeframe buttons to Upstox's { unit, interval } query params.
+// 1D uses 5-minute candles (78 of them ≈ one trading session); the rest are daily candles
+// over a longer lookback window, since Upstox's v3 daily-candle endpoint returns one row/day.
+// If the user picked a specific candle interval from the picker button, that
+// always takes priority over whichever 1D/1M/6M/1Y preset is still "active".
+function tfToUpstoxParams(tf){
+  if(chartCustomInterval)return {unit:chartCustomInterval.unit,interval:chartCustomInterval.interval};
+  return {
+    '1D': { unit:'minutes', interval:5 },
+    '1M': { unit:'days',    interval:1 },
+    '6M': { unit:'days',    interval:1 },
+    '1Y': { unit:'days',    interval:1 },
+  }[tf] || { unit:'days', interval:1 };
+}
+
+// Small in-memory cache so toggling an indicator or resizing the window doesn't
+// refetch from the backend — only a real symbol/timeframe change does.
+const realCandleCache={}; // key: `${symbol}|${tf}` -> { candles, fetchedAt }
 const REAL_CANDLE_CACHE_MS=50000;
 
 /** Tries the real backend (Upstox-backed) candle endpoint. Returns null on any
@@ -4988,25 +5310,27 @@ const REAL_CANDLE_CACHE_MS=50000;
 const CHART_INDEX_SYMBOLS=['NIFTY 50','SENSEX','NIFTY BANK'];
 function isChartIndexSymbol(symbol){ return CHART_INDEX_SYMBOLS.includes(symbol); }
 
-async function fetchRealCandles(symbol,exchange,unit,interval){
+async function fetchRealCandles(symbol,tf,exchange){
  if(isPlaceholder(APP_CONFIG.API_BASE_URL))return null;
-  const cacheKey=symbol+'|'+(exchange||'auto')+'|'+unit+'|'+interval;
+  const cacheKey=symbol+'|'+tf+'|'+(exchange||'')+(chartCustomInterval?('|'+chartCustomInterval.unit+chartCustomInterval.interval):'');
   const cached=realCandleCache[cacheKey];
   if(cached&&(Date.now()-cached.fetchedAt)<REAL_CANDLE_CACHE_MS)return cached.candles;
   try{
-    const qsParams={unit,interval:String(interval)};
-    if(exchange&&!isChartIndexSymbol(symbol))qsParams.exchange=exchange;
-    const qs=new URLSearchParams(qsParams);
+    const {unit,interval}=tfToUpstoxParams(tf);
+    const qs=new URLSearchParams({unit,interval:String(interval)});
     // NIFTY 50 / SENSEX / NIFTY BANK aren't tradable equities — they go
-    // through the dedicated index-candles endpoint instead of /candles/:symbol.
-    const url=isChartIndexSymbol(symbol)
+    // through the dedicated index-candles endpoint instead of /candles/:symbol,
+    // and have no NSE/BSE choice.
+    const isIndex=isChartIndexSymbol(symbol);
+    if(exchange&&!isIndex)qs.set('exchange',exchange);
+    const url=isIndex
       ? `/api/market/index-candles?underlying=${encodeURIComponent(symbol)}&${qs}`
       : `/api/market/candles/${encodeURIComponent(symbol)}?${qs}`;
     const res=await apiFetch(url);
     if(!res.ok){
       let reason='HTTP '+res.status;
       try{ const body=await res.json(); if(body?.error)reason=body.error; }catch(_){}
-      console.warn('[candles] '+symbol+' '+unit+'/'+interval+' unavailable — '+reason);
+      console.warn('[candles] '+symbol+' '+tf+' unavailable — '+reason);
       realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()}; // cache the failure too — stops hammering Upstox every 4s
       return null;
     }
@@ -5031,15 +5355,14 @@ function renderMainChart(){
   // swap in real candles once the backend responds.
   const requestedSym=chartCurrentSymbol;
   const requestedExchange=chartCurrentExchange;
-  const requestedUnit=chartCurrentUnit, requestedInterval=chartCurrentInterval;
   // Clear any live-tick state left over from the previous symbol so a
   // stray in-flight tick can never be applied to the wrong chart while
   // the new symbol's real candles are still loading.
   lwLastBar=null; lastChartTick=null;
   renderMainChartWith(null);
-  fetchRealCandles(requestedSym,requestedExchange,requestedUnit,requestedInterval).then(real=>{
-    // Guard against the user switching symbols/timeframes while this was in flight.
-    if(real&&chartCurrentSymbol===requestedSym&&chartCurrentExchange===requestedExchange&&chartCurrentUnit===requestedUnit&&chartCurrentInterval===requestedInterval)renderMainChartWith(real);
+  fetchRealCandles(requestedSym,chartCurrentTF,requestedExchange).then(real=>{
+    // Guard against the user switching symbols/timeframes/exchange while this was in flight.
+    if(real&&chartCurrentSymbol===requestedSym&&chartCurrentExchange===requestedExchange)renderMainChartWith(real);
   }).catch(()=>{});
 }
 
@@ -5050,6 +5373,12 @@ function renderMainChart(){
 // recreating the whole chart (keeps zoom/scroll state and is much cheaper).
 let lwChart=null, lwCandleSeries=null, lwLastBar=null, lastChartTick=null;
 const lwOverlaySeries={}; // { ema: series, vwapUpper: series, ... } — created/removed as toggled
+// Tracks which symbol/timeframe/exchange the chart is currently zoomed/panned
+// for. Only a CHANGE in this key should reset the view (fitContent) — the
+// background live-refresh (every REFRESH_MS) re-renders the SAME symbol's
+// data and must never yank the user's zoom/pan back to "fit all", which was
+// the bug: any zoom got wiped out within a few seconds by the next refresh.
+let lwFitKey=null;
 
 function ensureLightweightChart(){
   if(lwChart)return;
@@ -5061,24 +5390,109 @@ function ensureLightweightChart(){
     rightPriceScale:{borderColor:'rgba(255,255,255,0.08)'},
     timeScale:{borderColor:'rgba(255,255,255,0.08)',timeVisible:true,secondsVisible:false},
     crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
-    // Zoom in/out (mouse wheel + pinch on touch) and click-drag pan, so
-    // traders can inspect candles closely — this is on by default in
-    // Lightweight Charts but set explicitly so it can never get disabled
-    // by a future options change.
-    handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
-    handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true},
-    kineticScroll:{touch:true,mouse:false},
     autoSize:true,
+    // Explicit (rather than relying on library defaults) so pan/zoom is
+    // guaranteed on both desktop (scroll-wheel + drag) and touch/trackpad
+    // (pinch) — traders need this to zoom into a setup on the candles.
+    handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},
+    handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true},
   });
   lwCandleSeries=lwChart.addCandlestickSeries({
     upColor:'#34d399',downColor:'#f87171',borderVisible:false,
     wickUpColor:'#34d399',wickDownColor:'#f87171',
   });
-  // Keep hand-drawn trendlines glued to their price/time anchors while the
-  // user pans or zooms the chart.
-  lwChart.timeScale().subscribeVisibleTimeRangeChange(()=>redrawTrendlines());
-  lwChart.subscribeCrosshairMove(()=>{ if(chartDrawMode)redrawTrendlinePreview(); });
+  lwChart.subscribeClick(handleChartDrawClick);
 }
+
+// ── DRAWING TOOLS — trendlines + horizontal price levels ──
+// Lets a trader sketch entry/target/stop-loss levels or a trend line
+// directly on the candles. Kept deliberately simple (two-click trendline,
+// one-click horizontal level) rather than pulling in a full charting-library
+// plugin, since Lightweight Charts v4 has no built-in drawing tools.
+let chartDrawMode=null; // 'trend' | 'hline' | null
+let chartTrendStart=null; // {time, price} — first click of a trendline
+let chartDrawnTrendlines=[]; // LineSeries[]
+let chartDrawnPriceLines=[]; // IPriceLine[] (owned by lwCandleSeries)
+
+function setChartDrawMode(mode,btn){
+  chartDrawMode = (chartDrawMode===mode) ? null : mode;
+  chartTrendStart=null;
+  document.querySelectorAll('.chart-tool-btn').forEach(b=>b.classList.remove('active'));
+  const hint=document.getElementById('chart-tool-hint');
+  if(chartDrawMode && btn){
+    btn.classList.add('active');
+    if(hint){
+      hint.classList.add('show');
+      hint.textContent = chartDrawMode==='trend'
+        ? 'Click two points on the chart to draw a trendline.'
+        : 'Click anywhere on the chart to mark a price level (entry/target/stop-loss).';
+    }
+  } else if(hint){
+    hint.classList.remove('show'); hint.textContent='';
+  }
+  const container=document.getElementById('mainChart');
+  if(container)container.style.cursor = chartDrawMode ? 'crosshair' : 'default';
+}
+
+function clearChartDrawings(){
+  if(lwChart){
+    chartDrawnTrendlines.forEach(s=>{ try{lwChart.removeSeries(s);}catch(e){} });
+  }
+  if(lwCandleSeries){
+    chartDrawnPriceLines.forEach(pl=>{ try{lwCandleSeries.removePriceLine(pl);}catch(e){} });
+  }
+  chartDrawnTrendlines=[];
+  chartDrawnPriceLines=[];
+  chartTrendStart=null;
+}
+
+function handleChartDrawClick(param){
+  if(!chartDrawMode || !lwChart || !lwCandleSeries) return;
+  if(!param.point || param.time===undefined) return;
+  const price=lwCandleSeries.coordinateToPrice(param.point.y);
+  if(price==null || !isFinite(price)) return;
+
+  if(chartDrawMode==='hline'){
+    const pl=lwCandleSeries.createPriceLine({
+      price,
+      color:'#f59e0b',
+      lineWidth:2,
+      lineStyle:LightweightCharts.LineStyle.Dashed,
+      axisLabelVisible:true,
+      title:'₹'+price.toFixed(2),
+    });
+    chartDrawnPriceLines.push(pl);
+    return;
+  }
+
+  if(chartDrawMode==='trend'){
+    if(!chartTrendStart){
+      chartTrendStart={time:param.time,price};
+      return;
+    }
+    if(param.time===chartTrendStart.time){ chartTrendStart=null; return; } // avoid a zero-length line
+    const pts=[chartTrendStart,{time:param.time,price}].sort((a,b)=>a.time-b.time);
+    const line=lwChart.addLineSeries({color:'#38bdf8',lineWidth:2,lastValueVisible:true,priceLineVisible:false});
+    line.setData(pts.map(p=>({time:p.time,value:p.price})));
+    chartDrawnTrendlines.push(line);
+    chartTrendStart=null;
+  }
+}
+
+// ── ZOOM CONTROLS — explicit buttons for traders who don't know about
+// scroll-wheel/pinch zoom, or are on a device where that's unreliable. ──
+function chartZoomBy(factor){
+  if(!lwChart)return;
+  const ts=lwChart.timeScale();
+  const range=ts.getVisibleLogicalRange();
+  if(!range)return;
+  const center=(range.from+range.to)/2;
+  const half=Math.max(1,(range.to-range.from)/2*factor);
+  ts.setVisibleLogicalRange({from:center-half,to:center+half});
+}
+function chartZoomIn(){ chartZoomBy(0.7); }
+function chartZoomOut(){ chartZoomBy(1.4); }
+function chartZoomReset(){ if(lwChart) lwChart.timeScale().fitContent(); }
 
 /** Converts our {o,h,l,c,v,t?} candles into Lightweight Charts' time-keyed
  *  format. Real candles carry a `t` (ISO timestamp from Upstox) — converted
@@ -5122,6 +5536,11 @@ function clearLwOverlay(key){
 function renderLightweightMainChart(candles,isRealData,indicators){
   ensureLightweightChart();
   if(!lwChart)return; // library failed to load (e.g. offline) — chart panel just stays empty
+  // A fresh candle dataset (new symbol/timeframe) invalidates any trendline
+  // points/price levels drawn against the previous data, so clear them here
+  // rather than on every live tick (live ticks use lwCandleSeries.update(),
+  // never this function).
+  clearChartDrawings();
   const closes=candles.map(c=>c.c);
   const timeSeries=toLwTimeSeries(candles,isRealData);
   lwCandleSeries.setData(timeSeries.map(({time},i)=>({time,open:candles[i].o,high:candles[i].h,low:candles[i].l,close:candles[i].c})));
@@ -5136,141 +5555,16 @@ const lastRow=timeSeries[timeSeries.length-1];
   }else{
     clearLwOverlay('bbUpper'); clearLwOverlay('bbLower');
   }
-  lwChart.timeScale().fitContent();
-  redrawTrendlines();
-}
-
-// ── Zoom controls (also available via mouse wheel / pinch, enabled above) ──
-function zoomMainChart(factor){
-  if(!lwChart)return;
-  const ts=lwChart.timeScale();
-  const range=ts.getVisibleLogicalRange();
-  if(!range)return;
-  const center=(range.from+range.to)/2;
-  const half=((range.to-range.from)*factor)/2;
-  ts.setVisibleLogicalRange({from:center-half,to:center+half});
-  redrawTrendlines();
-}
-function resetMainChartZoom(){
-  if(!lwChart)return;
-  lwChart.timeScale().fitContent();
-  redrawTrendlines();
-}
-
-// ── Trendline drawing tool — click-drag on the chart to draw a line for
-// marking up support/resistance or a planned trade, same idea as any
-// broker charting app's trendline tool. Lines are stored as time/price
-// pairs (not raw pixels) so they stay anchored to the data while the
-// user pans or zooms; redrawTrendlines() re-projects them to pixels
-// every time the visible range changes. ──
-let chartDrawMode=false;
-let chartTrendlines=[]; // [{t1,p1,t2,p2}, ...] per symbol+interval in-memory only (not persisted)
-let trendlineDraftStart=null; // {x,y,time,price} while dragging
-
-function getDrawOverlay(){ return document.getElementById('chart-draw-overlay'); }
-
-function syncOverlaySize(){
-  const overlay=getDrawOverlay();
-  const wrap=document.querySelector('.chart-canvas-wrap');
-  if(!overlay||!wrap)return;
-  const dpr=window.devicePixelRatio||1;
-  const w=wrap.clientWidth,h=wrap.clientHeight;
-  if(overlay.width!==w*dpr||overlay.height!==h*dpr){
-    overlay.width=w*dpr; overlay.height=h*dpr;
-    overlay.style.width=w+'px'; overlay.style.height=h+'px';
+  // Only snap the view to "fit all candles" when the symbol, timeframe or
+  // exchange actually changed since the last render. Without this guard,
+  // the REFRESH_MS live-data poll (same symbol, fresh candles) called this
+  // on every tick and reset any zoom/pan the user had just made.
+  const fitKey=`${chartCurrentSymbol}|${chartCurrentTF}|${chartCurrentExchange}|${chartCustomInterval?chartCustomInterval.unit+chartCustomInterval.interval:''}`;
+  if(fitKey!==lwFitKey){
+    lwFitKey=fitKey;
+    lwChart.timeScale().fitContent();
   }
 }
-
-function toggleTrendlineDraw(){
-  chartDrawMode=!chartDrawMode;
-  document.getElementById('chart-draw-toggle')?.classList.toggle('sel',chartDrawMode);
-  const overlay=getDrawOverlay();
-  if(overlay)overlay.classList.toggle('active',chartDrawMode);
-}
-function clearTrendlines(){
-  chartTrendlines=[];
-  redrawTrendlines();
-}
-
-function projectPoint(time,price){
-  if(!lwChart||!lwCandleSeries)return null;
-  const x=lwChart.timeScale().timeToCoordinate(time);
-  const y=lwCandleSeries.priceToCoordinate(price);
-  if(x===null||y===null)return null;
-  return {x,y};
-}
-
-function redrawTrendlines(){
-  const overlay=getDrawOverlay();
-  if(!overlay||!lwChart||!lwCandleSeries)return;
-  syncOverlaySize();
-  const dpr=window.devicePixelRatio||1;
-  const ctx=overlay.getContext('2d');
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,overlay.width/dpr,overlay.height/dpr);
-  ctx.strokeStyle='#A78BFA'; ctx.lineWidth=1.6; ctx.setLineDash([]);
-  chartTrendlines.forEach(line=>{
-    const p1=projectPoint(line.t1,line.p1), p2=projectPoint(line.t2,line.p2);
-    if(!p1||!p2)return;
-    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
-    [p1,p2].forEach(p=>{ ctx.beginPath(); ctx.arc(p.x,p.y,3,0,Math.PI*2); ctx.fillStyle='#A78BFA'; ctx.fill(); });
-  });
-}
-function redrawTrendlinePreview(){ redrawTrendlines(); } // crosshair-move hook; live drag preview is handled by pointer events below
-
-function overlayPixelToTimePrice(x,y){
-  if(!lwChart||!lwCandleSeries)return null;
-  const time=lwChart.timeScale().coordinateToTime(x);
-  const price=lwCandleSeries.coordinateToPrice(y);
-  if(time===null||price===null)return null;
-  return {time,price};
-}
-
-(function initTrendlineDrawing(){
-  const overlay=document.getElementById('chart-draw-overlay');
-  if(!overlay)return;
-  const getPos=(e)=>{
-    const rect=overlay.getBoundingClientRect();
-    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
-    return {x:cx,y:cy};
-  };
-  const start=(e)=>{
-    if(!chartDrawMode)return;
-    const {x,y}=getPos(e);
-    const tp=overlayPixelToTimePrice(x,y);
-    if(!tp)return;
-    trendlineDraftStart={x,y,...tp};
-  };
-  const move=(e)=>{
-    if(!chartDrawMode||!trendlineDraftStart)return;
-    const {x,y}=getPos(e);
-    redrawTrendlines();
-    const ctx=overlay.getContext('2d');
-    const dpr=window.devicePixelRatio||1;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.strokeStyle='#2EECD4'; ctx.lineWidth=1.6; ctx.setLineDash([4,3]);
-    ctx.beginPath(); ctx.moveTo(trendlineDraftStart.x,trendlineDraftStart.y); ctx.lineTo(x,y); ctx.stroke();
-  };
-  const end=(e)=>{
-    if(!chartDrawMode||!trendlineDraftStart)return;
-    const {x,y}=getPos(e.changedTouches?{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY}:e);
-    const tp=overlayPixelToTimePrice(x,y);
-    if(tp&&(tp.time!==trendlineDraftStart.time||tp.price!==trendlineDraftStart.price)){
-      chartTrendlines.push({t1:trendlineDraftStart.time,p1:trendlineDraftStart.price,t2:tp.time,p2:tp.price});
-    }
-    trendlineDraftStart=null;
-    redrawTrendlines();
-  };
-  overlay.addEventListener('mousedown',start);
-  overlay.addEventListener('mousemove',move);
-  overlay.addEventListener('mouseup',end);
-  overlay.addEventListener('mouseleave',()=>{trendlineDraftStart=null;redrawTrendlines();});
-  overlay.addEventListener('touchstart',start,{passive:true});
-  overlay.addEventListener('touchmove',move,{passive:true});
-  overlay.addEventListener('touchend',end);
-})();
-
 
 function renderMainChartWith(realCandles){
   const sym=chartCurrentSymbol;
@@ -5283,7 +5577,8 @@ function renderMainChartWith(realCandles){
   if(!isRealData){
     // No fake candles — show a clear empty state instead of inventing a chart.
     titleEl.innerHTML=`${sym} <span style="font-size:10px;font-weight:600;color:var(--text3);border:1px solid var(--border2);padding:2px 7px;border-radius:8px;vertical-align:middle">NO LIVE DATA</span>`;
-    if(lwChart){ lwChart.remove(); lwChart=null; lwCandleSeries=null; Object.keys(lwOverlaySeries).forEach(k=>delete lwOverlaySeries[k]); }
+    if(lwChart){ lwChart.remove(); lwChart=null; lwCandleSeries=null; lwFitKey=null; Object.keys(lwOverlaySeries).forEach(k=>delete lwOverlaySeries[k]); }
+    chartDrawnTrendlines=[]; chartDrawnPriceLines=[]; chartTrendStart=null;
     const container=document.getElementById('mainChart');
     if(container)container.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;text-align:center;padding:20px">Real ${sym} candles aren't available yet — connect Upstox (see admin status) to see the live chart here.</div>`;
     if(rsiCanvas){rsiCanvas.style.display='none';} if(rsiLbl)rsiLbl.style.display='none';
@@ -5627,6 +5922,11 @@ async function getBacktestAdvice(symbol,strategy,totalReturn,buyHoldReturn,winRa
 
 // ══════════════ INIT ══════════════
 renderDashboard('overview');
+// The Backtesting page's stock field lives in static HTML (not re-rendered
+// per-visit like the dashboard sections), so register its search handler
+// once here — selecting a result just needs to fill in the input, which
+// stockSearchBarHtml/selectGenericStockSearchResult already does.
+registerStockSearch('bt-sym',()=>{});
 </script>
 </body>
 </html>

@@ -115,7 +115,7 @@ const getIndexCandles = asyncHandler(async (req, res) => {
 });
 const listStocks = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
-  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 150);
   const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const result = await marketDataService.listAllSymbols({ exchange, page, limit });
   res.json(result);
@@ -149,15 +149,19 @@ const searchSymbols = asyncHandler(async (req, res) => {
 });
 
 // ── GET /api/market/candles/:symbol  (any authenticated user) ───────────
-// Query params: unit (minutes|hours|days|weeks|months), interval, from, to
+// Query params: unit (minutes|hours|days|weeks|months), interval, from, to,
+// exchange (NSE_EQ|BSE_EQ — optional; omit to try NSE first then BSE, same
+// as before. The Charts page's NSE/BSE switch sends this explicitly so a
+// symbol listed on both exchanges shows the one the trader actually picked.)
 const getCandles = asyncHandler(async (req, res) => {
-  const { unit, interval, from, to, exchange } = req.query;
+  const { unit, interval, from, to } = req.query;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const data = await marketDataService.getHistoricalCandles(req.params.symbol, {
     unit,
     interval: interval ? Number(interval) : undefined,
     from,
     to,
-    exchange: ['NSE_EQ', 'BSE_EQ'].includes(exchange) ? exchange : undefined,
+    exchange,
   });
   res.json(data);
 });

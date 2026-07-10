@@ -82,18 +82,19 @@ function calcCost(model, tokIn, tokOut) {
 //  Throws if Upstox isn't connected or returns no data — callers must
 //  surface that as "Data Unavailable", never fall back to invented numbers.
 // ─────────────────────────────────────────────────────────────────────────
-async function fetchRealMarketContext(stockSymbol) {
+async function fetchRealMarketContext(stockSymbol, exchange) {
   const to = new Date();
   const from = new Date();
   from.setFullYear(from.getFullYear() - 1);
 
   const [quote, candleData] = await Promise.all([
-    marketDataService.getLtp(stockSymbol),
+    marketDataService.getLtp(stockSymbol, exchange),
     marketDataService.getHistoricalCandles(stockSymbol, {
       unit: 'days',
       interval: 1,
       from: from.toISOString().slice(0, 10),
       to: to.toISOString().slice(0, 10),
+      exchange,
     }),
   ]);
 
@@ -421,13 +422,13 @@ function isAvailable(availableModelKeys, modelKey) {
   return availableModelKeys.includes(modelKey);
 }
 
-async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, availableModelKeys }) {
+async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, userPlan, availableModelKeys }) {
   // Real data first — if this fails (Upstox not connected, symbol not
   // found, no historical candles), we throw here and never reach an AI
   // call at all. There is no fallback that lets the AI guess instead.
   let marketContext;
   try {
-    marketContext = await fetchRealMarketContext(stockSymbol);
+    marketContext = await fetchRealMarketContext(stockSymbol, exchange);
   } catch (err) {
     console.error(`[aiService] Real market data fetch failed for ${stockSymbol}:`, err.message);
     throw new AppError(
