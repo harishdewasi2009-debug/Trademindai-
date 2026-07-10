@@ -2294,11 +2294,27 @@ async function refreshLiveMarket(){
   marketStatus = okCount>0 ? 'live' : (Object.keys(liveQuoteCache).length ? 'stale' : 'offline');
   renderTicker();
   renderIndices();
-  if(typeof renderScreener==='function' && document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
+  if(typeof renderScreenerThrottled==='function')renderScreenerThrottled();
   updateMarketStatusUI();
 }
 const INDEX_NAME_TO_KEY={'NIFTY 50':'%5ENSEI','NIFTY BANK':'%5ENSEBANK','SENSEX':'%5EBSESN'};
-  
+
+// Live ticks can arrive many times a second — calling renderScreener() on
+// every single one wipes the list back to "Loading stocks…" and re-fetches
+// everything, causing visible flicker. Throttle it to at most once/3s.
+let screenerRenderPending=false, lastScreenerRender=0;
+function renderScreenerThrottled(){
+  const now=Date.now();
+  if(now-lastScreenerRender<3000){
+    if(!screenerRenderPending){
+      screenerRenderPending=true;
+      setTimeout(()=>{ screenerRenderPending=false; renderScreenerThrottled(); },3000-(now-lastScreenerRender));
+    }
+    return;
+  }
+  lastScreenerRender=now;
+  if(typeof renderScreener==='function' && document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
+}
 // ══════════════ LIVE WEBSOCKET FEED (real-time, no polling) ══════════════
 // Connects to our backend's /ws/market, which relays Upstox's live tick
 // feed the instant a price changes — replaces the old 4s/15s REST polling
@@ -2343,7 +2359,7 @@ liveSocket.onmessage=(evt)=>{
       marketStatus='live';
       renderTicker();
       renderIndices();
-      if(typeof renderScreener==='function' && document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
+      if(typeof renderScreenerThrottled==='function')renderScreenerThrottled();
       updateMarketStatusUI();
     }
   };
