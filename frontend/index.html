@@ -3800,6 +3800,7 @@ async function resolveScanSymbols(){
 // Fetches candles for the whole scan universe in small concurrent batches
 // (instead of one giant Promise.all) so a 150–300 symbol scan doesn't fire
 // hundreds of simultaneous requests at the backend/Upstox at once.
+let scanFailReason=null; // captured once, shown to the user if the whole scan comes back empty
 async function fetchInBatches(symbols,batchSize=10){
   const out=[];
   for(let i=0;i<symbols.length;i+=batchSize){
@@ -3808,7 +3809,10 @@ async function fetchInBatches(symbols,batchSize=10){
       try{
         const res=await apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=days&interval=1`,{cache:'no-store'});
         const data=await res.json();
-        if(!res.ok||!data.candles||data.candles.length<21)return null;
+        if(!res.ok||!data.candles||data.candles.length<21){
+          if(!res.ok && !scanFailReason)scanFailReason=data?.error||('HTTP '+res.status);
+          return null;
+        }
         return {sym:symbol,candles:data.candles};
       }catch{return null;}
     }));
@@ -3894,12 +3898,12 @@ async function renderScannerCards(active){
   wrap.innerHTML=SCAN_TYPES.map(s=>`<div class="scanner-card ${s.key===active?'active-scan':''}" onclick="renderScannerCards('${s.key}')"><div class="sc-icon">${s.icon}</div><div class="sc-title">${s.title}</div><div class="sc-desc">${s.desc}</div><div class="sc-count">…</div></div>`).join('');
   if(resEl)resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3)" id="scan-progress">Scanning…</div>`;
 
-  const universe=await fetchScannerUniverse();
+ const universe=await fetchScannerUniverse();
   if(!universe.length){
-    if(resEl)resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load real candle data for the scan.</div>`;
+    const hint=scanFailReason?` (${scanFailReason})`:'';
+    if(resEl)resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load real candle data for the scan${hint}.</div>`;
     return;
   }
-
   let matches;
   if(active==='momentum'){
     matches=universe.map(u=>{
