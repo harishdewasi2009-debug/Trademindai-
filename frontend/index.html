@@ -306,6 +306,7 @@ nav{
 
 /* ── SCREENER ── */
 .screener-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;padding:16px;background:var(--bg3);border-radius:var(--radius-lg);border:1px solid var(--border)}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .filter-chip{padding:7px 16px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:6px}
 .filter-chip.active{background:rgba(0,194,168,.15);color:#2EECD4;border-color:rgba(0,194,168,.5)}
 .filter-chip:hover{border-color:var(--border3);color:var(--text)}
@@ -1166,8 +1167,8 @@ html{scroll-behavior:smooth}
     <div class="footer-bottom">
       <div class="footer-disclaimer">© 2025 TradeMind AI · Not SEBI registered · AI-generated analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
       <div class="social-links">
-        <a class="social-link" href="https://instagram.com/_trademind.ai" target="_blank" rel="noopener"><i class="ti ti-brand-instagram"></i></a>
-        <a class="social-link" href="https://www.linkedin.com/in/harish-dewasi-98a75a367?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener"><i class="ti ti-brand-linkedin"></i></a>
+        <a class="social-link" href="https://instagram.com/_trademind.ai" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+        <a class="social-link" href="https://www.linkedin.com/in/harish-dewasi-98a75a367?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11v5"/><path d="M8 8v.01"/><path d="M12 16v-5"/><path d="M16 16v-3a2 2 0 1 0 -4 0"/><path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10"/></svg></a>
       </div>
     </div>
   </div>
@@ -1195,6 +1196,24 @@ html{scroll-behavior:smooth}
           <div class="inp-group">
             <label class="inp-lbl">NSE / BSE Symbol</label>
             <input class="tm-inp" id="inp-sym" placeholder="e.g. RELIANCE" onkeydown="if(event.key==='Enter')runAnalysis()"/>
+          </div>
+        </div>
+        <div class="inp-group" style="margin-bottom:16px">
+          <label class="inp-lbl">Exchange</label>
+          <div style="display:flex;gap:8px">
+            <span class="chart-tool-btn active" id="analysis-ex-auto" onclick="setAnalysisExchange(undefined,this)" title="Try NSE first, fall back to BSE"><i class="ti ti-sparkles"></i> Auto</span>
+            <span class="chart-tool-btn" id="analysis-ex-nse" onclick="setAnalysisExchange('NSE_EQ',this)" title="Analyse this symbol's NSE listing"><i class="ti ti-building"></i> NSE</span>
+            <span class="chart-tool-btn" id="analysis-ex-bse" onclick="setAnalysisExchange('BSE_EQ',this)" title="Analyse this symbol's BSE listing"><i class="ti ti-building"></i> BSE</span>
+          </div>
+        </div>
+        <div class="inp-row" id="compare-row-2" style="display:none">
+          <div class="inp-group">
+            <label class="inp-lbl">Stock name (2nd stock to compare)</label>
+            <input class="tm-inp" id="inp-name2" placeholder="e.g. TCS" onkeydown="if(event.key==='Enter')handleAnalyseClick()"/>
+          </div>
+          <div class="inp-group">
+            <label class="inp-lbl">NSE / BSE Symbol (2nd stock)</label>
+            <input class="tm-inp" id="inp-sym2" placeholder="e.g. TCS" onkeydown="if(event.key==='Enter')handleAnalyseClick()"/>
           </div>
         </div>
         <div class="inp-group" style="margin-bottom:16px">
@@ -1228,7 +1247,7 @@ html{scroll-behavior:smooth}
             </select>
           </div>
         </div>
-        <button class="btn-analyse" id="btn-analyse" onclick="runAnalysis()"><i class="ti ti-sparkles"></i> Analyse with AI</button>
+        <button class="btn-analyse" id="btn-analyse" onclick="handleAnalyseClick()"><i class="ti ti-sparkles"></i> Analyse with AI</button>
         <div class="load-wrap" id="load-wrap">
           <div class="load-bar"><div class="load-fill"></div></div>
           <div class="load-steps" id="load-steps">
@@ -1441,6 +1460,7 @@ html{scroll-behavior:smooth}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash analysis · 50,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Buy / Sell / Hold signals</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Basic risk scoring</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>News sentiment analysis <span class="soon-badge">Coming Soon</span></span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (5 stocks)</span></li>
         </ul>
@@ -1460,6 +1480,7 @@ html{scroll-behavior:smooth}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash (primary) · 250,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>DeepSeek V3 (secondary) · 250,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Prediction history tracking</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (10 stocks)</span></li>
         </ul>
         <button class="btn-plan" onclick="openPay('Basic','149')">Get Basic</button>
@@ -1536,7 +1557,7 @@ html{scroll-behavior:smooth}
           <tr><td>Monthly Queries</td><td class="comp-partial">15</td><td class="comp-partial">150</td><td class="comp-partial">400</td><td class="comp-partial">Unlimited</td></tr>
           <tr><td>AI Price Targets</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
-          <tr><td>AI Stock Screener</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Stock Screener</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Telegram / WhatsApp Alerts</td><td colspan="4" class="comp-soon" style="text-align:center">Coming Soon — Pro &amp; Elite</td></tr>
           <tr><td>AI Trading Assistant Chat</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>4-Model Consensus Analysis</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
@@ -2600,6 +2621,12 @@ function isIndianMarketOpenNow(){
 }
 // ══════════════ AI ANALYSIS ══════════════
 let isAnalysing=false;
+let analysisExchange; // undefined='Auto' (NSE then BSE), or 'NSE_EQ'/'BSE_EQ'
+function setAnalysisExchange(ex,el){
+  ['analysis-ex-auto','analysis-ex-nse','analysis-ex-bse'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  el.classList.add('active');
+  analysisExchange=ex;
+}
 async function runAnalysis(){
   if(isAnalysing)return;
   const name=document.getElementById('inp-name').value.trim();
@@ -2628,22 +2655,25 @@ async function runAnalysis(){
   });
 
   const stockSym=sym||name.toUpperCase();
-  let result=null, errorMsg=null, quota=null;
+  let result=null, errorMsg=null, quota=null, isQuotaError=false;
 
   try{
     const res=await apiFetch('/api/ai/analyze',{
       method:'POST',
-      body:JSON.stringify({stockSymbol:stockSym,horizon:'1 month',riskTolerance:'moderate'}),
+      body:JSON.stringify({stockSymbol:stockSym,horizon:'1 month',riskTolerance:'moderate',...(analysisExchange?{exchange:analysisExchange}:{})}),
     });
     const data=await res.json();
     if(!res.ok){
-      throw new Error(data.error || 'AI analysis failed. Please try again.');
+      const err=new Error(data.error || 'AI analysis failed. Please try again.');
+      err.isQuota=res.status===429;
+      throw err;
     }
     result=data;
     quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
     syncModelChipsWithResult(result);
   }catch(e){
     errorMsg=e.message || 'AI analysis is temporarily unavailable.';
+    isQuotaError=!!e.isQuota;
   }
 
   setTimeout(()=>{
@@ -2652,7 +2682,7 @@ async function runAnalysis(){
     btn.disabled=false;isAnalysing=false;
 
     if(!result){
-      rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run analysis:</strong> ${errorMsg}</div>`;
+      rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run analysis:</strong> ${errorMsg}</div>${isQuotaError?'<div style="margin-top:12px"><button class="btn-lg" onclick="show(\'pricing\')">View plans</button></div>':''}`;
       rw.style.display='block';
       rw.scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
@@ -2782,13 +2812,21 @@ async function renderScreener(){
       :'<i class="ti ti-moon" style="margin-right:4px"></i>Market is closed right now — up/down % shown below is the change vs the last session\'s close.';
   }
 
-  el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Loading stocks…</div>`;
+  el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="font-size:18px;display:block;margin:0 auto 8px;animation:spin 1s linear infinite"></i>Loading stocks… <span style="opacity:.7">(first load of the day can take a few seconds)</span></div>`;
   try{
     const qs=new URLSearchParams({page:screenerPage,limit:50});
     if(screenerExchange)qs.set('exchange',screenerExchange);
     const res=await apiFetch('/api/market/stocks?'+qs.toString(),{cache:'no-store'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const {items,totalPages,partialFailure}=await res.json();
+    const body=await res.json().catch(()=>({}));
+    if(!res.ok){
+      // Surface the real backend reason (e.g. "requires a higher plan")
+      // instead of a bare HTTP status — this is what was showing as a
+      // generic, unexplained failure before.
+      const err=new Error(body.error||('HTTP '+res.status));
+      err.isPlanGate=res.status===403;
+      throw err;
+    }
+    const {items,totalPages,partialFailure}=body;
     screenerTotalPages=totalPages||1;
     if(partialFailure&&partialFailure.length&&noteEl){
       const failedLabel=partialFailure.map(ex=>ex==='BSE_EQ'?'BSE':'NSE').join(' and ');
@@ -2836,7 +2874,9 @@ async function renderScreener(){
       <button class="btn-lg-ghost" style="padding:8px 20px;font-size:12px" ${screenerPage>=screenerTotalPages?'disabled':''} onclick="changeScreenerPage(1)">Next →</button>
     </div>`;
   }catch(e){
-    el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load stocks — ${e.message}</div>`;
+    el.innerHTML=e.isPlanGate
+      ? `<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-lock" style="font-size:22px;color:var(--text3);display:block;margin-bottom:10px"></i><strong>${e.message}</strong><div style="margin-top:14px"><button class="btn-lg" onclick="show('pricing')">View plans</button></div></div>`
+      : `<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load stocks — ${e.message}</div>`;
   }
 }
 function changeScreenerPage(delta){
@@ -4784,13 +4824,96 @@ async function handlePay(){
 document.getElementById('pay-modal').addEventListener('click',function(e){if(e.target===this)closePay();});
 
 // ══════════════ ANALYSIS TABS ══════════════
-document.querySelectorAll('.atab').forEach((tab,i)=>{
-  tab.onclick=()=>{
-    document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
-    tab.classList.add('active');
-    if(i>0)setTimeout(()=>alert('This feature requires the Pro plan. Upgrade to unlock Deep Research, Stock Comparison, and Portfolio Scan.'),100);
+// analysisMode: 'quick' (default) or 'compare'. Deep Research and Portfolio
+// Scan aren't built yet (no backend endpoint exists for either), so those
+// two tabs still show a clear "coming soon" note instead of pretending to
+// work. Compare Stocks IS wired up for real — it just runs the existing
+// single-stock analysis endpoint twice and shows both results side by side.
+let analysisMode='quick';
+document.getElementById('tab-quick').onclick=()=>setAnalysisTab('quick');
+document.getElementById('tab-compare').onclick=()=>setAnalysisTab('compare');
+document.getElementById('tab-deep').onclick=()=>setAnalysisTab('deep');
+document.getElementById('tab-portfolio').onclick=()=>setAnalysisTab('portfolio');
+function setAnalysisTab(mode){
+  document.querySelectorAll('.atab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+(mode==='quick'?'quick':mode)).classList.add('active');
+  const row2=document.getElementById('compare-row-2');
+  const btn=document.getElementById('btn-analyse');
+  const rw=document.getElementById('result-wrap');
+  if(mode==='deep'||mode==='portfolio'){
+    // Not implemented server-side yet — say so plainly instead of a fake flow.
+    row2.style.display='none';
+    rw.style.display='block';
+    rw.innerHTML=`<div class="disclaimer"><strong>${mode==='deep'?'Deep Research':'Portfolio Scan'} is coming soon.</strong> This isn't wired up on the backend yet. Use <strong>Quick Analysis</strong> for a full AI signal today, or <strong>Compare Stocks</strong> to run two side by side.</div>`;
+    analysisMode=mode;
+    return;
+  }
+  analysisMode=mode;
+  row2.style.display=mode==='compare'?'grid':'none';
+  btn.innerHTML=mode==='compare'?'<i class="ti ti-arrows-diff"></i> Compare with AI':'<i class="ti ti-sparkles"></i> Analyse with AI';
+  rw.style.display='none'; rw.innerHTML='';
+}
+function handleAnalyseClick(){
+  if(analysisMode==='compare')runCompareAnalysis();
+  else if(analysisMode==='quick')runAnalysis();
+  // deep/portfolio: button click does nothing extra, the tab click already
+  // explained these aren't available yet.
+}
+async function runCompareAnalysis(){
+  if(isAnalysing)return;
+  const symA=(document.getElementById('inp-sym').value.trim()||document.getElementById('inp-name').value.trim()).toUpperCase();
+  const symB=(document.getElementById('inp-sym2').value.trim()||document.getElementById('inp-name2').value.trim()).toUpperCase();
+  if(!symA||!symB){alert('Enter both stock symbols to compare.');return;}
+  if(!currentUser){
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
+    show('login');
+    return;
+  }
+  const lw=document.getElementById('load-wrap');
+  const rw=document.getElementById('result-wrap');
+  const btn=document.getElementById('btn-analyse');
+  lw.style.display='block';rw.style.display='none';rw.innerHTML='';
+  btn.disabled=true;isAnalysing=true;
+  ['ls1','ls2','ls3','ls4'].forEach(id=>document.getElementById(id).classList.add('active'));
+
+  const runOne=async(sym)=>{
+    try{
+      const res=await apiFetch('/api/ai/analyze',{
+        method:'POST',
+        body:JSON.stringify({stockSymbol:sym,horizon:'1 month',riskTolerance:'moderate',...(analysisExchange?{exchange:analysisExchange}:{})}),
+      });
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'AI analysis failed.');
+      return {ok:true,data};
+    }catch(e){
+      return {ok:false,error:e.message||'AI analysis failed.'};
+    }
   };
-});
+  const [a,b]=await Promise.all([runOne(symA),runOne(symB)]);
+
+  lw.style.display='none'; btn.disabled=false; isAnalysing=false;
+  rw.style.display='block';
+  const card=(sym,r)=>{
+    if(!r.ok)return `<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>${sym}:</strong> ${r.error}</div>`;
+    const d=r.data, sig=(d.signal||'HOLD').toUpperCase(), pt=d.priceTargets||{};
+    return `<div class="admin-panel" style="flex:1;min-width:260px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="res-sym-big" style="font-size:18px">${d.stockSymbol||sym}</div>
+        <span class="badge b-${sig.toLowerCase()}">${sig}</span>
+      </div>
+      <div class="meta-row" style="margin-bottom:10px">
+        <div class="mc"><div class="mc-lbl">Confidence</div><div class="mc-val">${d.confidence??'—'}%</div></div>
+        <div class="mc"><div class="mc-lbl">Price</div><div class="mc-val">${d.currentPrice?'₹'+Number(d.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
+        <div class="mc"><div class="mc-lbl">Risk</div><div class="mc-val">${d.riskScore??'—'}/10</div></div>
+      </div>
+      ${pt.oneMonth?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px">1M target: <strong style="color:var(--text)">₹${Number(pt.oneMonth).toLocaleString('en-IN')}</strong></div>`:''}
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">${d.reasoning||''}</div>
+    </div>`;
+  };
+  rw.innerHTML=`<div class="res-block-title" style="padding:0 0 10px">Comparison result</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">${card(symA,a)}${card(symB,b)}</div>`;
+  rw.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
 
 // ══════════════ CANDLESTICK ENGINE HELPERS ══════════════
 function seedFromString(str){
@@ -5250,6 +5373,12 @@ function renderMainChart(){
 // recreating the whole chart (keeps zoom/scroll state and is much cheaper).
 let lwChart=null, lwCandleSeries=null, lwLastBar=null, lastChartTick=null;
 const lwOverlaySeries={}; // { ema: series, vwapUpper: series, ... } — created/removed as toggled
+// Tracks which symbol/timeframe/exchange the chart is currently zoomed/panned
+// for. Only a CHANGE in this key should reset the view (fitContent) — the
+// background live-refresh (every REFRESH_MS) re-renders the SAME symbol's
+// data and must never yank the user's zoom/pan back to "fit all", which was
+// the bug: any zoom got wiped out within a few seconds by the next refresh.
+let lwFitKey=null;
 
 function ensureLightweightChart(){
   if(lwChart)return;
@@ -5426,7 +5555,15 @@ const lastRow=timeSeries[timeSeries.length-1];
   }else{
     clearLwOverlay('bbUpper'); clearLwOverlay('bbLower');
   }
-  lwChart.timeScale().fitContent();
+  // Only snap the view to "fit all candles" when the symbol, timeframe or
+  // exchange actually changed since the last render. Without this guard,
+  // the REFRESH_MS live-data poll (same symbol, fresh candles) called this
+  // on every tick and reset any zoom/pan the user had just made.
+  const fitKey=`${chartCurrentSymbol}|${chartCurrentTF}|${chartCurrentExchange}|${chartCustomInterval?chartCustomInterval.unit+chartCustomInterval.interval:''}`;
+  if(fitKey!==lwFitKey){
+    lwFitKey=fitKey;
+    lwChart.timeScale().fitContent();
+  }
 }
 
 function renderMainChartWith(realCandles){
@@ -5440,7 +5577,7 @@ function renderMainChartWith(realCandles){
   if(!isRealData){
     // No fake candles — show a clear empty state instead of inventing a chart.
     titleEl.innerHTML=`${sym} <span style="font-size:10px;font-weight:600;color:var(--text3);border:1px solid var(--border2);padding:2px 7px;border-radius:8px;vertical-align:middle">NO LIVE DATA</span>`;
-    if(lwChart){ lwChart.remove(); lwChart=null; lwCandleSeries=null; Object.keys(lwOverlaySeries).forEach(k=>delete lwOverlaySeries[k]); }
+    if(lwChart){ lwChart.remove(); lwChart=null; lwCandleSeries=null; lwFitKey=null; Object.keys(lwOverlaySeries).forEach(k=>delete lwOverlaySeries[k]); }
     chartDrawnTrendlines=[]; chartDrawnPriceLines=[]; chartTrendStart=null;
     const container=document.getElementById('mainChart');
     if(container)container.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;text-align:center;padding:20px">Real ${sym} candles aren't available yet — connect Upstox (see admin status) to see the live chart here.</div>`;

@@ -41,11 +41,10 @@ router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
 router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
-// FIX: this is sold as a Pro/Elite-only feature on the pricing page and
-// comparison table ("AI Stock Screener" — cross for Free/Basic, check for
-// Pro/Elite) but had no backend gate at all, so any authenticated Free/Basic
-// user (or a direct API call) could pull the full paginated stock list for
-// free. requireFeature('screener') matches config/plans.js exactly.
+// Available on every plan (including Free) — it's just live Upstox
+// quotes/listing, no AI token cost, so there's no reason to gate it above
+// Free. requireFeature('screener') still runs so the check exists, but
+// 'screener' is now in every plan's features array in config/plans.js.
 router.get('/stocks', requireAuth, requireFeature('screener'), marketLimiter, ctrl.listStocks);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
 // FIX: sold as Elite-only on the pricing page/comparison table but had no

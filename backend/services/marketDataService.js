@@ -427,9 +427,9 @@ async function searchSymbols(prefixRaw, limit = 20) {
 // it's changed since. If ohlc.close turns out to be missing/different,
 // changePct below will just come back null and the frontend already
 // handles that (falls back to 0% rather than crashing).
-async function getLtp(symbol) {
+async function getLtp(symbol, exchange) {
   const accessToken = await getValidAccessToken();
-  const instrumentKey = await resolveInstrumentKey(symbol);
+  const instrumentKey = await resolveInstrumentKey(symbol, exchange);
 
   const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({ instrument_key: instrumentKey })}`;
   const res = await fetch(url, {

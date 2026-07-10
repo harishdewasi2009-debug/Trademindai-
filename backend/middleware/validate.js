@@ -106,6 +106,10 @@ const validateAiAnalyze = [
     .optional()
     .isIn(['low', 'moderate', 'high'])
     .withMessage('riskTolerance must be low, moderate, or high.'),
+  body('exchange')
+    .optional()
+    .isIn(['NSE_EQ', 'BSE_EQ'])
+    .withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   handleValidationErrors,
 ];
 
