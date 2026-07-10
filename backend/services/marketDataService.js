@@ -274,39 +274,33 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   //      the equity marker.
   //   2) Accept a few known aliases for the trading-symbol/key fields.
   //   3) Skip obvious derivative/options rows (expiry/strike present).
-  const bySymbol = new Map();
+ const bySymbol = new Map();
   let skippedNoSymbol = 0;
   for (const row of list) {
     if (row.expiry || row.strike_price) continue; // derivatives/options rows
 
-    const segment = (row.segment || '').toUpperCase();
-    const instrumentType = (row.instrument_type || '').toUpperCase();
     const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
-
-    // Only trust instrument_type when it's present — that's the reliable
-    // equity marker. Fall back to segment ONLY when instrument_type is
-    // missing: relying on segment alone lets BSE bonds/NCDs through too
-    // (their segment is also "BSE_EQ"), which is why junk symbols like
-    // "HCCL-0.01%-31-3-29-PVT" were showing up in the screener.
-    const looksLikeEquity = instrumentType
-      ? instrumentType === 'EQ'
-      : (segment === exchange || segment === `${exchange.split('_')[0]}_EQ`);
-    if (!looksLikeEquity) continue;
-
-    // Extra safety net: skip anything that still looks like a bond/
-    // debenture code (coupon %, "PVT" placement suffix) even if it
-    // slipped past the check above.
-    if (tradingSymbol && /%|PVT$/i.test(String(tradingSymbol))) continue;
-
     const instrumentKey = row.instrument_key || row.instrumentKey;
     if (!tradingSymbol || !instrumentKey) { skippedNoSymbol++; continue; }
+
+    // Upstox's segment/instrument_type fields are unreliable on the BSE
+    // file (sometimes blank for real equities, sometimes shared with debt
+    // instruments) — that inconsistency is what caused BSE to alternate
+    // between "0 stocks" and "full of bonds/NCDs" depending on how strict
+    // this check was. The ISIN itself is reliable and exchange-agnostic:
+    // Indian ISINs encode a security-type code right after the issuer code
+    // — "01" is always equity shares (bonds/NCDs use "08", preference
+    // shares "02", etc). instrument_key is "EXCHANGE|ISIN", e.g.
+    // "BSE_EQ|INE002A01018" — so we check that instead of segment/type.
+    const isin = String(instrumentKey).split('|')[1] || '';
+    const isEquity = isin.slice(7, 9) === '01';
+    if (!isEquity) continue;
 
     bySymbol.set(String(tradingSymbol).toUpperCase(), {
       instrumentKey,
       name: row.name || String(tradingSymbol),
     });
   }
-
   if (bySymbol.size === 0) {
     // Don't cache an empty result — a transient/malformed download shouldn't
     // black out an entire exchange for the next 24h TTL. Throw so the route
