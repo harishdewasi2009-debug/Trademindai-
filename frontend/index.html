@@ -1277,23 +1277,18 @@ html{scroll-behavior:smooth}
       <div id="screener-search-dropdown" style="display:none;position:absolute;top:48px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:20;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
     </div>
     <div class="screener-filters">
-      <span class="filter-group-exchange" style="display:contents">
-        <button class="filter-chip active" onclick="toggleExchangeFilter(this,undefined)"><i class="ti ti-sparkles"></i> All (NSE + BSE)</button>
-        <button class="filter-chip" onclick="toggleExchangeFilter(this,'NSE_EQ')"><i class="ti ti-building"></i> NSE only</button>
-        <button class="filter-chip" onclick="toggleExchangeFilter(this,'BSE_EQ')"><i class="ti ti-building"></i> BSE only</button>
-      </span>
-      <span style="width:1px;align-self:stretch;background:var(--border2);margin:0 2px"></span>
-      <span class="filter-group-direction" style="display:contents">
-        <button class="filter-chip active" id="scr-dir-all" onclick="setScreenerDirection(undefined,this)"><i class="ti ti-list"></i> All moves</button>
-        <button class="filter-chip" id="scr-dir-up" onclick="setScreenerDirection('up',this)"><i class="ti ti-trending-up" style="color:var(--green2)"></i> Up</button>
-        <button class="filter-chip" id="scr-dir-down" onclick="setScreenerDirection('down',this)"><i class="ti ti-trending-down" style="color:var(--rose2)"></i> Down</button>
-      </span>
-    </div>
-    <div id="screener-market-note" style="font-size:11px;color:var(--text3);margin:-8px 0 14px"></div>
-    <div id="screener-results"></div>
-  </div>
+    <span class="filter-group-exchange" style="display:contents">
+        <button class="filter-chip active" onclick="toggleExchangeFilter(this,'all')">All</button>
+        <button class="filter-chip" onclick="toggleExchangeFilter(this,'nse')">NSE only</button>
+        <button class="filter-chip" onclick="toggleExchangeFilter(this,'bse')">BSE only</button>
+    </span>
+    <span style="width:1px;align-self:stretch;background:rgba(255,255,255,.1)"></span>
+    <span class="filter-group-direction" style="display:contents">
+        <button class="filter-chip active" id="scr-dir-all" onclick="toggleDirectionFilter(this,'all')">All</button>
+        <button class="filter-chip" id="scr-dir-up" onclick="toggleDirectionFilter(this,'up')">Up</button>
+        <button class="filter-chip" id="scr-dir-down" onclick="toggleDirectionFilter(this,'down')">Down</button>
+    </span>
 </div>
-
 <!-- ══════════════ CHARTS ══════════════ -->
 <div id="page-charts" class="page">
   <div class="section">
@@ -2601,11 +2596,7 @@ function toggleExchangeFilter(el,exchange){
   el.classList.add('active');
   setScreenerExchange(exchange);
 }
-function toggleExchangeFilter(el,exchange){
-  document.querySelectorAll('.screener-filters .filter-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  setScreenerExchange(exchange);
-}
+
 // Up/Down direction filter — independent of the exchange chips above, so
 // both can be active at once (e.g. "NSE only" + "Down").
 function setScreenerDirection(dir,el){
