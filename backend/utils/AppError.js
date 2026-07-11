@@ -1,11 +1,8 @@
-// utils/AppError.js
-// Use this for any expected/operational error (bad input, not found, unauthorized).
-// The global error handler in server.js checks `err.isOperational` to decide
-// whether to leak the message to the client or hide it behind a generic 500.
 class AppError extends Error {
-  constructor(message, statusCode = 400) {
+  constructor(message, statusCode) {
     super(message);
     this.statusCode = statusCode;
+    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
     this.isOperational = true;
     Error.captureStackTrace(this, this.constructor);
   }
