@@ -2243,7 +2243,31 @@ const INDEX_SYMBOLS=[{sym:'NIFTY 50',label:'NIFTY 50'},{sym:'SENSEX',label:'SENS
 const INDEX_LABELS=INDEX_SYMBOLS.map(i=>i.label);
 let liveQuoteCache={};   // symbol -> {price, changePct, up}
 let marketStatus='connecting'; // connecting | live | stale | offline
+let globalMarketOpen=null; // null=unknown yet, true=open, false=closed (from backend marketStatus field)
 const REFRESH_MS=4000; // was 15000 — now polls close to the backend's 3s quote cache, so ticks feel near-live
+
+// Persists NIFTY 50 / SENSEX / NIFTY BANK across page refreshes so the
+// strip never has to fall back to "Connecting…" (or a 0.00% flash) while
+// waiting on the first network round-trip — it shows the last real values
+// immediately, then updates them once fresh data arrives.
+const INDEX_CACHE_KEY='trademind_last_indices_v1';
+function persistIndexCache(){
+  try{
+    const snapshot={};
+    INDEX_LABELS.forEach(label=>{ if(liveQuoteCache[label])snapshot[label]=liveQuoteCache[label]; });
+    localStorage.setItem(INDEX_CACHE_KEY, JSON.stringify({snapshot, savedAt:Date.now()}));
+  }catch{/* storage unavailable/full — non-fatal, just won't survive a refresh */}
+}
+function hydrateIndexCache(){
+  try{
+    const raw=localStorage.getItem(INDEX_CACHE_KEY);
+    if(!raw)return;
+    const {snapshot}=JSON.parse(raw)||{};
+    Object.entries(snapshot||{}).forEach(([label,q])=>{
+      if(q&&typeof q.price==='number')liveQuoteCache[label]={...q,stale:true};
+    });
+  }catch{/* corrupt/old cache — ignore and start fresh */}
+}
 
 // UPDATED: indices (NIFTY 50 / SENSEX / NIFTY BANK) still go through Yahoo —
 // the backend's Upstox integration only resolves individual NSE/BSE equity
@@ -2316,11 +2340,21 @@ async function refreshIndices(){
     const res=await apiFetch('/api/market/indices',{cache:'no-store'});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
+    if(data.marketStatus==='open'||data.marketStatus==='closed'){
+      globalMarketOpen = data.marketStatus==='open';
+    }
     let okCount=0;
     (data.indices||[]).forEach(idx=>{
       if(typeof idx.lastPrice==='number'){
-        const changePct=typeof idx.changePct==='number'?idx.changePct:0;
-        liveQuoteCache[idx.label]={price:idx.lastPrice,changePct,up:changePct>=0};
+        // Only ever overwrite changePct with a real number. If the backend
+        // sent null (no trustworthy previousClose right now) keep whatever
+        // we already had cached instead of forcing it to 0.
+        const prev=liveQuoteCache[idx.label];
+        const changePct=typeof idx.changePct==='number'?idx.changePct:prev?.changePct;
+        if(typeof changePct==='number'){
+          liveQuoteCache[idx.label]={price:idx.lastPrice,changePct,up:changePct>=0,stale:!!idx.stale};
+          persistIndexCache();
+        }
         okCount++;
       }
     });
@@ -2341,9 +2375,10 @@ async function refreshIndices(){
           if(candles.length<2)return;
           const last=candles[candles.length-1], prev=candles[candles.length-2];
           const changePct=prev.c?((last.c-prev.c)/prev.c)*100:0;
-          liveQuoteCache[idx.sym]={price:last.c,changePct,up:changePct>=0,closed:true};
+          liveQuoteCache[idx.sym]={price:last.c,changePct,up:changePct>=0,stale:true};
+          persistIndexCache();
           okCount++;
-        }catch{/* leave uncached — UI shows "Connecting…" for just this index */}
+        }catch{/* leave uncached — UI shows last cached value, or "Connecting…" if there truly is none */}
       }));
       if(okCount>0 && marketStatus==='connecting') marketStatus='live';
     }
@@ -2410,7 +2445,18 @@ liveSocket.onmessage=(evt)=>{
     let got=false;
     for(const [sym,q] of Object.entries(msg.feeds||{})){
       if(TICKER_SYMBOLS.includes(sym)){ liveQuoteCache[sym+'.NS']=q; got=true; }
-      else if(INDEX_LABELS.includes(sym)){ liveQuoteCache[sym]=q; got=true; }
+      else if(INDEX_LABELS.includes(sym)){
+        // A tick can arrive with changePct:null (backend has no trustworthy
+        // previousClose for this moment) — never let that stomp a real
+        // value we already have; keep showing the last good % change.
+        const prevGood=liveQuoteCache[sym];
+        const changePct=typeof q.changePct==='number'?q.changePct:prevGood?.changePct;
+        liveQuoteCache[sym]=typeof changePct==='number'
+          ? {...q,changePct,up:changePct>=0}
+          : q; // no prior value either — best we can do is pass it through
+        persistIndexCache();
+        got=true;
+      }
     }
     // Live ticks for a BSE-selected symbol arrive keyed "BSE:SYMBOL" (see
     // liveFeedService's feedKeyFor) so they never get confused with the
@@ -2483,7 +2529,7 @@ function renderIndices(){
   // trend arrows vanish right after market close.
   el.innerHTML=INDEX_SYMBOLS.map(idx=>{
     const q=liveQuoteCache[idx.sym];
-    if(!q){
+    if(!q||typeof q.price!=='number'||typeof q.changePct!=='number'){
       return `<div class="idx-cell">
         <div class="idx-name">${idx.label}</div>
         <div class="idx-price" style="color:var(--text3);font-size:13px">Connecting…</div>
@@ -2494,6 +2540,7 @@ function renderIndices(){
       <div class="idx-name">${idx.label}</div>
       <div class="idx-price">${fmtINR(q.price)}</div>
       <div class="${up?'t-up':'t-dn'}" style="font-size:12px">${up?'▲':'▼'} ${Math.abs(q.changePct).toFixed(2)}%</div>
+      ${q.stale?`<div style="font-size:10px;color:var(--text3)">Last Close</div>`:''}
     </div>`;
   }).join('');
 }
@@ -2501,6 +2548,12 @@ function renderIndices(){
 function updateMarketStatusUI(){
   const pill=document.getElementById('live-status-pill');
   if(!pill)return;
+  // Once the backend has told us plainly that the market is shut, say so —
+  // showing "Live" language over stale last-close numbers is misleading.
+  if(globalMarketOpen===false){
+    pill.innerHTML=`<span class="live-dot" style="background:var(--amber)"></span>Market Closed · Last Close`;
+    return;
+  }
   // No broker name or connection-state language is shown to end users —
   // just a simple live/delayed indicator for NSE + BSE data.
   const cfg={
@@ -2512,9 +2565,16 @@ function updateMarketStatusUI(){
   pill.innerHTML=`<span class="live-dot" style="${cfg.dot}"></span>${cfg.text}`;
 }
 
-// kick off the live feed — no demo-data fallback; the UI shows a
-// "connecting" state until Upstox is actually returning real quotes.
-// Stock prices arrive instantly over the WebSocket (connectLiveFeed);
+// Hydrate NIFTY 50 / SENSEX / NIFTY BANK from the last successful response
+// (localStorage) BEFORE the first network call, so a page refresh shows the
+// real last-known numbers immediately instead of "Connecting…" or a 0.00%
+// flash while the first fetch is in flight.
+hydrateIndexCache();
+if(Object.keys(liveQuoteCache).length){ marketStatus='stale'; renderIndices(); updateMarketStatusUI(); }
+
+// kick off the live feed — no demo-data fallback beyond the cache above;
+// the UI now only shows "Connecting…" for an index it has truly never
+// seen. Stock prices arrive instantly over the WebSocket (connectLiveFeed);
 // refreshLiveMarket() only runs once for the first paint, then repeats
 // slowly (30s) as a safety net for indices + in case the socket drops.
 refreshLiveMarket();
