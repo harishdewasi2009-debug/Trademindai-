@@ -311,7 +311,7 @@ const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'op
 router.post(
   '/insight',
   requireAuth,
-  requireFeature('ai_chat'), // reuse the existing chat-tier gate — same cost class as chat
+  requireFeature('ai_chat'),
   aiLimiter,
   asyncHandler(async (req, res) => {
     const { kind, context } = req.body || {};
