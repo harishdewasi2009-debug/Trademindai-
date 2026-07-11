@@ -570,7 +570,10 @@ async function getLtpBatch(symbols) {
       Object.values(data.data || {}).find((q) => q.instrument_token === instrumentKey);
 
     const lastPrice = quote?.last_price;
-    const previousClose = quote?.ohlc?.close ?? null;
+    const netChange = quote?.net_change;
+const previousClose = (typeof lastPrice === 'number' && typeof netChange === 'number')
+  ? lastPrice - netChange
+  : (quote?.ohlc?.close ?? null);
 
     // After market hours Upstox's live quote endpoint can return nothing for
     // a symbol (no fresh tick to serve) — this is the same gap already
