@@ -484,7 +484,35 @@ async function getLtp(symbol, exchange) {
  */
 const quoteBatchCache = new Map(); // cacheKey -> { data, expiresAt }
 const QUOTE_CACHE_TTL_MS = 3000;
+/** Used by getLtpBatch() when Upstox's live quote has no usable last_price/
+ *  previousClose (e.g. after market close) — pulls the last two daily
+ *  candles instead, same pattern as the index fallback, so the caller
+ *  still gets a real last-close price and real day change instead of null. */
+async function getDailyCloseFallback(instrumentKey) {
+  try {
+    const accessToken = await getValidAccessToken();
+    const toDate = new Date().toISOString().slice(0, 10);
+    const fromDate = defaultFromDate('days');
+    const encodedKey = encodeURIComponent(instrumentKey);
+    const url = `${BASE_V3}/historical-candle/${encodedKey}/days/1/${toDate}/${fromDate}`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const candles = (data.data?.candles || []).slice().reverse(); // oldest-first
+    if (candles.length < 2) return null;
+    const lastClose = candles[candles.length - 1][4];
+    const prevClose = candles[candles.length - 2][4];
+    if (!(prevClose > 0)) return null;
+    return { lastPrice: lastClose, previousClose: prevClose, changePct: ((lastClose - prevClose) / prevClose) * 100 };
+  } catch {
+    return null;
+  }
+}
 
+async function getLtpBatch(symbols) {
 async function getLtpBatch(symbols) {
   if (!Array.isArray(symbols) || !symbols.length) {
     throw new AppError('symbols must be a non-empty array.', 400);
