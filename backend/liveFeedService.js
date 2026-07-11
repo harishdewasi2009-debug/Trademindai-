@@ -39,9 +39,11 @@ let streamer = null;
 const browserClients = new Set();       // Set<ws.WebSocket> — connected frontend tabs
 let instrumentKeyToSymbol = new Map();  // "NSE_EQ|INE..." -> { symbol, feedKey }
 const lastKnownFeed = new Map();        // feedKey -> last tick, sent as an instant snapshot to new clients
+const lastGoodPrevClose = new Map();    // feedKey -> last trusted previous-close (Upstox often omits `cp` after hours)
 // feedKey -> last previous-close ('cp') we actually trusted. Ticks around/
 // after market close often omit 'cp', which used to force changePct to 0.
-const lastGoodPrevClose = new Map();
+const lastKnownFeed = new Map();        // feedKey -> last tick, sent as an instant snapshot to new clients
+const lastGoodPrevClose = new Map();    // feedKey -> last trusted previous-close (Upstox often omits `cp` after hours)
 /** Call from server.js when a browser opens a WS connection to /ws/market (after auth). */
 function registerBrowserClient(ws) {
   browserClients.add(ws);
