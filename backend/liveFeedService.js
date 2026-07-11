@@ -33,9 +33,12 @@ const INDEX_INSTRUMENT_KEYS = {
 
 let streamer = null;
 const browserClients = new Set();       // Set<ws.WebSocket> — connected frontend tabs
-let instrumentKeyToSymbol = new Map();  // "NSE_EQ|INE..." -> "RELIANCE"
-const lastKnownFeed = new Map();        // symbol -> last tick, sent as an instant snapshot to new clients
+let instrumentKeyToSymbol = new Map();  // "NSE_EQ|INE..." -> { symbol, feedKey }
+const lastKnownFeed = new Map();        // feedKey -> last tick, sent as an instant snapshot to new clients
 
+// feedKey -> last previous-close ('cp') we actually trusted. Ticks around/
+// after market close often omit 'cp', which used to force changePct to 0.
+const lastGoodPrevClose = new Map();
 /** Call from server.js when a browser opens a WS connection to /ws/market (after auth). */
 function registerBrowserClient(ws) {
   browserClients.add(ws);
@@ -133,13 +136,18 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
       const ltpc = extractLtpc(feed);
       if (!symbol || !ltpc || typeof ltpc.ltp !== 'number') continue;
 
-      const price = ltpc.ltp;
-      const prevClose = ltpc.cp;
+     const price = ltpc.ltp;
+      let prevClose = ltpc.cp;
+      if (typeof prevClose === 'number' && prevClose > 0) {
+        lastGoodPrevClose.set(info.feedKey, prevClose);
+      } else {
+        prevClose = lastGoodPrevClose.get(info.feedKey) ?? null;
+      }
       const changePct = (typeof prevClose === 'number' && prevClose > 0)
         ? ((price - prevClose) / prevClose) * 100
-        : 0;
+        : (lastKnownFeed.get(info.feedKey)?.changePct ?? null);
 
-      const entry = { price, changePct, up: changePct >= 0 };
+      const entry = { price, changePct, up: (changePct ?? 0) >= 0 };
       out[symbol] = entry;
       lastKnownFeed.set(symbol, entry);
     }
