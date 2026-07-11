@@ -512,7 +512,7 @@ async function getDailyCloseFallback(instrumentKey) {
   }
 }
 
-async function getLtpBatch(symbols) {
+
 async function getLtpBatch(symbols) {
   if (!Array.isArray(symbols) || !symbols.length) {
     throw new AppError('symbols must be a non-empty array.', 400);
