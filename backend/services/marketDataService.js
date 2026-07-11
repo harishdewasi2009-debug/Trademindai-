@@ -562,6 +562,78 @@ async function getLtpBatch(symbols) {
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
   return result;
 }
+// ─────────────────────────────────────────────────────────────────────────
+//  INDEX QUOTES (NIFTY 50 / SENSEX / NIFTY BANK)
+// ─────────────────────────────────────────────────────────────────────────
+
+const lastGoodIndexQuotes = {}; // { 'NIFTY 50': {lastPrice, previousClose, changePct, fetchedAt}, ... }
+
+function isIndianMarketOpen(now = new Date()) {
+  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const day = ist.getUTCDay();
+  if (day === 0 || day === 6) return false;
+  const minutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return minutes >= (9 * 60 + 15) && minutes < (15 * 60 + 30);
+}
+
+async function getIndexQuotes() {
+  const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
+  const marketOpen = isIndianMarketOpen();
+
+  let values = [];
+  try {
+    const accessToken = await getValidAccessToken();
+    const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
+      instrument_key: entries.map(([, key]) => key).join(','),
+    })}`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
+    }
+    const data = await res.json();
+    values = Object.values(data.data || {});
+  } catch (err) {
+    values = [];
+  }
+
+  const indices = entries.map(([label, instrumentKey]) => {
+    const quote =
+      values.find((q) => q.instrument_token === instrumentKey) ||
+      values.find((q) => q.instrument_token?.replace('%7C', '|') === instrumentKey);
+
+    const cached = lastGoodIndexQuotes[label];
+    const lastPrice = quote?.last_price;
+    const rawPrevClose = quote?.ohlc?.close;
+    const previousClose = (typeof rawPrevClose === 'number' && rawPrevClose > 0)
+      ? rawPrevClose
+      : (cached?.previousClose ?? null);
+
+    const haveFreshPrice = typeof lastPrice === 'number' && lastPrice > 0;
+    const changePct = (haveFreshPrice && typeof previousClose === 'number' && previousClose > 0)
+      ? ((lastPrice - previousClose) / previousClose) * 100
+      : null;
+
+    if (haveFreshPrice && changePct !== null) {
+      const fresh = { lastPrice, previousClose, changePct, fetchedAt: new Date().toISOString() };
+      lastGoodIndexQuotes[label] = fresh;
+      return { label, instrumentKey, ...fresh, stale: false };
+    }
+    if (cached) {
+      return { label, instrumentKey, ...cached, stale: true };
+    }
+    return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null, stale: true };
+  });
+
+  return {
+    indices,
+    marketStatus: marketOpen ? 'open' : 'closed',
+    fetchedAt: new Date().toISOString(),
+  };
+}
 async function getIndexQuotes() {
   const cacheKey = 'INDICES';
   const cached = quoteBatchCache.get(cacheKey);
