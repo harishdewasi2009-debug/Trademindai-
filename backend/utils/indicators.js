@@ -179,7 +179,45 @@ function computeAllIndicators(candles) {
   };
 }
 
+// ── Rule-based BUY / HOLD / SELL signal — purely computed from the real ──
+// indicator values above, no AI/LLM involved. Used by the Screener so it
+// can be labelled "computed data analysis", distinct from the AI Analysis
+// page. Six independent votes are tallied; each is a plain, explainable
+// technical rule (trend, momentum, oscillator) so the result can always be
+// traced back to real numbers instead of a black box.
+function deriveSignal(ind) {
+  if (!ind) return null;
+  let score = 0;
+  const votes = [];
+
+  if (ind.rsi <= 30) { score += 1; votes.push('RSI oversold'); }
+  else if (ind.rsi >= 70) { score -= 1; votes.push('RSI overbought'); }
+
+  if (ind.ema20 > ind.ema50) { score += 1; votes.push('EMA20 > EMA50'); }
+  else { score -= 1; votes.push('EMA20 < EMA50'); }
+
+  if (ind.macdHistogram > 0) { score += 1; votes.push('MACD histogram positive'); }
+  else { score -= 1; votes.push('MACD histogram negative'); }
+
+  if (ind.supertrendDirection === 'bullish') { score += 1; votes.push('Supertrend bullish'); }
+  else { score -= 1; votes.push('Supertrend bearish'); }
+
+  if (ind.currentPrice > ind.vwap) { score += 1; votes.push('Price above VWAP'); }
+  else { score -= 1; votes.push('Price below VWAP'); }
+
+  if (ind.trendStrength >= 60) { score += 1; votes.push('Strong trend'); }
+  else if (ind.trendStrength <= -60) { score -= 1; votes.push('Weak/negative trend'); }
+
+  const signal = score >= 2 ? 'BUY' : score <= -2 ? 'SELL' : 'HOLD';
+  // Map the -6..+6 vote tally to a 0-100 confidence figure so the UI can
+  // show e.g. "BUY · 78%" without implying any prediction/probability.
+  const confidence = Math.round(50 + (score / 6) * 50);
+
+  return { signal, score, confidence: Math.max(0, Math.min(100, confidence)), votes };
+}
+
 module.exports = {
   calcSMA, calcEMA, calcRSI, calcMACD, calcBollinger, calcVWAP, calcATR,
   calcSupertrend, findSupportResistance, calcTrendStrength, computeAllIndicators,
+  deriveSignal,
 };

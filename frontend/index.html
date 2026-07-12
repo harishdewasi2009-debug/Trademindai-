@@ -1153,8 +1153,6 @@ html{scroll-behavior:smooth}
       <div>
         <div class="footer-col-title">Resources</div>
         <span class="footer-link" onclick="show('backtest')">Backtesting</span>
-        <span class="footer-link">Accuracy Report</span>
-        <span class="footer-link">API Docs</span>
         <span class="footer-link" onclick="show('ads')">Advertise</span>
       </div>
       <div>
@@ -1188,15 +1186,19 @@ html{scroll-behavior:smooth}
           <button class="atab" id="tab-compare"><i class="ti ti-arrows-diff"></i>Compare Stocks</button>
           <button class="atab" id="tab-portfolio"><i class="ti ti-briefcase"></i>Portfolio Scan</button>
         </div>
-        <div class="inp-row">
-          <div class="inp-group">
-            <label class="inp-lbl">Stock name</label>
-            <input class="tm-inp" id="inp-name" placeholder="e.g. Reliance Industries" onkeydown="if(event.key==='Enter')runAnalysis()"/>
+        <div class="inp-group" style="margin-bottom:16px">
+          <label class="inp-lbl">Or analyse an index</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span class="ind-chip" onclick="setAnalysisIndex('NIFTY 50')"><i class="ti ti-chart-candle" style="margin-right:4px"></i>NIFTY 50</span>
+            <span class="ind-chip" onclick="setAnalysisIndex('SENSEX')"><i class="ti ti-chart-candle" style="margin-right:4px"></i>SENSEX</span>
+            <span class="ind-chip" onclick="setAnalysisIndex('NIFTY BANK')"><i class="ti ti-chart-candle" style="margin-right:4px"></i>NIFTY BANK</span>
           </div>
-          <div class="inp-group">
-            <label class="inp-lbl">NSE / BSE Symbol</label>
-            <input class="tm-inp" id="inp-sym" placeholder="e.g. RELIANCE" onkeydown="if(event.key==='Enter')runAnalysis()"/>
-          </div>
+        </div>
+        <div class="inp-group" style="margin-bottom:16px">
+          <label class="inp-lbl">Search stock</label>
+          ${stockSearchBarHtml('analysis-search-inp','Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…',{wrapStyle:'margin-bottom:0'})}
+          <input type="hidden" id="inp-name"/>
+          <input type="hidden" id="inp-sym"/>
         </div>
         <div class="inp-group" style="margin-bottom:16px">
           <label class="inp-lbl">Exchange</label>
@@ -1207,13 +1209,11 @@ html{scroll-behavior:smooth}
           </div>
         </div>
         <div class="inp-row" id="compare-row-2" style="display:none">
-          <div class="inp-group">
-            <label class="inp-lbl">Stock name (2nd stock to compare)</label>
-            <input class="tm-inp" id="inp-name2" placeholder="e.g. TCS" onkeydown="if(event.key==='Enter')handleAnalyseClick()"/>
-          </div>
-          <div class="inp-group">
-            <label class="inp-lbl">NSE / BSE Symbol (2nd stock)</label>
-            <input class="tm-inp" id="inp-sym2" placeholder="e.g. TCS" onkeydown="if(event.key==='Enter')handleAnalyseClick()"/>
+          <div class="inp-group" style="grid-column:1/-1">
+            <label class="inp-lbl">Search 2nd stock to compare</label>
+            ${stockSearchBarHtml('analysis-search-inp2','Search any NSE or BSE stock (e.g. TCS, INFY, 500325)…',{wrapStyle:'margin-bottom:0'})}
+            <input type="hidden" id="inp-name2"/>
+            <input type="hidden" id="inp-sym2"/>
           </div>
         </div>
         <div class="inp-group" style="margin-bottom:16px">
@@ -1288,7 +1288,15 @@ html{scroll-behavior:smooth}
 <button class="filter-chip" id="scr-dir-up" onclick="setScreenerDirection('up',this)">Up</button>
 <button class="filter-chip" id="scr-dir-down" onclick="setScreenerDirection('down',this)">Down</button>
  </span>
+    <span style="width:1px;align-self:stretch;background:rgba(255,255,255,.1)"></span>
+    <span class="filter-group-signal" style="display:contents">
+        <button class="filter-chip active" id="scr-sig-all" onclick="setScreenerSignal('all',this)">All</button>
+        <button class="filter-chip" id="scr-sig-buy" onclick="setScreenerSignal('BUY',this)">Buy</button>
+        <button class="filter-chip" id="scr-sig-hold" onclick="setScreenerSignal('HOLD',this)">Hold</button>
+        <button class="filter-chip" id="scr-sig-sell" onclick="setScreenerSignal('SELL',this)">Sell</button>
+    </span>
 </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Buy/Hold/Sell is computed from real technical indicators (RSI, EMA, MACD, Supertrend, VWAP) — not an AI model.</div>
     <div id="screener-market-note" style="font-size:12px;color:var(--text3);margin-bottom:12px"></div>
     <div id="screener-results"></div>
   </div>
@@ -1418,7 +1426,7 @@ html{scroll-behavior:smooth}
     <div class="backtest-controls">
       <div class="inp-group">
         <label class="inp-lbl">Stock / Index</label>
-        ${stockSearchBarHtml('bt-sym','Search any NSE or BSE stock…',{value:'RELIANCE',wrapStyle:'margin-bottom:0'})}
+        ${stockSearchBarHtml('bt-sym','Search any NSE or BSE stock…',{value:'RELIANCE',wrapStyle:'margin-bottom:0',onEnter:'runBacktest'})}
       </div>
       <div class="inp-group">
         <label class="inp-lbl">Strategy</label>
@@ -1593,7 +1601,7 @@ html{scroll-behavior:smooth}
       <div class="side-nav-item" onclick="switchDash('analysis')"><i class="ti ti-chart-candle side-icon"></i> Run Analysis</div>
       <div class="side-nav-item" onclick="switchDash('watchlist')"><i class="ti ti-star side-icon"></i> Watchlist <span class="side-badge" id="side-badge-watchlist">0</span></div>
       <div class="side-nav-item" onclick="switchDash('portfolio')"><i class="ti ti-briefcase side-icon"></i> Portfolio</div>
-      <div class="side-nav-item" onclick="switchDash('alerts')"><i class="ti ti-bell side-icon"></i> Alerts <span class="side-badge">3</span></div>
+      <div class="side-nav-item" onclick="switchDash('alerts')"><i class="ti ti-bell side-icon"></i> Alerts <span class="side-badge" style="background:var(--bg3);color:var(--text3)">Soon</span></div>
       <div class="side-nav-item" onclick="switchDash('chat')"><i class="ti ti-robot side-icon"></i> AI Assistant</div>
       <div class="side-section-label">Tools</div>
       <div class="side-nav-item" onclick="show('charts')"><i class="ti ti-chart-candle side-icon"></i> Live Charts</div>
@@ -1795,7 +1803,7 @@ html{scroll-behavior:smooth}
 
 <!-- ══════════════ STOCK DETAIL (Screener → click any stock) ══════════════ -->
 <div class="modal-bg" id="stock-detail-modal">
-  <div class="modal-box" style="width:640px;max-width:94vw;padding:28px">
+  <div class="modal-box" style="width:760px;max-width:96vw;padding:28px;max-height:88vh;overflow-y:auto">
     <div class="modal-hdr">
       <div>
         <div class="modal-title" id="sd-symbol">—</div>
@@ -1860,7 +1868,7 @@ function modelDisplayName(raw){
 }
 async function apiFetch(path, opts={}){
   if(isPlaceholder(APP_CONFIG.API_BASE_URL)){
-    throw new Error('Backend not configured yet — set API_BASE_URL in the frontend config.');
+    throw new Error('Something went wrong loading the site. Please refresh in a moment.');
   }
   const doFetch=()=>{
     const headers={'Content-Type':'application/json',...(opts.headers||{})};
@@ -2086,6 +2094,14 @@ function checkForPasswordResetLink(){
     setAuthMode('reset');
   }else{
     setAuthMode('login');
+  }
+  // If someone opened a shared referral link (?ref=CODE), pre-fill and
+  // switch straight to the signup tab so the code isn't lost.
+  const refCode=params.get('ref');
+  if(refCode){
+    setAuthMode('signup');
+    const refInput=document.getElementById('auth-referral');
+    if(refInput) refInput.value=refCode;
   }
 }
 
@@ -2332,6 +2348,23 @@ async function fetchBackendQuotesBatch(symbols){
   return out;
 }
 
+// Computed (non-AI) BUY/HOLD/SELL signals for the Screener — technical
+// indicators (RSI, EMA, MACD, Supertrend, VWAP, trend strength) run
+// through backend/utils/indicators.js. No LLM call happens here; this is
+// deliberately kept on a separate, longer-cached endpoint from live quotes.
+async function fetchSignalsBatch(symbols){
+  const clean=(symbols||[]).filter(Boolean);
+  if(!clean.length)return {};
+  try{
+    const res=await apiFetch('/api/market/signals?symbols='+encodeURIComponent(clean.join(',')),{cache:'no-store'});
+    if(!res.ok)return {};
+    const data=await res.json();
+    const out={};
+    (data.signals||[]).forEach(s=>{ if(s.signal)out[s.symbol]=s; });
+    return out;
+  }catch{ return {}; }
+}
+
 // Indices still come from Yahoo via REST (see comment above) — this part
 // of refreshLiveMarket stays on a slow poll. Stock quotes now arrive
 // instantly over the WebSocket below instead of being fetched here.
@@ -2508,7 +2541,7 @@ function renderTicker(){
     })
     .filter(Boolean);
  if(!rows.length){
-    el.innerHTML=`<div class="t-item" style="opacity:.6">Connecting to live NSE/BSE data via Upstox…</div>`;
+    el.innerHTML=`<div class="t-item" style="opacity:.6">Connecting to live NSE/BSE data…</div>`;
     return;
   }
   const doubled=[...rows,...rows];
@@ -2612,6 +2645,21 @@ function toggleFaq(i){
   ic.style.transform=o?'':'rotate(180deg)';
 }
 
+// Reads the Investment horizon / Risk tolerance selects on the Analysis
+// page. Previously the API calls ignored these entirely and always sent
+// horizon:'1 month', riskTolerance:'moderate' no matter what the user
+// picked — this maps the select's option values to what the backend
+// prompt/labels expect.
+function getAnalysisHorizonRisk(){
+  const h=document.getElementById('inp-horizon')?.value||'medium';
+  const r=document.getElementById('inp-risk')?.value||'medium';
+  // Must match backend/middleware/validate.js's allowed values exactly:
+  // horizon in ['1 week','1 month','3 months',...], riskTolerance in
+  // ['low','moderate','high'] — anything else gets rejected as 400.
+  const horizon={short:'1 week',medium:'1 month',long:'3 months'}[h]||'1 month';
+  const riskTolerance={low:'low',medium:'moderate',high:'high'}[r]||'moderate';
+  return {horizon,riskTolerance};
+}
 // ══════════════ CHIP TOGGLE ══════════════
 const PLAN_RANK={free:0,basic:1,pro:2,elite:3};
 function toggleChip(el){
@@ -2670,6 +2718,14 @@ function setScreenerDirection(dir,el){
   screenerDirection=dir;
   renderScreener();
 }
+// Buy/Hold/Sell filter — driven by /api/market/signals (computed technical
+// indicators), completely independent of the AI Analysis page.
+function setScreenerSignal(sig,el){
+  ['scr-sig-all','scr-sig-buy','scr-sig-hold','scr-sig-sell'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  el.classList.add('active');
+  screenerSignal=sig==='all'?undefined:sig;
+  renderScreener();
+}
 // Real IST market-hours check (Mon–Fri 9:15–15:30), used only to label the
 // screener correctly — up/down itself always comes from real previousClose
 // vs lastPrice data from the backend, whether the market is open or shut.
@@ -2688,10 +2744,18 @@ function setAnalysisExchange(ex,el){
   el.classList.add('active');
   analysisExchange=ex;
 }
+function setAnalysisIndex(label){
+  document.getElementById('inp-sym').value=label;
+  document.getElementById('inp-name').value=label;
+  // Indices aren't NSE_EQ/BSE_EQ equities — always use Auto so the backend
+  // routes them to the dedicated index quote/candle endpoints.
+  setAnalysisExchange(undefined,document.getElementById('analysis-ex-auto'));
+  runAnalysis();
+}
 async function runAnalysis(){
   if(isAnalysing)return;
   const name=document.getElementById('inp-name').value.trim();
- const sym=document.getElementById('inp-sym').value.trim().toUpperCase().replace(/[^A-Z0-9&_-]/g,'');
+ const sym=document.getElementById('inp-sym').value.trim().toUpperCase().replace(/[^A-Z0-9&_ -]/g,'');
   if(!name&&!sym){alert('Please enter a stock name or symbol.');return;}
 
   if(!currentUser){
@@ -2715,13 +2779,13 @@ async function runAnalysis(){
     },delays[i]);
   });
 
- const stockSym=(sym||name.toUpperCase()).replace(/[^A-Z0-9&_-]/g,'');
+ const stockSym=(sym||name.toUpperCase()).replace(/[^A-Z0-9&_ -]/g,'').trim();
   let result=null, errorMsg=null, quota=null, isQuotaError=false;
 
   try{
     const res=await apiFetch('/api/ai/analyze',{
       method:'POST',
-      body:JSON.stringify({stockSymbol:stockSym,horizon:'1 month',riskTolerance:'moderate',...(analysisExchange?{exchange:analysisExchange}:{})}),
+      body:JSON.stringify({stockSymbol:stockSym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
     });
     const data=await res.json();
     if(!res.ok){
@@ -2733,8 +2797,8 @@ async function runAnalysis(){
     quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
     syncModelChipsWithResult(result);
   }catch(e){
-    errorMsg=e.message || 'AI analysis is temporarily unavailable.';
     isQuotaError=!!e.isQuota;
+    errorMsg=isQuotaError ? e.message : 'AI analysis is temporarily unavailable. Please try again shortly.';
   }
 
   setTimeout(()=>{
@@ -2834,7 +2898,7 @@ async function getMultiTimeframeView(sym){
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${timeframes.daily.rsi}, ${timeframes.daily.trend} · Weekly: RSI ${timeframes.weekly.rsi}, ${timeframes.weekly.trend}</div>${data.text.replace(/\n/g,'<br/>')}`;
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not build multi-timeframe view — ${e.message}</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not build multi-timeframe view right now — please try again shortly.</span>`;
   }
 }
 
@@ -2853,7 +2917,7 @@ async function quickAddToWatchlist(sym){
 // exchange needs a backend job that isn't built yet (see chat notes), so
 // rather than fake it, this now shows real symbol/name/price/change% only,
 // paginated across the full NSE+BSE instrument list via /api/market/stocks.
-let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined;
+let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined, screenerSignal=undefined;
 
 async function renderScreener(){
   const el=document.getElementById('screener-results');
@@ -2895,35 +2959,55 @@ async function renderScreener(){
     }
 
     const quotes=await fetchBackendQuotesBatch(items.map(it=>it.symbol)).catch(()=>({}));
+    // Only fetch signals for the symbols we're about to actually need them
+    // for (this page) — signals are a heavier per-symbol computation than
+    // quotes, so we don't want to fetch them for pages the user never
+    // views. Skipped entirely if the Buy/Hold/Sell filter isn't relevant
+    // to the current view — but we still show badges even with "All"
+    // selected, so fetch on every render.
+    const signals=await fetchSignalsBatch(items.map(it=>it.symbol)).catch(()=>({}));
 
-    // Apply the Up/Down filter against real quote data (never guessed).
-    // Stocks with no quote yet are excluded when a direction filter is
-    // active, since we can't know their direction without real data.
+    // Apply the Up/Down and Buy/Hold/Sell filters against real computed
+    // data (never guessed). Stocks with no quote/signal yet are excluded
+    // when that filter is active, since we can't know without real data.
     const filtered=items.filter(it=>{
-      if(!screenerDirection)return true;
-      const q=quotes[it.symbol];
-      if(!q)return false;
-      return screenerDirection==='up'?q.up:!q.up;
+      if(screenerDirection){
+        const q=quotes[it.symbol];
+        if(!q)return false;
+        if(screenerDirection==='up'?!q.up:q.up)return false;
+      }
+      if(screenerSignal){
+        const s=signals[it.symbol];
+        if(!s||s.signal!==screenerSignal)return false;
+      }
+      return true;
     });
 
     if(!filtered.length){
       const dirLabel=screenerDirection==='up'?'up':screenerDirection==='down'?'down':null;
-      el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">${dirLabel?`No stocks ${dirLabel} on this page right now — try Next page or switch filters.`:'No stocks matched — this shows only real data, no placeholders.'}</div>`;
+      const sigLabel=screenerSignal?screenerSignal.charAt(0)+screenerSignal.slice(1).toLowerCase():null;
+      const bits=[dirLabel,sigLabel?`${sigLabel} signal`:null].filter(Boolean).join(' + ');
+      el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">${bits?`No stocks matching ${bits} on this page right now — try Next page or switch filters.`:'No stocks matched — this shows only real data, no placeholders.'}</div>`;
       return;
     }
 
+    const sigStyle={BUY:{c:'var(--green2)',bg:'rgba(34,197,94,.12)'},SELL:{c:'var(--rose2)',bg:'rgba(244,63,94,.12)'},HOLD:{c:'var(--text2)',bg:'rgba(255,255,255,.06)'}};
     el.innerHTML=filtered.map((it,i)=>{
       const q=quotes[it.symbol];
+      const s=signals[it.symbol];
       const changeLabel=marketOpen?'today':'vs prev. close';
       const priceHtml=q
         ?`<div style="text-align:right;min-width:90px"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--text)">₹${fmtINR(q.price)}</div><div style="font-size:10px;color:${q.up?'var(--green2)':'var(--rose2)'}">${q.up?'▲ +':'▼ '}${q.changePct.toFixed(2)}% ${changeLabel}</div></div>`
         :`<div style="text-align:right;min-width:90px;color:var(--text3);font-size:11px">No quote yet</div>`;
+      const sigHtml=s
+        ?`<span style="margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:${sigStyle[s.signal].c};background:${sigStyle[s.signal].bg}" title="Computed technical signal, not AI — ${s.confidence}% confidence">${s.signal} · ${s.confidence}%</span>`
+        :'';
       const exLabel=it.exchange==='BSE_EQ'?'BSE':'NSE';
       return `
       <div class="screener-stock" onclick="openStockDetail('${it.symbol}','${it.exchange}','${(it.name||'').replace(/'/g,"\\'")}')">
         <div class="ss-rank">${(screenerPage-1)*50+i+1}</div>
         <div class="ss-info">
-          <div class="ss-sym">${it.symbol} <span style="font-size:11px;color:var(--text3);font-weight:400">· ${exLabel}</span></div>
+          <div class="ss-sym">${it.symbol} <span style="font-size:11px;color:var(--text3);font-weight:400">· ${exLabel}</span>${sigHtml}</div>
           <div class="ss-name">${it.name||''}</div>
         </div>
         ${priceHtml}
@@ -2986,7 +3070,7 @@ async function runScreenerSearch(q){
       </div>`;
     }).join('');
   }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search failed — ${e.message}</div>`;
+    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
   }
 }
 
@@ -3055,7 +3139,7 @@ async function runGenericStockSearch(inputId,q){
       </div>`;
     }).join('');
   }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search failed — ${e.message}</div>`;
+    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
   }
 }
 
@@ -3162,9 +3246,6 @@ function renderDashboard(section){
       </div>
       <div id="portfolio-manual-view">
         ${stockSearchBarHtml('pf-search-inp','Search any NSE or BSE stock to add a holding (e.g. RELIANCE, TATASTEEL, 500325)…')}
-        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-          <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="promptAddHolding()"><i class="ti ti-plus"></i> Add holding manually</button>
-        </div>
         <div id="portfolio-content"><div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Loading your portfolio…</div></div>
       </div>
       <div id="portfolio-broker-view" style="display:none"></div>`;
@@ -3178,7 +3259,6 @@ function renderDashboard(section){
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">AI Watchlist</div>
         <div style="display:flex;gap:8px">
           <button class="btn-sm"><i class="ti ti-bell"></i> Manage alerts</button>
-          <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="promptAddWatchlist()"><i class="ti ti-plus"></i> Add stock manually</button>
         </div>
       </div>
       ${stockSearchBarHtml('wl-search-inp','Search any NSE or BSE stock to add to your watchlist (e.g. INFY, TCS, 500325)…')}
@@ -3193,7 +3273,7 @@ function renderDashboard(section){
       <div class="chat-wrap">
         <div class="chat-header">
           <div class="chat-ai-avatar">🤖</div>
-          <div><div class="chat-ai-name">TradeMind AI Assistant</div><div class="chat-ai-status">● Online · Powered by Claude</div></div>
+          <div><div class="chat-ai-name">TradeMind AI Assistant</div><div class="chat-ai-status">● Online · Model used shown per reply</div></div>
         </div>
         <div class="chat-messages" id="chat-msgs">
           <div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">Hello Rahul! I'm your AI trading assistant powered by Claude. I can help you analyse stocks, explain market movements, check your portfolio, and answer any trading questions.<br/><br/>Try asking: <em>"Should I buy RELIANCE today?"</em> or <em>"What's the outlook for IT stocks?"</em></div><div class="msg-time">Just now</div></div>
@@ -3257,33 +3337,10 @@ function renderDashboard(section){
   else if(section==='alerts'){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">AI Alerts</div>
-      <div class="admin-panel" style="margin-bottom:20px">
-        <div class="sec-title">Alert channels</div>
-        <div class="three-col">
-          <div style="padding:14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border2);text-align:center;opacity:.65">
-            <div style="font-size:24px;margin-bottom:8px">📱</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Telegram</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Coming Soon</div>
-          </div>
-          <div style="padding:14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border2);text-align:center;opacity:.65">
-            <div style="font-size:24px;margin-bottom:8px">💬</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)">WhatsApp</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Coming Soon</div>
-          </div>
-          <div style="padding:14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border2);text-align:center;opacity:.65">
-            <div style="font-size:24px;margin-bottom:8px">📧</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Email</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Coming Soon</div>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:12px">We're building real-time delivery to these channels. Until then, check your signals and watchlist directly in the app.</div>
-      </div>
-      <div class="alerts-panel">
-        <div class="sec-title">Recent alerts</div>
-        <div style="text-align:center;color:var(--text3);padding:40px 20px;font-size:13px">
-          <i class="ti ti-bell-off" style="font-size:28px;display:block;margin-bottom:10px;opacity:.5"></i>
-          Alert delivery isn't live yet — this is where your Telegram/WhatsApp/email signal history will appear once it ships.
-        </div>
+      <div class="admin-panel" style="text-align:center;padding:60px 20px">
+        <i class="ti ti-bell-ringing" style="font-size:40px;color:var(--violet);display:block;margin-bottom:16px"></i>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Coming Soon</div>
+        <div style="font-size:13px;color:var(--text2);max-width:420px;margin:0 auto">Real-time Telegram, WhatsApp and email alerts are on the way. We'll let you know the moment they're live.</div>
       </div>`;
   }
 
@@ -3346,7 +3403,7 @@ function renderDashboard(section){
   else if(section==='scanner'){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Live Market Scanner</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE universe to scan, then pick a scan type below. Or jump straight to any stock's full AI analysis using the search bar.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE universe to scan, then pick a scan type below. Or search any stock to see its full breakout-scanner breakdown across every scan type.</div>
       ${stockSearchBarHtml('scanner-search-inp','Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…')}
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span class="ind-chip sel" id="scan-uni-30" onclick="setScanUniverse('curated30',this)">Curated 30 (fastest)</span>
@@ -3363,7 +3420,7 @@ function renderDashboard(section){
         </div>
         <div id="ai-trade-ideas" style="font-size:13px;color:var(--text2);line-height:1.7">Run a scan above, then click the button for AI commentary on the real matches — grounded in the actual scan data, not invented.</div>
       </div>`;
-    registerStockSearch('scanner-search-inp',(sym,name)=>{ show('analysis'); document.getElementById('inp-sym').value=sym; if(document.getElementById('inp-name'))document.getElementById('inp-name').value=name||''; });
+    registerStockSearch('scanner-search-inp',(sym,name)=>{ renderSingleStockScan(sym,name); });
     renderScannerCards('breakout');
   }
 
@@ -3450,39 +3507,12 @@ function renderDashboard(section){
   // ══════════════ ALERT BUILDER ══════════════
   else if(section==='alertstools'){
     el.innerHTML=`
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Alert Builder</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Set price, breakout, volume, news and trend-change alerts. Delivered via Telegram, WhatsApp or email.</div>
-      <div class="alert-manager">
-        <div class="alert-form">
-          <div class="sec-title">Create new alert</div>
-          <div class="inp-group" style="margin-bottom:12px">
-            <label class="inp-lbl">Stock symbol</label>
-            ${stockSearchBarHtml('al-sym','Search any NSE or BSE stock (e.g. TATAMOTORS)…',{wrapStyle:'margin-bottom:0'})}
-          </div>
-          <div class="inp-group" style="margin-bottom:12px">
-            <label class="inp-lbl">Alert type</label>
-            <select class="tm-inp" id="al-type">
-              <option value="price">Price crosses level</option>
-              <option value="breakout">Breakout detected</option>
-              <option value="volume">Volume spike</option>
-              <option value="watchlist">Watchlist smart alert (AI signal change)</option>
-              <option value="news">News-based alert</option>
-              <option value="trend">Trend change alert</option>
-            </select>
-          </div>
-          <div class="inp-group" style="margin-bottom:14px">
-            <label class="inp-lbl">Threshold / value</label>
-            <input class="tm-inp" id="al-val" placeholder="e.g. ₹500 or 2x avg volume"/>
-          </div>
-          <button class="btn-analyse" onclick="addCustomAlert()"><i class="ti ti-bell-plus"></i> Create alert</button>
-        </div>
-        <div>
-          <div class="sec-title">Active alerts</div>
-          <div id="custom-alerts-list"></div>
-        </div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">Alert Builder</div>
+      <div class="admin-panel" style="text-align:center;padding:60px 20px">
+        <i class="ti ti-bell-plus" style="font-size:40px;color:var(--violet);display:block;margin-bottom:16px"></i>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Coming Soon</div>
+        <div style="font-size:13px;color:var(--text2);max-width:420px;margin:0 auto">Custom price, breakout, volume and trend alerts are on the way, delivered via Telegram, WhatsApp or email.</div>
       </div>`;
-    registerStockSearch('al-sym',()=>{});
-    renderCustomAlerts();
   }
 
   // ══════════════ TRUST & PERFORMANCE ══════════════
@@ -3595,8 +3625,10 @@ function copyReferralCode(){
 }
 function shareReferral(channel){
   if(!currentReferralCode)return;
-  const text=encodeURIComponent(`Join TradeMind AI and get smarter stock signals — use my code ${currentReferralCode} when you sign up!`);
-  const url=channel==='whatsapp'?`https://wa.me/?text=${text}`:`https://t.me/share/url?url=&text=${text}`;
+  const siteUrl=`${window.location.origin}/?ref=${encodeURIComponent(currentReferralCode)}`;
+  const message=`Join TradeMind AI and get smarter stock signals — use my code ${currentReferralCode} when you sign up! ${siteUrl}`;
+  const text=encodeURIComponent(message);
+  const url=channel==='whatsapp'?`https://wa.me/?text=${text}`:`https://t.me/share/url?url=${encodeURIComponent(siteUrl)}&text=${text}`;
   window.open(url,'_blank');
 }
 
@@ -3631,7 +3663,7 @@ async function loadTodayAiAlerts(){
       return `<div class="alert-item"><div class="alert-icon ${meta.cls}"><i class="ti ti-${meta.icon}"></i></div><div class="alert-content"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.description}</div></div><div class="alert-time">${timeAgo(a.detectedAt)}</div></div>`;
     }).join('') + `<div style="font-size:11px;color:var(--text3);margin-top:6px">${data.usingWatchlist?'Scanned your watchlist':'Your watchlist is empty — scanned a small curated sample'} (${data.symbolsScanned} stock${data.symbolsScanned===1?'':'s'}) using real daily candles. Purely arithmetic technical rules, not an AI model.</div>`;
   }catch(e){
-    el.innerHTML=`<div style="padding:16px;color:var(--rose2);font-size:13px">Could not load real alerts — ${e.message}</div>`;
+    el.innerHTML=`<div style="padding:16px;color:var(--rose2);font-size:13px">Could not load alerts right now — please try again shortly.</div>`;
   }
 }
 
@@ -3664,7 +3696,7 @@ async function generateMarketBrief(){
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     el.innerHTML=data.text.replace(/\n/g,'<br/>');
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not generate brief — ${e.message}</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not generate brief right now — please try again shortly.</span>`;
   }
 }
 
@@ -3691,10 +3723,10 @@ async function connectUpstoxBroker(){
   try{
     const res=await apiFetch('/api/portfolio/broker/connect');
     const data=await res.json();
-    if(!res.ok||!data.url)throw new Error(data.error||'Could not start Upstox connection.');
+    if(!res.ok||!data.url)throw new Error(data.error||'Could not start broker connection right now. Please try again shortly.');
     window.location.href=data.url;
   }catch(e){
-    alert('Could not connect Upstox: '+e.message);
+    alert('Could not connect your broker account right now. Please try again shortly.');
   }
 }
 function switchPortfolioTab(tab){
@@ -3708,7 +3740,7 @@ function switchPortfolioTab(tab){
 async function loadBrokerPortfolio(){
   const el=document.getElementById('portfolio-broker-view');
   if(!el)return;
-  el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Checking your Upstox connection…</div>`;
+  el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Checking your broker connection…</div>`;
   try{
     const res=await apiFetch('/api/portfolio/broker/status');
     const status=await res.json();
@@ -3744,7 +3776,7 @@ async function loadBrokerPortfolio(){
       </div>`;
     loadBrokerHoldings(); loadBrokerPositions(); loadBrokerOrders();
   }catch(e){
-    el.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not check Upstox connection: ${e.message}</div>`;
+    el.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not check your broker connection right now. Please try again shortly.</div>`;
   }
 }
 
@@ -3760,7 +3792,7 @@ async function loadBrokerHoldings(){
       ${data.holdings.map(h=>`<tr><td style="font-weight:600">${h.symbol}</td><td>${h.quantity}</td><td>₹${(h.avgPrice||0).toFixed(2)}</td><td>₹${(h.lastPrice||0).toFixed(2)}</td><td style="color:${(h.pnl||0)>=0?'var(--green2)':'var(--rose2)'}">₹${(h.pnl||0).toFixed(2)}</td></tr>`).join('')}
     </tbody></table>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">${e.message}</div>`;
+    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
   }
 }
 async function loadBrokerPositions(){
@@ -3775,7 +3807,7 @@ async function loadBrokerPositions(){
       ${data.positions.map(p=>`<tr><td style="font-weight:600">${p.symbol}</td><td>${p.product}</td><td>${p.quantity}</td><td>₹${(p.avgPrice||0).toFixed(2)}</td><td>₹${(p.lastPrice||0).toFixed(2)}</td><td style="color:${(p.pnl||0)>=0?'var(--green2)':'var(--rose2)'}">₹${(p.pnl||0).toFixed(2)}</td></tr>`).join('')}
     </tbody></table>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">${e.message}</div>`;
+    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
   }
 }
 async function loadBrokerOrders(){
@@ -3790,7 +3822,7 @@ async function loadBrokerOrders(){
       ${data.orders.map(o=>`<tr><td style="font-weight:600">${o.symbol}</td><td style="color:${o.transactionType==='BUY'?'var(--green2)':'var(--rose2)'}">${o.transactionType}</td><td>${o.quantity}</td><td>₹${(o.price||0).toFixed(2)}</td><td>${o.status}</td></tr>`).join('')}
     </tbody></table>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">${e.message}</div>`;
+    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
   }
 }
 async function disconnectBrokerAccount(){
@@ -3799,7 +3831,7 @@ async function disconnectBrokerAccount(){
     await apiFetch('/api/portfolio/broker',{method:'DELETE'});
     loadBrokerPortfolio();
   }catch(e){
-    alert('Could not disconnect: '+e.message);
+    alert('Could not disconnect right now. Please try again shortly.');
   }
 }
 
@@ -3859,7 +3891,7 @@ async function loadPortfolioSection(){
         <div id="portfolio-health" style="font-size:13px;color:var(--text2);line-height:1.7">Click "Run check" for AI commentary on concentration risk and diversification, based on your real holdings above.</div>
       </div>`:''}`;
   }catch(e){
-    wrap.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not load portfolio: ${e.message}</div>`;
+    wrap.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not load portfolio right now. Please try again shortly.</div>`;
   }
 }
 
@@ -3877,7 +3909,7 @@ async function runPortfolioHealthCheck(){
     if(!res2.ok)throw new Error(data2.error||'HTTP '+res2.status);
     el.innerHTML=data2.text.replace(/\n/g,'<br/>');
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not run health check — ${e.message}</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not run health check right now — please try again shortly.</span>`;
   }
 }
 
@@ -3905,7 +3937,7 @@ async function promptAddHoldingWithSymbol(stockSymbol){
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Could not add holding.');
     loadPortfolioSection();
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 async function deleteHolding(id){
@@ -3914,7 +3946,7 @@ async function deleteHolding(id){
     const res=await apiFetch(`/api/portfolio/${id}`,{method:'DELETE'});
     if(!res.ok){const data=await res.json();throw new Error(data.error||'Could not remove holding.');}
     loadPortfolioSection();
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 // ══════════════ WATCHLIST (real backend data) ══════════════
@@ -3936,7 +3968,7 @@ async function loadWatchlistSection(){
         </div>
       </div>`).join(''):`<div style="text-align:center;padding:40px;color:var(--text3)">Your watchlist is empty — add a stock to start tracking it.</div>`;
   }catch(e){
-    wi.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not load watchlist: ${e.message}</div>`;
+    wi.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not load watchlist right now. Please try again shortly.</div>`;
   }
 }
 
@@ -3957,7 +3989,7 @@ async function addToWatchlistBySymbol(stockSymbol){
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Could not add to watchlist.');
     loadWatchlistSection();
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 async function deleteWatchlistItem(id){
@@ -3966,7 +3998,7 @@ async function deleteWatchlistItem(id){
     const res=await apiFetch(`/api/watchlist/${id}`,{method:'DELETE'});
     if(!res.ok){const data=await res.json();throw new Error(data.error||'Could not remove item.');}
     loadWatchlistSection();
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 // ══════════════ SECURITY / SESSIONS (real backend data) ══════════════
@@ -3987,7 +4019,7 @@ async function toggleSessionsPanel(){
         ${s.is_revoked?'':`<button class="btn-sm" style="color:var(--rose2)" onclick="revokeSession('${s.id}')">Revoke</button>`}
       </div>`).join(''):'<div style="font-size:12px;color:var(--text3);padding:8px 0">No active sessions found.</div>';
   }catch(e){
-    panel.innerHTML=`<div style="font-size:12px;color:var(--rose2);padding:8px 0">${e.message}</div>`;
+    panel.innerHTML=`<div style="font-size:12px;color:var(--rose2);padding:8px 0">Something went wrong. Please try again shortly.</div>`;
   }
 }
 
@@ -3996,7 +4028,7 @@ async function revokeSession(id){
     const res=await apiFetch(`/api/auth/sessions/${id}`,{method:'DELETE'});
     if(!res.ok){const data=await res.json();throw new Error(data.error||'Could not revoke session.');}
     toggleSessionsPanel();toggleSessionsPanel();
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 // ══════════════ BILLING (real backend data) ══════════════
@@ -4016,7 +4048,7 @@ async function loadBillingHistory(){
         <td><span class="badge ${p.status==='paid'?'b-active':'b-pending'}" style="text-transform:capitalize">${p.status}</span></td>
       </tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No payments yet.</td></tr>';
   }catch(e){
-    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--rose2);padding:16px">${e.message}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--rose2);padding:16px">Something went wrong. Please try again shortly.</td></tr>`;
   }
 }
 
@@ -4028,7 +4060,7 @@ async function cancelSubscription(){
     if(!res.ok)throw new Error(data.error||'Could not cancel subscription.');
     alert(data.message||'Auto-renew turned off.');
     renderDashboard('billing');
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 // ══════════════ FEATURE NAV SEARCH ══════════════
@@ -4163,7 +4195,7 @@ async function generateAITradeIdeas(){
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     el.innerHTML=data.text.replace(/\n/g,'<br/>');
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI commentary — ${e.message}</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI commentary right now — please try again shortly.</span>`;
   }
 }
 
@@ -4216,8 +4248,53 @@ async function renderScannerCards(active){
       <span class="scan-tag tag-${r.tag}">${r.tag}</span>
       <span style="font-size:12px;color:var(--text2);flex:1">${r.d}</span>
       <button class="btn-sm"><i class="ti ti-chart-candle"></i> Analyse</button>
-    </div>`).join('')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Scanned ${universe.length} real stocks (curated list, not the full 5,000+ exchange — full-exchange scanning needs a backend job, not built yet).</div>`
+    </div>`).join('')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Scanned ${universe.length} real stocks (curated list) — full-exchange scanning is coming soon.</div>`
     : `<div style="padding:24px;text-align:center;color:var(--text3)">No matches right now in this scan list.</div>`;
+}
+
+// Runs EVERY scan rule (breakout, volume, reversal, oversold, gap, momentum)
+// against a single searched stock, so picking a stock from the Market
+// Scanner's search bar shows that stock's full breakout-scanner-style
+// breakdown right here, instead of just jumping away to Quick Analysis.
+async function renderSingleStockScan(sym,name){
+  const wrap=document.getElementById('scanner-cards');
+  const resEl=document.getElementById('scanner-results');
+  if(!resEl)return;
+  lastScanType=null; lastScanMatches=null;
+  if(wrap)wrap.innerHTML=`<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg)">
+    <div><strong>${sym}</strong>${name?` <span style="color:var(--text3);font-weight:400">— ${name}</span>`:''}<div style="font-size:12px;color:var(--text3);margin-top:2px">Full scanner breakdown for this stock</div></div>
+    <button class="btn-sm" onclick="clearSingleStockScan()"><i class="ti ti-x"></i> Back to full scan</button>
+  </div>`;
+  resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3)">Checking every scan type for ${sym}…</div>`;
+  try{
+    const res=await apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1`,{cache:'no-store'});
+    const data=await res.json();
+    if(!res.ok||!data.candles||data.candles.length<21)throw new Error(data?.error||'Not enough real candle history yet for this stock.');
+    const candles=data.candles;
+    const rows=SCAN_TYPES.map(s=>{
+      if(s.key==='momentum'){
+        const r=runScanRule('momentum',sym,candles);
+        const chg=r.momentum;
+        return {key:s.key,title:s.title,icon:s.icon,hit:true,detail:`${chg>=0?'+':''}${chg.toFixed(1)}% over 20 real trading days`,tag:chg>=0?'breakout':'reversal'};
+      }
+      const note=runScanRule(s.key,sym,candles);
+      return {key:s.key,title:s.title,icon:s.icon,hit:!!note,detail:note||'No signal right now',tag:s.key};
+    });
+    resEl.innerHTML=rows.map(r=>`
+      <div class="scan-row">
+        <span style="font-size:16px">${r.icon}</span>
+        <span class="scan-sym" style="min-width:150px">${r.title}</span>
+        ${r.hit?`<span class="scan-tag tag-${r.tag}">match</span>`:`<span style="font-size:11px;color:var(--text3)">no match</span>`}
+        <span style="font-size:12px;color:${r.hit?'var(--text2)':'var(--text3)'};flex:1">${r.detail}</span>
+      </div>`).join('')+`<div style="display:flex;justify-content:center;margin-top:14px">
+        <button class="btn-lg-ghost" onclick="show('analysis');document.getElementById('inp-sym').value='${sym}'">Run full AI analysis on ${sym} →</button>
+      </div>`;
+  }catch(e){
+    resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load scan data for ${sym} right now. Please try again shortly.</div>`;
+  }
+}
+function clearSingleStockScan(){
+  renderScannerCards(lastScanType||'breakout');
 }
 
 // ══════════════ TECHNICAL INDICATORS PANEL — real data ══════════════
@@ -4235,7 +4312,7 @@ async function renderIndicatorsPanel(){
     if(!data.candles||data.candles.length<20)throw new Error('Not enough real history returned.');
     candles=data.candles;
   }catch(e){
-    panel.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load real data for ${sym} — ${e.message}. Please try again shortly.</div>`;
+    panel.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load data for ${sym} right now. Please try again shortly.</div>`;
     return;
   }
 
@@ -4330,7 +4407,7 @@ async function renderGreeksPanel(){
       <div class="ind-card"><div class="ind-name">Theta</div><div class="ind-value">${(g.theta??0).toFixed(2)}</div><div class="ind-signal ind-bear">Daily decay ₹${Math.abs(g.theta??0).toFixed(2)}</div></div>
       <div class="ind-card"><div class="ind-name">Vega</div><div class="ind-value">${(g.vega??0).toFixed(2)}</div><div class="ind-signal ind-neut">Per 1% IV move</div></div>`;
   }catch(e){
-    el.innerHTML=`<div style="padding:20px;color:var(--rose2);grid-column:1/-1">${e.message}</div>`;
+    el.innerHTML=`<div style="padding:20px;color:var(--rose2);grid-column:1/-1">Something went wrong. Please try again shortly.</div>`;
   }
 }
 async function renderIVPanel(){
@@ -4349,7 +4426,7 @@ async function renderIVPanel(){
       </div>
       <div style="font-size:11px;color:var(--text3)">This is today's real implied volatility from Upstox, not a percentile rank — computing a true "IV Rank" needs 1 year of historical IV we aren't storing yet.</div>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">${e.message}</div>`;
+    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
   }
 }
 async function renderUnusualOI(){
@@ -4376,7 +4453,7 @@ async function renderUnusualOI(){
       <div class="diverg-row"><span class="diverg-type ${m.chgPct>0?'diverg-bull':'diverg-bear'}">${m.strike} ${m.side}</span><span style="font-size:12px;color:var(--text2);flex:1">OI ${m.chgPct>=0?'+':''}${m.chgPct.toFixed(0)}% vs prev session — now ${(m.oi/1000).toFixed(0)}K contracts</span></div>`).join('')
       : `<div style="font-size:12px;color:var(--text3)">No strikes with >50% real OI change right now.</div>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">${e.message}</div>`;
+    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
   }
 }
 let strategyLegs=[];
@@ -4561,7 +4638,7 @@ function renderPaperLeaderboard(){
   const pl=paperPositions.reduce((s,p)=>{const live=liveQuoteCache[p.sym+'.NS'];const cmp=live?live.price:p.avg;return s+(cmp-p.avg)*p.qty;},0);
   const retPct=invested?((pl/invested)*100).toFixed(1):'0.0';
   if(!paperPositions.length){
-    el.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Real multi-trader leaderboards need a backend to track other users — not built yet. Place a paper trade to see your own live virtual return here.</td></tr>`;
+    el.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">Multi-trader leaderboards are coming soon. Place a paper trade to see your own live virtual return here.</td></tr>`;
     return;
   }
   el.innerHTML=`<tr><td style="font-weight:700;color:var(--text)">—</td><td style="color:var(--text)">You</td><td style="color:${pl>=0?'var(--green2)':'var(--rose2)'}">${pl>=0?'+':''}${retPct}%</td><td>—</td></tr>`;
@@ -4604,7 +4681,7 @@ async function sendChat(){
     msgs.insertAdjacentHTML('beforeend',aiBubble);
   }catch(e){
     document.getElementById('typing-indicator')?.remove();
-    msgs.insertAdjacentHTML('beforeend',`<div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">${e.message||"I'm having trouble connecting right now. Please try again in a moment."}</div></div>`);
+    msgs.insertAdjacentHTML('beforeend',`<div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">I'm having trouble connecting right now. Please try again in a moment.</div></div>`);
   }
   msgs.scrollTop=msgs.scrollHeight;
 }
@@ -4642,7 +4719,7 @@ async function loadAdminPanel(){
 
     if(rh){
       rh.innerHTML = `<div class="revenue-row"><span class="rev-month">This month</span><div class="rev-bar-wrap"><div class="rev-bar-fill" style="width:100%"></div></div><span class="rev-amount">₹${Number(stats.monthlyRevenue||0).toLocaleString('en-IN')}</span></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px">Month-by-month trend requires a revenue-history report (not yet built on the backend).</div>`;
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">Month-by-month trend is coming soon.</div>`;
     }
 
     if(pb){
@@ -4675,7 +4752,7 @@ async function loadAdminPanel(){
         : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No users yet.</td></tr>';
     }
   }catch(e){
-    if(rh)rh.innerHTML=`<div style="font-size:12px;color:var(--rose2)">Could not load admin data: ${e.message}</div>`;
+    if(rh)rh.innerHTML=`<div style="font-size:12px;color:var(--rose2)">Could not load admin data right now. Please try again shortly.</div>`;
   }
 }
 
@@ -4690,7 +4767,7 @@ async function promptUpdateUserPlan(userId,userName){
     if(!res.ok)throw new Error(data.error||'Could not update plan.');
     alert(`${userName}'s plan updated to ${clean}.`);
     loadAdminPanel();
-  }catch(e){alert(e.message);}
+  }catch(e){alert('Something went wrong. Please try again shortly.');}
 }
 
 // ══════════════ ADS ══════════════
@@ -4732,6 +4809,118 @@ function openPay(plan,price){
 }
 function closePay(){document.getElementById('pay-modal').classList.remove('open')}
 
+// ══════════════ COMPUTED TRADE SIGNAL CARD (Stock Detail modal) ══════════════
+// Purely rule-based technical computation from real candles — RSI, EMA,
+// MACD, VWAP, ATR, Supertrend, 60-day support/resistance and 20-day
+// breakout/breakdown detection. No AI/LLM call happens here; this mirrors
+// the same "computed data analysis" approach already used by the Screener's
+// BUY/HOLD/SELL tag and the Market Scanner, just packaged as 11 signal cards.
+function computeTradeSignalCard(candles){
+  if(!candles||candles.length<21)return null;
+  const closes=candles.map(c=>c.c), vols=candles.map(c=>c.v||0);
+  const last=closes.length-1;
+  const lastClose=closes[last];
+
+  const rsiArr=calcRSI(closes), rsi=rsiArr[last];
+  const {macd,signal:macdSig}=calcMACD(closes);
+  const macdHist=macd[last]-macdSig[last];
+  const ema20=calcEMA(closes,20), ema50=calcEMA(closes,50);
+  const vwapArr=calcVWAP(candles), vwapLast=vwapArr[last];
+
+  const trs=candles.slice(1).map((c,i)=>Math.max(c.h-c.l,Math.abs(c.h-candles[i].c),Math.abs(c.l-candles[i].c)));
+  if(!trs.length)return null; // not enough real candles to derive a genuine ATR
+  const atr=trs.slice(-14).reduce((a,b)=>a+b,0)/Math.min(14,trs.length);
+
+  // Supertrend (10,3) — same real-ATR method used on the Technical Indicators panel.
+  const stPeriod=10, stMult=3, atrSeries=[];
+  for(let i=0;i<candles.length;i++){
+    if(i===0){atrSeries.push(candles[i].h-candles[i].l);continue;}
+    const tr=Math.max(candles[i].h-candles[i].l,Math.abs(candles[i].h-candles[i-1].c),Math.abs(candles[i].l-candles[i-1].c));
+    atrSeries.push((atrSeries[i-1]*(stPeriod-1)+tr)/stPeriod);
+  }
+  let stTrend=1, finalUpper=0, finalLower=0;
+  for(let i=1;i<candles.length;i++){
+    const mid=(candles[i].h+candles[i].l)/2;
+    const basicUpper=mid+stMult*atrSeries[i], basicLower=mid-stMult*atrSeries[i];
+    finalUpper=(basicUpper<finalUpper||closes[i-1]>finalUpper)?basicUpper:finalUpper;
+    finalLower=(basicLower>finalLower||closes[i-1]<finalLower)?basicLower:finalLower;
+    if(stTrend===1&&closes[i]<finalLower)stTrend=-1;
+    else if(stTrend===-1&&closes[i]>finalUpper)stTrend=1;
+  }
+  const stBullish=stTrend===1;
+
+  const slopeLookback=Math.max(0,last-10);
+  const slopePct=ema20[slopeLookback]?((ema20[last]-ema20[slopeLookback])/ema20[slopeLookback])*100:0;
+  const trendStrength=Math.max(0,Math.min(100,50+slopePct*5));
+
+  const lb=Math.min(60,candles.length);
+  const recent=candles.slice(-lb);
+  const resistance=Math.max(...recent.map(c=>c.h));
+  const support=Math.min(...recent.map(c=>c.l));
+
+  const w=Math.min(21,closes.length);
+  const last20High=Math.max(...closes.slice(-w,-1));
+  const last20Low=Math.min(...closes.slice(-w,-1));
+  const avgVol20=vols.slice(-w,-1).reduce((a,b)=>a+b,0)/Math.max(1,vols.slice(-w,-1).length);
+  const volRatio=avgVol20?vols[last]/avgVol20:0;
+  let breakout='Consolidation';
+  if(lastClose>last20High&&volRatio>1.3)breakout='Breakout';
+  else if(lastClose<last20Low&&volRatio>1.3)breakout='Breakdown';
+
+  let score=0; const votes=[];
+  if(rsi<=30){score+=1;votes.push(`RSI ${rsi.toFixed(0)} — oversold`);}
+  else if(rsi>=70){score-=1;votes.push(`RSI ${rsi.toFixed(0)} — overbought`);}
+  else votes.push(`RSI ${rsi.toFixed(0)} — neutral`);
+  if(ema20[last]>ema50[last]){score+=1;votes.push('EMA20 above EMA50 (uptrend)');}
+  else {score-=1;votes.push('EMA20 below EMA50 (downtrend)');}
+  if(macdHist>0){score+=1;votes.push('MACD histogram positive');}
+  else {score-=1;votes.push('MACD histogram negative');}
+  if(stBullish){score+=1;votes.push('Supertrend bullish');}
+  else {score-=1;votes.push('Supertrend bearish');}
+  if(lastClose>vwapLast){score+=1;votes.push('Price above VWAP');}
+  else {score-=1;votes.push('Price below VWAP');}
+  if(trendStrength>=60){score+=1;votes.push('Strong trend momentum');}
+  else if(trendStrength<=40){score-=1;votes.push('Weak trend momentum');}
+
+  const bullish=score>=0;
+  const signal=score>=4?'Strong Buy':score>=2?'Buy':score<=-4?'Strong Sell':score<=-2?'Sell':'Hold';
+  const confidence=Math.max(0,Math.min(100,Math.round(50+(score/6)*50)));
+
+  const entryLow=lastClose-0.3*atr, entryHigh=lastClose+0.3*atr;
+  const riskDist=1.5*atr;
+  const stopLoss=bullish?lastClose-riskDist:lastClose+riskDist;
+  const t1=bullish?lastClose+riskDist:lastClose-riskDist;
+  const t2=bullish?lastClose+2*riskDist:lastClose-2*riskDist;
+  const t3=bullish?lastClose+3*riskDist:lastClose-3*riskDist;
+
+  const trendDirection=Math.abs(slopePct)<0.3?'Sideways':(ema20[last]>ema50[last]?'Bullish':'Bearish');
+
+  const atrPct=(atr/lastClose)*100;
+  const duration=atrPct>=3.5?'Intraday':atrPct>=1.8?'Swing (few days–2 weeks)':trendStrength>=55?'Positional (2–8 weeks)':'Long-Term';
+
+  return {signal,confidence,entryLow,entryHigh,stopLoss,t1,t2,t3,support,resistance,trendDirection,breakout,duration,votes,lastClose,bullish};
+}
+function tradeSignalCardHtml(sig,sym){
+  if(!sig)return `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Not enough real candle history yet to compute a trade signal for ${sym}.</div>`;
+  const sigCls=sig.signal.includes('Buy')?'ind-bull':sig.signal.includes('Sell')?'ind-bear':'ind-neut';
+  return `
+    <div style="font-size:11px;color:var(--text3);margin:18px 0 8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Computed trade signal (technical analysis, not AI) — RSI, MACD, EMA, VWAP, Supertrend and ATR run on real candles.</div>
+    <div class="indicator-grid">
+      <div class="ind-card"><div class="ind-name">Signal</div><div class="ind-value">${sig.signal}</div><div class="ind-signal ${sigCls}">${sig.confidence}% confidence</div></div>
+      <div class="ind-card"><div class="ind-name">Entry Point</div><div class="ind-value" style="font-size:14px">₹${fmtINR(sig.entryLow)}–₹${fmtINR(sig.entryHigh)}</div><div class="ind-signal ind-neut">Suggested entry range</div></div>
+      <div class="ind-card"><div class="ind-name">Stop Loss</div><div class="ind-value" style="font-size:14px">₹${fmtINR(sig.stopLoss)}</div><div class="ind-signal ind-bear">ATR-based risk level</div></div>
+      <div class="ind-card"><div class="ind-name">Target 1 / 2 / 3</div><div class="ind-value" style="font-size:12px">₹${fmtINR(sig.t1)} · ₹${fmtINR(sig.t2)} · ₹${fmtINR(sig.t3)}</div><div class="ind-signal ind-bull">1R / 2R / 3R</div></div>
+      <div class="ind-card"><div class="ind-name">Risk : Reward</div><div class="ind-value">1 : 2</div><div class="ind-signal ind-neut">At Target 2</div></div>
+      <div class="ind-card"><div class="ind-name">Trend Direction</div><div class="ind-value">${sig.trendDirection}</div><div class="ind-signal ${sig.trendDirection==='Bullish'?'ind-bull':sig.trendDirection==='Bearish'?'ind-bear':'ind-neut'}">EMA20/EMA50 slope</div></div>
+      <div class="ind-card"><div class="ind-name">Breakout Detection</div><div class="ind-value">${sig.breakout}</div><div class="ind-signal ${sig.breakout==='Breakout'?'ind-bull':sig.breakout==='Breakdown'?'ind-bear':'ind-neut'}">20-day range + volume</div></div>
+      <div class="ind-card"><div class="ind-name">Support / Resistance</div><div class="ind-value" style="font-size:13px">₹${fmtINR(sig.support)} / ₹${fmtINR(sig.resistance)}</div><div class="ind-signal ind-neut">60-day real range</div></div>
+      <div class="ind-card"><div class="ind-name">Confidence Score</div><div class="ind-value">${sig.confidence}%</div><div class="ind-signal ind-neut">Of 6 technical votes</div></div>
+      <div class="ind-card"><div class="ind-name">Trade Duration</div><div class="ind-value" style="font-size:13px">${sig.duration}</div><div class="ind-signal ind-neut">Based on volatility</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px"><strong style="color:var(--text)">Technical reasoning:</strong> ${sig.votes.join(' · ')}.</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">Computed from real daily candles — not AI-generated, not financial advice.</div>`;
+}
+
 // ══════════════ STOCK DETAIL MODAL (Screener → click any stock) ══════════════
 // Shows a real quote + mini price chart + day range for any NSE/BSE stock
 // without leaving the Screener, with one-click hand-off into full AI
@@ -4761,12 +4950,13 @@ async function openStockDetail(symbol,exchange,name){
   modal.classList.add('open');
 
   try{
-    const [quoteRes,candles]=await Promise.all([
+    const [quoteRes,candlesRes]=await Promise.all([
       fetchBackendQuotesBatch([symbol]).catch(()=>({})),
-      fetchRealCandles(symbol,'1M',exchange).catch(()=>null),
+      apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=days&interval=1${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
     ]);
     if(stockDetailCurrent?.symbol!==symbol)return; // user opened a different stock while this was in flight
     const q=quoteRes[symbol];
+    const candles=(candlesRes&&Array.isArray(candlesRes.candles)&&candlesRes.candles.length)?candlesRes.candles:null;
     const bodyEl=document.getElementById('sd-body');
     const priceHtml=q
       ?`<div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
@@ -4787,13 +4977,14 @@ async function openStockDetail(symbol,exchange,name){
     const chartHtml = candles&&candles.length
       ? `<canvas id="sd-mini-chart" width="580" height="140" style="width:100%;height:140px;margin-bottom:8px"></canvas>`
       : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Chart data unavailable right now.</div>`;
-    bodyEl.innerHTML = priceHtml + rangeHtml + chartHtml;
+    const signalHtml = tradeSignalCardHtml(candles?computeTradeSignalCard(candles):null,symbol);
+    bodyEl.innerHTML = priceHtml + rangeHtml + chartHtml + signalHtml;
     if(candles&&candles.length){
       const canvas=document.getElementById('sd-mini-chart');
-      if(canvas)drawLineChart(canvas,[{data:candles.map(c=>c.c),color:'#7C5CFC',width:1.6}]);
+      if(canvas)drawLineChart(canvas,[{data:candles.slice(-30).map(c=>c.c),color:'#7C5CFC',width:1.6}]);
     }
   }catch(e){
-    document.getElementById('sd-body').innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load details — ${e.message}</div>`;
+    document.getElementById('sd-body').innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load details right now — please try again shortly.</div>`;
   }
 }
 function closeStockDetail(){
@@ -4804,7 +4995,7 @@ function closeStockDetail(){
 async function handlePay(){
   if(!currentUser){closePay();show('login');return;}
   if(isPlaceholder(APP_CONFIG.RAZORPAY_KEY_ID)){
-    alert('Payments are not configured yet — set RAZORPAY_KEY_ID in the frontend config (and the matching secret key on the backend) to enable checkout.');
+    alert('Payments are temporarily unavailable. Please try again shortly.');
     return;
   }
   if(typeof Razorpay==='undefined'){
@@ -4857,7 +5048,7 @@ async function handlePay(){
           show('dashboard');
           switchDash('billing');
         }catch(e){
-          alert('Payment received but verification failed: '+e.message+'. Please contact support with your payment id: '+response.razorpay_payment_id);
+          alert('Payment received but we could not verify it automatically. Please contact support with your payment id: '+response.razorpay_payment_id);
         }
       },
       modal: {
@@ -4877,7 +5068,7 @@ async function handlePay(){
     });
     rzp.open();
   }catch(e){
-    alert(e.message||'Payment could not be started. Please try again.');
+    alert('Payment could not be started. Please try again.');
   }finally{
     if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-lock"></i> Pay securely via Razorpay';}
   }
@@ -4891,6 +5082,15 @@ document.getElementById('pay-modal').addEventListener('click',function(e){if(e.t
 // work. Compare Stocks IS wired up for real — it just runs the existing
 // single-stock analysis endpoint twice and shows both results side by side.
 let analysisMode='quick';
+registerStockSearch('analysis-search-inp',(sym,name,exchange)=>{
+  document.getElementById('inp-sym').value=sym;
+  document.getElementById('inp-name').value=name||'';
+  if(exchange)setAnalysisExchange(exchange,document.getElementById(exchange==='BSE_EQ'?'analysis-ex-bse':'analysis-ex-nse'));
+});
+registerStockSearch('analysis-search-inp2',(sym,name)=>{
+  document.getElementById('inp-sym2').value=sym;
+  document.getElementById('inp-name2').value=name||'';
+});
 document.getElementById('tab-quick').onclick=()=>setAnalysisTab('quick');
 document.getElementById('tab-compare').onclick=()=>setAnalysisTab('compare');
 document.getElementById('tab-deep').onclick=()=>setAnalysisTab('deep');
@@ -4901,11 +5101,18 @@ function setAnalysisTab(mode){
   const row2=document.getElementById('compare-row-2');
   const btn=document.getElementById('btn-analyse');
   const rw=document.getElementById('result-wrap');
-  if(mode==='deep'||mode==='portfolio'){
+  if(mode==='deep'){
     // Not implemented server-side yet — say so plainly instead of a fake flow.
     row2.style.display='none';
     rw.style.display='block';
-    rw.innerHTML=`<div class="disclaimer"><strong>${mode==='deep'?'Deep Research':'Portfolio Scan'} is coming soon.</strong> This isn't wired up on the backend yet. Use <strong>Quick Analysis</strong> for a full AI signal today, or <strong>Compare Stocks</strong> to run two side by side.</div>`;
+    rw.innerHTML=`<div class="disclaimer"><strong>Deep Research is coming soon.</strong> Use <strong>Quick Analysis</strong> for a full AI signal today, or <strong>Compare Stocks</strong> to run two side by side.</div>`;
+    analysisMode=mode;
+    return;
+  }
+  if(mode==='portfolio'){
+    row2.style.display='none';
+    btn.innerHTML='<i class="ti ti-briefcase"></i> Scan my portfolio';
+    rw.style.display='none'; rw.innerHTML='';
     analysisMode=mode;
     return;
   }
@@ -4917,8 +5124,50 @@ function setAnalysisTab(mode){
 function handleAnalyseClick(){
   if(analysisMode==='compare')runCompareAnalysis();
   else if(analysisMode==='quick')runAnalysis();
-  // deep/portfolio: button click does nothing extra, the tab click already
-  // explained these aren't available yet.
+  else if(analysisMode==='portfolio')runPortfolioScan();
+  // deep: button click does nothing extra, the tab click already explained
+  // this isn't available yet.
+}
+// FIX: this used to be a permanent "coming soon" stub even though the exact
+// same AI portfolio review already existed and worked on the Portfolio page
+// (real holdings → /api/ai/insight kind=portfolioHealth). Reuse that same
+// real endpoint here so "Portfolio Scan" actually scans your portfolio.
+async function runPortfolioScan(){
+  if(isAnalysing)return;
+  if(!currentUser){
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
+    show('login');
+    return;
+  }
+  const lw=document.getElementById('load-wrap');
+  const rw=document.getElementById('result-wrap');
+  const btn=document.getElementById('btn-analyse');
+  lw.style.display='block';rw.style.display='none';rw.innerHTML='';
+  btn.disabled=true;isAnalysing=true;
+  ['ls1','ls2','ls3','ls4'].forEach(id=>document.getElementById(id).classList.add('active'));
+  try{
+    const res=await apiFetch('/api/portfolio');
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Could not load your portfolio.');
+    const holdings=(data.holdings||[]).map(h=>({symbol:h.stock_symbol,sector:h.sector||'Unknown',qty:h.quantity,value:h.value,pnlPct:h.pnlPct}));
+    if(!holdings.length){
+      rw.innerHTML=`<div class="disclaimer">You don't have any holdings yet — <a href="#" onclick="event.preventDefault();switchDash('portfolio')">add some to your portfolio</a> first, then run a scan.</div>`;
+    }else{
+      const res2=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'portfolioHealth',context:{holdings}})});
+      const data2=await res2.json();
+      if(!res2.ok)throw new Error(data2.error||'AI portfolio scan failed.');
+      rw.innerHTML=`<div class="res-block-title" style="padding:0 0 10px">Portfolio scan result</div>
+        <div class="admin-panel">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Based on your ${holdings.length} real holding${holdings.length===1?'':'s'} · ${modelDisplayName(data2.model)||'AI'}</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.7">${data2.text.replace(/\n/g,'<br/>')}</div>
+        </div>`;
+    }
+  }catch(e){
+    rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run portfolio scan.</strong> Please try again shortly.</div>`;
+  }
+  lw.style.display='none'; btn.disabled=false; isAnalysing=false;
+  rw.style.display='block';
+  rw.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 async function runCompareAnalysis(){
   if(isAnalysing)return;
@@ -4941,7 +5190,7 @@ async function runCompareAnalysis(){
     try{
       const res=await apiFetch('/api/ai/analyze',{
         method:'POST',
-        body:JSON.stringify({stockSymbol:sym,horizon:'1 month',riskTolerance:'moderate',...(analysisExchange?{exchange:analysisExchange}:{})}),
+        body:JSON.stringify({stockSymbol:sym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
       });
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||'AI analysis failed.');
@@ -5314,7 +5563,7 @@ async function runChartSearch(q){
       </div>`;
     }).join('');
   }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search failed — ${e.message}</div>`;
+    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
   }
 }
 function selectChartSearchResult(sym,exchange){
@@ -5367,7 +5616,7 @@ const REAL_CANDLE_CACHE_MS=50000;
 
 /** Tries the real backend (Upstox-backed) candle endpoint. Returns null on any
  *  failure — not configured (501), not authenticated, network error, etc. —
- *  so the caller can fall back to the synthetic generator without breaking. */
+ *  so the caller can show a real "data unavailable" state instead of guessing. */
 const CHART_INDEX_SYMBOLS=['NIFTY 50','SENSEX','NIFTY BANK'];
 function isChartIndexSymbol(symbol){ return CHART_INDEX_SYMBOLS.includes(symbol); }
 
@@ -5555,24 +5804,14 @@ function chartZoomIn(){ chartZoomBy(0.7); }
 function chartZoomOut(){ chartZoomBy(1.4); }
 function chartZoomReset(){ if(lwChart) lwChart.timeScale().fitContent(); }
 
-/** Converts our {o,h,l,c,v,t?} candles into Lightweight Charts' time-keyed
- *  format. Real candles carry a `t` (ISO timestamp from Upstox) — converted
- *  to unix seconds. Synthetic/demo candles have no timestamp, so we
- *  synthesize consecutive daily dates counting back from today (good enough
- *  for a visual demo; never shown as "LIVE" so this is never misleading). */
+/** Converts our {o,h,l,c,v,t} candles into Lightweight Charts' time-keyed
+ *  format. Every candle reaching this function is real, with a genuine `t`
+ *  ISO timestamp from Upstox — converted to unix seconds. There is no
+ *  fallback path here; renderMainChartWith() already returns early with a
+ *  "no live data" state before ever calling this on non-real data. */
 function toLwTimeSeries(candles,isRealData){
-  const n=candles.length;
-  return candles.map((c,i)=>{
-    let time;
-    if(isRealData&&c.t){
-      time=Math.floor(new Date(c.t).getTime()/1000);
-    }else{
-      const d=new Date();
-      d.setDate(d.getDate()-(n-1-i));
-      time=Math.floor(d.getTime()/1000);
-    }
-    return {time,open:c.o,high:c.h,low:c.l,close:c.c};
-  }).sort((a,b)=>a.time-b.time)
+  return candles.map((c)=>({time:Math.floor(new Date(c.t).getTime()/1000),open:c.o,high:c.h,low:c.l,close:c.c}))
+    .sort((a,b)=>a.time-b.time)
     // Lightweight Charts requires strictly increasing unique times.
     .filter((row,i,arr)=>i===0||row.time>arr[i-1].time);
 }
@@ -5597,11 +5836,19 @@ function clearLwOverlay(key){
 function renderLightweightMainChart(candles,isRealData,indicators){
   ensureLightweightChart();
   if(!lwChart)return; // library failed to load (e.g. offline) — chart panel just stays empty
-  // A fresh candle dataset (new symbol/timeframe) invalidates any trendline
-  // points/price levels drawn against the previous data, so clear them here
-  // rather than on every live tick (live ticks use lwCandleSeries.update(),
-  // never this function).
-  clearChartDrawings();
+  // FIX: this used to call clearChartDrawings() unconditionally on every
+  // call, but this function also runs on every REFRESH_MS live-data poll
+  // for the SAME symbol/timeframe — which was silently deleting the
+  // trader's trendlines/price-lines every few seconds with no action from
+  // them. Only clear drawings when the symbol, timeframe or exchange
+  // actually changed (a genuinely different chart, where the old
+  // coordinates no longer mean anything) — otherwise leave them alone.
+  // Removal is now only ever a result of the user's own "Clear drawings"
+  // action or an actual instrument/timeframe switch, never an automatic
+  // background refresh.
+  const fitKey=`${chartCurrentSymbol}|${chartCurrentTF}|${chartCurrentExchange}|${chartCustomInterval?chartCustomInterval.unit+chartCustomInterval.interval:''}`;
+  const isNewChart = fitKey!==lwFitKey;
+  if(isNewChart) clearChartDrawings();
   const closes=candles.map(c=>c.c);
   const timeSeries=toLwTimeSeries(candles,isRealData);
   lwCandleSeries.setData(timeSeries.map(({time},i)=>({time,open:candles[i].o,high:candles[i].h,low:candles[i].l,close:candles[i].c})));
@@ -5620,8 +5867,7 @@ const lastRow=timeSeries[timeSeries.length-1];
   // exchange actually changed since the last render. Without this guard,
   // the REFRESH_MS live-data poll (same symbol, fresh candles) called this
   // on every tick and reset any zoom/pan the user had just made.
-  const fitKey=`${chartCurrentSymbol}|${chartCurrentTF}|${chartCurrentExchange}|${chartCustomInterval?chartCustomInterval.unit+chartCustomInterval.interval:''}`;
-  if(fitKey!==lwFitKey){
+  if(isNewChart){
     lwFitKey=fitKey;
     lwChart.timeScale().fitContent();
   }
@@ -5641,7 +5887,7 @@ function renderMainChartWith(realCandles){
     if(lwChart){ lwChart.remove(); lwChart=null; lwCandleSeries=null; lwFitKey=null; Object.keys(lwOverlaySeries).forEach(k=>delete lwOverlaySeries[k]); }
     chartDrawnTrendlines=[]; chartDrawnPriceLines=[]; chartTrendStart=null;
     const container=document.getElementById('mainChart');
-    if(container)container.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;text-align:center;padding:20px">Real ${sym} candles aren't available yet — connect Upstox (see admin status) to see the live chart here.</div>`;
+    if(container)container.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;text-align:center;padding:20px">Chart data for ${sym} isn't available right now. Please check back shortly.</div>`;
     if(rsiCanvas){rsiCanvas.style.display='none';} if(rsiLbl)rsiLbl.style.display='none';
     if(macdCanvas){macdCanvas.style.display='none';} if(macdLbl)macdLbl.style.display='none';
     if(grid)grid.innerHTML='';
@@ -5742,9 +5988,10 @@ function selectOptUnderlying(sym,el){
   if(el)el.classList.add('sel');
   onOptUnderlyingChange();
 }
-// ── Searchable F&O underlying — any NSE or BSE stock, same search backend
-// as Screener/Charts. Not every equity has a listed options segment, so a
-// stock with no contracts will simply show "No contracts found" once loaded.
+// ── Searchable F&O underlying — filtered to only stocks/indices that
+// actually have a listed options segment (backend derives this from
+// Upstox's own instrument master), so this never suggests a stock with
+// no option chain the way the general Screener/Charts search does.
 let optUnderlyingSearchDebounce=null;
 function onOptUnderlyingSearchInput(val){
   clearTimeout(optUnderlyingSearchDebounce);
@@ -5756,13 +6003,13 @@ async function runOptUnderlyingSearch(q){
   const dropdown=document.getElementById('opt-underlying-dropdown');
   if(!dropdown)return;
   dropdown.style.display='block';
-  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE…</div>`;
+  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching F&amp;O underlyings…</div>`;
   try{
-    const res=await apiFetch('/api/market/search?q='+encodeURIComponent(q),{cache:'no-store'});
+    const res=await apiFetch('/api/market/search-fno?q='+encodeURIComponent(q),{cache:'no-store'});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const {results}=await res.json();
     if(!results||!results.length){
-      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE or BSE for "${q}".</div>`;
+      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No F&amp;O stock matches "${q}" — options only exist for a subset of stocks.</div>`;
       return;
     }
     dropdown.innerHTML=results.map(r=>{
@@ -5772,7 +6019,7 @@ async function runOptUnderlyingSearch(q){
       </div>`;
     }).join('');
   }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search failed — ${e.message}</div>`;
+    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
   }
 }
 document.addEventListener('click',(e)=>{
@@ -5808,7 +6055,7 @@ async function renderOptionsChain(){
     chain=data.chain||[];
     if(!chain.length)throw new Error(`No contracts found for ${underlying} expiring ${expiry} — check the expiry date is a valid trading date for this underlying.`);
   }catch(e){
-    summaryEl.innerHTML=`<div style="padding:24px;color:var(--rose2);grid-column:1/-1">Could not load option chain — ${e.message}</div>`;
+    summaryEl.innerHTML=`<div style="padding:24px;color:var(--rose2);grid-column:1/-1">Could not load option chain right now — please try again shortly.</div>`;
     return;
   }
 
@@ -5880,7 +6127,7 @@ async function getOptionStrategyAdvice(){
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     el.innerHTML=data.text.replace(/\n/g,'<br/>');
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI suggestion — ${e.message}</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI suggestion right now — please try again shortly.</span>`;
   }
 }
 
@@ -5905,7 +6152,7 @@ async function runBacktest(){
     if(!data.candles||!data.candles.length)throw new Error('No historical data returned.');
     candles=data.candles;
   }catch(e){
-    resultEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load real historical data for ${sym} — ${e.message}. Backtesting needs a connected Upstox account (see Upstox status).</div>`;
+    resultEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load historical data for ${sym} right now. Please try again shortly.</div>`;
     return;
   }
 
@@ -5977,7 +6224,7 @@ async function getBacktestAdvice(symbol,strategy,totalReturn,buyHoldReturn,winRa
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     el.innerHTML=data.text.replace(/\n/g,'<br/>');
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI critique — ${e.message}</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI critique right now — please try again shortly.</span>`;
   }
 }
 
@@ -5987,7 +6234,7 @@ renderDashboard('overview');
 // per-visit like the dashboard sections), so register its search handler
 // once here — selecting a result just needs to fill in the input, which
 // stockSearchBarHtml/selectGenericStockSearchResult already does.
-registerStockSearch('bt-sym',()=>{});
+registerStockSearch('bt-sym',(sym)=>{ document.getElementById('bt-sym').value=sym; runBacktest(); });
 </script>
 </body>
 </html>

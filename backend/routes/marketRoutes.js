@@ -36,10 +36,15 @@ router.post('/upstox/notifier', ctrl.upstoxNotifier);
  router.get('/quote/:symbol', marketLimiter, validateMarketSymbol, ctrl.getQuote);
  // Batch: GET /api/market/quotes?symbols=RELIANCE,TCS,INFY&exchange=BSE_EQ
 router.get('/quotes', marketLimiter, validateMarketQuotes, ctrl.getQuotes);
+// Computed (non-AI) BUY/HOLD/SELL signals for the Screener:
+// GET /api/market/signals?symbols=RELIANCE,TCS&exchange=BSE_EQ
+router.get('/signals', marketLimiter, validateMarketQuotes, ctrl.getSignals);
 router.get('/indices', marketLimiter, ctrl.getIndices);
 router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
 router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
+// Options-only autocomplete: GET /api/market/search-fno?q=REL
+router.get('/search-fno', marketLimiter, validateMarketSearch, ctrl.searchFnoSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
 // Available on every plan (including Free) — it's just live Upstox
 // quotes/listing, no AI token cost, so there's no reason to gate it above

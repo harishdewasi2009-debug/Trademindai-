@@ -209,7 +209,11 @@ router.post(
             result.signal.toLowerCase(),
             result.currentPrice,
             result.priceTargets?.oneMonth || null,
-            horizon === '1 week' ? 7 : horizon === '3 months' ? 90 : 30,
+            // Matches every horizon value the frontend can actually send
+            // (getAnalysisHorizonRisk() in index.html) — previously only
+            // '1 week'/'3 months' were handled and everything else silently
+            // fell back to 30, even a 6-12 month "long" horizon pick.
+            { '1 week': 7, '1 month': 30, '3 months': 90 }[horizon] || 30,
             result.confidence,
           ]
         );
@@ -249,54 +253,110 @@ router.post(
       throw new AppError('message must be 500 characters or less.', 400);
     }
 
-    // Pick model based on plan: Pro → Claude Sonnet 4, Elite → Claude Opus 4
+    // FIX: AI Assistant now picks its model from the user's plan config in
+    // plans.js instead of always hardcoding Claude. DeepSeek is the model
+    // TradeMind actually sells on Basic/Pro/Elite (DeepSeek V3 on
+    // Basic/Pro, DeepSeek R1 on Elite — see config/plans.js aiModels), so
+    // the assistant now runs on the DeepSeek model configured for that
+    // plan by default, falling back to Claude only if DeepSeek isn't
+    // configured/available on the server or the DeepSeek call fails.
+    const { getModelConfig } = require('../config/plans');
     const { MODELS } = require('../services/aiService');
-    const isElite = req.user.plan === 'elite';
-    const model   = isElite ? MODELS.CLAUDE_OPUS : MODELS.CLAUDE_SONNET;
-    const apiKey  = process.env.CLAUDE_API_KEY;
+    const plan = req.user.plan;
+    const deepseekKey = plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3';
+    const deepseekCfg = getModelConfig(plan, deepseekKey);
+    const deepseekAvailable = !!(deepseekCfg && process.env.DEEPSEEK_API_KEY);
 
-    if (!apiKey) throw new AppError('AI chat is not configured on this server.', 501);
+    const claudeApiKey = process.env.CLAUDE_API_KEY;
+    const claudeModel  = plan === 'elite' ? MODELS.CLAUDE_OPUS : MODELS.CLAUDE_SONNET;
+
+    if (!deepseekAvailable && !claudeApiKey) {
+      throw new AppError('AI chat is not configured on this server.', 501);
+    }
 
     const system = `You are TradeMind AI, a knowledgeable Indian stock market assistant.
 Give concise, practical answers. Always add a brief disclaimer when giving specific investment opinions.
 Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
-    let reply;
+    let reply, modelUsed, modelLabel;
     try {
-      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 512,
-          system,
-          messages: [{ role: 'user', content: message.trim() }],
-          temperature: 0.4,
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (!res2.ok) throw new Error(`Claude chat ${res2.status}`);
-      const data = await res2.json();
-      reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+      if (deepseekAvailable) {
+        try {
+          const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: deepseekCfg.modelId,
+              messages: [
+                { role: 'system', content: system },
+                { role: 'user', content: message.trim() },
+              ],
+              temperature: 0.4,
+              max_tokens: Math.min(512, deepseekCfg.maxOutputTokens || 512),
+            }),
+            signal: AbortSignal.timeout(30_000),
+          });
+          if (!dsRes.ok) throw new Error(`DeepSeek chat ${dsRes.status}`);
+          const dsData = await dsRes.json();
+          reply = dsData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+          modelUsed  = deepseekCfg.modelId;
+          modelLabel = deepseekKey === 'deepseek_r1' ? 'DeepSeek R1' : 'DeepSeek V3';
 
-      // Log chat usage
-      await query(
-        `INSERT INTO ai_requests
-           (user_id, stock_symbol, request_type, model_used,
-            tokens_input, tokens_output, cost_usd, latency_ms)
-         VALUES ($1, NULL, 'chat', $2, $3, $4, 0, 0)`,
-        [req.user.id, model, data.usage?.input_tokens || 0, data.usage?.output_tokens || 0]
-      );
+          await query(
+            `INSERT INTO ai_requests
+               (user_id, stock_symbol, request_type, model_used, model_key,
+                tokens_input, tokens_output, cost_usd, latency_ms)
+             VALUES ($1, NULL, 'chat', $2, $3, $4, $5, 0, 0)`,
+            [req.user.id, modelUsed, deepseekKey, dsData.usage?.prompt_tokens || 0, dsData.usage?.completion_tokens || 0]
+          );
+        } catch (dsErr) {
+          console.warn('[/api/ai/chat] DeepSeek failed, falling back to Claude:', dsErr.message);
+          if (!claudeApiKey) throw dsErr;
+          reply = undefined; // fall through to Claude below
+        }
+      }
+
+      if (reply === undefined) {
+        if (!claudeApiKey) throw new Error('No AI provider available');
+        const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': claudeApiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: claudeModel,
+            max_tokens: 512,
+            system,
+            messages: [{ role: 'user', content: message.trim() }],
+            temperature: 0.4,
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!res2.ok) throw new Error(`Claude chat ${res2.status}`);
+        const data = await res2.json();
+        reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+        modelUsed  = claudeModel;
+        modelLabel = plan === 'elite' ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6';
+
+        await query(
+          `INSERT INTO ai_requests
+             (user_id, stock_symbol, request_type, model_used, model_key,
+              tokens_input, tokens_output, cost_usd, latency_ms)
+           VALUES ($1, NULL, 'chat', $2, $3, $4, $5, 0, 0)`,
+          [req.user.id, modelUsed, 'claude_fallback', data.usage?.input_tokens || 0, data.usage?.output_tokens || 0]
+        );
+      }
     } catch (err) {
       console.error('[/api/ai/chat] failed:', err.message);
       throw new AppError('AI chat is temporarily unavailable.', 503);
     }
 
-    res.json({ reply, model: isElite ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6' });
+    res.json({ reply, model: modelLabel });
   })
 );
 
@@ -323,9 +383,11 @@ router.post(
     }
 
     const { getAIInsight } = require('../services/aiService');
-    let text;
+    let text, modelUsed;
     try {
-      text = await getAIInsight(kind, context);
+      const result = await getAIInsight(kind, context, req.user.plan);
+      text = result.text;
+      modelUsed = result.modelUsed;
     } catch (err) {
       console.error(`[/api/ai/insight:${kind}] failed:`, err.message);
       throw new AppError('AI insight is temporarily unavailable.', 503);
@@ -336,10 +398,10 @@ router.post(
          (user_id, stock_symbol, request_type, model_used,
           tokens_input, tokens_output, cost_usd, latency_ms)
        VALUES ($1, NULL, $2, $3, 0, 0, 0, 0)`,
-      [req.user.id, `insight_${kind}`, 'gemini-2.5-flash']
+      [req.user.id, `insight_${kind}`, modelUsed]
     );
 
-    res.json({ kind, text });
+    res.json({ kind, text, model: modelUsed });
   })
 );
 

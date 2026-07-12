@@ -98,6 +98,23 @@ const getQuotes = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+// ── GET /api/market/signals?symbols=RELIANCE,TCS&exchange=BSE_EQ  (any authenticated user) ──
+// Rule-based BUY/HOLD/SELL, computed purely from real technical indicators
+// (RSI, EMA, MACD, Supertrend, VWAP, trend strength) — no AI/LLM involved.
+// Powers the Screener's Buy/Hold/Sell filter; kept as a separate endpoint
+// from /quotes since it's cached much longer (20 min vs 3 sec) and is a
+// heavier per-symbol computation.
+const getSignals = asyncHandler(async (req, res) => {
+  const { symbols, exchange } = req.query;
+  if (!symbols) throw new AppError('symbols query param is required (comma-separated).', 400);
+
+  const list = symbols.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 100);
+  const input = exchange ? list.map((symbol) => ({ symbol, exchange })) : list;
+
+  const signals = await marketDataService.getSignalsBatch(input);
+  res.json({ signals, source: 'computed', fetchedAt: new Date().toISOString() });
+});
+
 // ── GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50  (any authenticated user) ──
 // Full paginated browse across all NSE + BSE equities (~5,000+), for an
 // "all stocks" page — distinct from /search, which is prefix search.
@@ -148,6 +165,18 @@ const searchSymbols = asyncHandler(async (req, res) => {
   res.json({ results });
 });
 
+// ── GET /api/market/search-fno?q=REL  (any authenticated user) ──────────
+// Same autocomplete, but filtered to only underlyings that actually have
+// a listed options segment (derived from Upstox's own instrument master,
+// not a hand-maintained list) — feeds the Options page search bar so it
+// never suggests a stock that has no option chain.
+const searchFnoSymbols = asyncHandler(async (req, res) => {
+  const { q } = req.query;
+  if (!q) throw new AppError('q query param is required.', 400);
+  const results = await marketDataService.searchFnoSymbols(q, 20);
+  res.json({ results });
+});
+
 // ── GET /api/market/candles/:symbol  (any authenticated user) ───────────
 // Query params: unit (minutes|hours|days|weeks|months), interval, from, to,
 // exchange (NSE_EQ|BSE_EQ — optional; omit to try NSE first then BSE, same
@@ -166,4 +195,4 @@ const getCandles = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getIndices, getIndexCandles, searchSymbols, listStocks, getOptionsChain, getCandles };
+module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles };

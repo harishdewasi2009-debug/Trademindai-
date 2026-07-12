@@ -275,9 +275,19 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   //   2) Accept a few known aliases for the trading-symbol/key fields.
   //   3) Skip obvious derivative/options rows (expiry/strike present).
  const bySymbol = new Map();
+  // F&O underlyings (stocks + indices that actually have listed options) —
+  // Upstox's per-exchange file mixes equity rows in with derivative rows
+  // (segment "NSE_FO"/"BSE_FO"), each derivative row carrying an
+  // `underlying_symbol`. We collect those into a Set here, in the same
+  // pass, instead of a hardcoded/stale F&O stock list that would need
+  // manual updates every quarter when NSE revises it.
+  const fnoUnderlyings = new Set();
   let skippedNoSymbol = 0;
   for (const row of list) {
-    if (row.expiry || row.strike_price) continue; // derivatives/options rows
+    if (row.expiry || row.strike_price) {
+      if (row.underlying_symbol) fnoUnderlyings.add(String(row.underlying_symbol).toUpperCase());
+      continue; // derivatives/options rows — not added to the equity bySymbol map
+    }
 
     const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
     const instrumentKey = row.instrument_key || row.instrumentKey;
@@ -311,8 +321,50 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
     );
   }
 
-  instrumentMasterCache[exchange] = { bySymbol, fetchedAt: new Date() };
+  instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
   return instrumentMasterCache[exchange];
+}
+
+// Every stock symbol (across NSE + BSE) that actually has listed options,
+// plus the tradeable indices (NIFTY, BANKNIFTY, SENSEX, etc). Backs the
+// Options page's search bar so it only ever suggests underlyings that will
+// actually return a real option chain, instead of all 5,000+ equities.
+async function getFnoUnderlyings() {
+  const symbols = new Set();
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
+    try {
+      const { fnoUnderlyings } = await loadInstrumentMaster(exchange);
+      fnoUnderlyings.forEach((s) => symbols.add(s));
+    } catch {
+      // let the other exchange still contribute
+    }
+  }
+  return symbols;
+}
+
+// Same as searchSymbols() but filtered down to only F&O-enabled
+// underlyings — used by the Options page's underlying search bar.
+async function searchFnoSymbols(prefixRaw, limit = 20) {
+  const prefix = (prefixRaw || '').trim().toUpperCase();
+  if (!prefix) return [];
+
+  const fnoSet = await getFnoUnderlyings();
+  const results = [];
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
+    let bySymbol;
+    try {
+      ({ bySymbol } = await loadInstrumentMaster(exchange));
+    } catch {
+      continue;
+    }
+    for (const [symbol, info] of bySymbol) {
+      if (symbol.startsWith(prefix) && fnoSet.has(symbol)) {
+        results.push({ symbol, exchange, name: info.name });
+        if (results.length >= limit) return results;
+      }
+    }
+  }
+  return results;
 }
 
 /**
@@ -788,6 +840,59 @@ function defaultFromDate(unit) {
   return d.toISOString().slice(0, 10);
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  SCREENER BUY / HOLD / SELL SIGNALS — computed technical analysis, not AI
+// ─────────────────────────────────────────────────────────────────────────
+// Every value here comes from real daily candles (same Upstox
+// historical-candle data the charts use) run through utils/indicators.js.
+// No LLM is involved anywhere in this path. Per-symbol results are cached
+// for SIGNAL_CACHE_TTL_MS since a daily-candle-based signal doesn't need
+// to move on every live tick like price does — this also keeps Upstox
+// request volume sane when the Screener renders 50 symbols at once.
+const { computeAllIndicators, deriveSignal } = require('../utils/indicators');
+const signalCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
+const SIGNAL_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
+
+async function getTechnicalSignal(symbol, exchange) {
+  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}`;
+  const cached = signalCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const { candles } = await getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
+    const ind = computeAllIndicators(candles);
+    const derived = deriveSignal(ind);
+    const data = derived
+      ? { symbol: symbol.toUpperCase(), signal: derived.signal, confidence: derived.confidence, votes: derived.votes }
+      : { symbol: symbol.toUpperCase(), signal: null, confidence: null, votes: [], error: 'Not enough candle history yet.' };
+    signalCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
+    return data;
+  } catch (err) {
+    return { symbol: symbol.toUpperCase(), signal: null, confidence: null, votes: [], error: err.message };
+  }
+}
+
+// Fetches signals for many symbols with limited concurrency (Upstox has no
+// batch historical-candle endpoint, so this is N individual requests —
+// capped at 6 in flight at a time to stay well under rate limits).
+async function getSignalsBatch(symbols) {
+  const list = Array.isArray(symbols) ? symbols : [];
+  const CONCURRENCY = 6;
+  const results = [];
+  let i = 0;
+  async function worker() {
+    while (i < list.length) {
+      const idx = i++;
+      const s = list[idx];
+      const symbol = typeof s === 'string' ? s : s.symbol;
+      const exchange = typeof s === 'string' ? undefined : s.exchange;
+      results[idx] = await getTechnicalSignal(symbol, exchange);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker));
+  return results;
+}
+
 module.exports = {
   buildLoginUrl,
   exchangeCodeForToken,
@@ -797,6 +902,8 @@ module.exports = {
   storeNotifiedToken,
   resolveInstrumentKey,
   searchSymbols,
+  searchFnoSymbols,
+  getFnoUnderlyings,
   listAllSymbols,
   getLtp,
   getLtpBatch,
@@ -804,4 +911,6 @@ module.exports = {
   getHistoricalCandles,
   getIndexQuotes,
   getIndexHistoricalCandles,
+  getTechnicalSignal,
+  getSignalsBatch,
 };

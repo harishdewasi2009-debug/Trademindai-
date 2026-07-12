@@ -82,7 +82,26 @@ function calcCost(model, tokIn, tokOut) {
 //  Throws if Upstox isn't connected or returns no data — callers must
 //  surface that as "Data Unavailable", never fall back to invented numbers.
 // ─────────────────────────────────────────────────────────────────────────
+// FIX (index analysis): NIFTY 50 / SENSEX / NIFTY BANK aren't equities —
+// resolveInstrumentKey() (used by getLtp/getHistoricalCandles) only knows
+// equity trading symbols, so analysing an index by name used to fail
+// outright. Route these three through the dedicated index quote/candle
+// functions instead (same ones the Charts/Options pages already use).
+const INDEX_LABELS = ['NIFTY 50', 'SENSEX', 'NIFTY BANK'];
+function normalizeIndexLabel(stockSymbol) {
+  const s = (stockSymbol || '').trim().toUpperCase();
+  if (INDEX_LABELS.includes(s)) return s;
+  // Accept common aliases so users typing "NIFTY", "BANKNIFTY" etc. in the
+  // Analysis search box still resolve to the right index.
+  if (s === 'NIFTY' || s === 'NIFTY50') return 'NIFTY 50';
+  if (s === 'BANKNIFTY' || s === 'NIFTYBANK' || s === 'BANK NIFTY') return 'NIFTY BANK';
+  return null;
+}
+
 async function fetchRealMarketContext(stockSymbol, exchange) {
+  const indexLabel = normalizeIndexLabel(stockSymbol);
+  if (indexLabel) return fetchRealIndexContext(indexLabel);
+
   const to = new Date();
   const from = new Date();
   from.setFullYear(from.getFullYear() - 1);
@@ -103,6 +122,46 @@ async function fetchRealMarketContext(stockSymbol, exchange) {
   if (!indicators) {
     throw new AppError(
       `Not enough real historical data returned by Upstox for ${stockSymbol} to compute indicators.`,
+      503
+    );
+  }
+
+  return { quote, indicators, candleCount: candles.length };
+}
+
+async function fetchRealIndexContext(indexLabel) {
+  const to = new Date();
+  const from = new Date();
+  from.setFullYear(from.getFullYear() - 1);
+
+  const [quotes, candleData] = await Promise.all([
+    marketDataService.getIndexQuotes(),
+    marketDataService.getIndexHistoricalCandles(indexLabel, {
+      unit: 'days',
+      interval: 1,
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    }),
+  ]);
+
+  const idx = quotes.indices.find((i) => i.label === indexLabel);
+  if (!idx || idx.lastPrice == null) {
+    throw new AppError(`Real index quote for ${indexLabel} is currently unavailable from Upstox.`, 503);
+  }
+  const quote = {
+    symbol: indexLabel,
+    instrumentKey: idx.instrumentKey,
+    lastPrice: idx.lastPrice,
+    previousClose: idx.previousClose,
+    changePct: idx.changePct,
+    fetchedAt: idx.fetchedAt,
+  };
+
+  const candles = candleData?.candles || [];
+  const indicators = computeAllIndicators(candles);
+  if (!indicators) {
+    throw new AppError(
+      `Not enough real historical data returned by Upstox for ${indexLabel} to compute indicators.`,
       503
     );
   }
@@ -639,34 +698,114 @@ const INSIGHT_PROMPTS = {
   multiTimeframe: (ctx) => `You are a technical analyst. Below are REAL daily and weekly indicator readings (real RSI/MACD/trend from real Upstox candles, not simulated) for ${ctx.symbol}. Synthesize a short multi-timeframe view — e.g. "bullish daily momentum but weak weekly trend" if that's what the data shows. Be honest if the timeframes agree or conflict. Data:\n${JSON.stringify(ctx.timeframes)}`,
 };
 
-async function getAIInsight(kind, context) {
-  const promptFn = INSIGHT_PROMPTS[kind];
-  if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
+const INSIGHT_SYSTEM = 'You are a careful, honest markets assistant. You only comment on the real data given to you — never invent numbers, news, or reasons not present in the input. If the data is insufficient to say something meaningful, say so plainly.';
 
+// Plain-text (non-JSON-forced) callers for insight generation — these
+// features return prose commentary, not a structured signal, so they must
+// NOT use the JSON-forced callGemini/callGPT/callDeepSeek above (which would
+// either reject plain prose or truncate it awkwardly into a JSON shape).
+async function callGeminiPlain(model, prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('AI is not configured on the server (GEMINI_API_KEY missing).');
-
-  const prompt = promptFn(context);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.GEMINI_FLASH}:generateContent?key=${apiKey}`;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not set');
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: 'You are a careful, honest markets assistant. You only comment on the real data given to you — never invent numbers, news, or reasons not present in the input. If the data is insufficient to say something meaningful, say so plainly.' }] },
+      system_instruction: { parts: [{ text: INSIGHT_SYSTEM }] },
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
+      generationConfig: { temperature: 0.3, maxOutputTokens: 700, thinkingConfig: { thinkingBudget: 0 } },
     }),
     signal: AbortSignal.timeout(30_000),
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
-  }
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('AI returned an empty response.');
-  return text.trim();
+  const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  if (!text) throw new Error('Gemini returned no text');
+  return { text, model };
+}
+
+async function callClaudePlain(model, prompt) {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) throw new Error('CLAUDE_API_KEY not set');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model, max_tokens: 700, system: INSIGHT_SYSTEM, messages: [{ role: 'user', content: prompt }], temperature: 0.3 }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  const text = (data.content?.[0]?.text || '').trim();
+  if (!text) throw new Error('Claude returned no text');
+  return { text, model };
+}
+
+async function callDeepSeekPlain(model, prompt) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set');
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model, messages: [{ role: 'system', content: INSIGHT_SYSTEM }, { role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  const text = (data.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('DeepSeek returned no text');
+  return { text, model };
+}
+
+// FIX: previously every plan got the exact same Gemini Flash commentary on
+// Trade Ideas / Portfolio Health / Market Brief / Option Strategy /
+// Backtest Advisor / Multi-Timeframe — the model selector on the Analysis
+// tab had no effect anywhere else. This now cascades through the actual
+// model(s) each plan pays for (config/plans.js), same spirit as
+// analyzeStock(), and falls back down the chain (never all the way to
+// nothing) if a higher model is temporarily unavailable.
+function insightCascadeForPlan(plan) {
+  switch (plan) {
+    case 'elite':
+      return [
+        { fn: callClaudePlain,   model: MODELS.CLAUDE_OPUS  },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_PRO   },
+        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_R1  },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
+      ];
+    case 'pro':
+      return [
+        { fn: callClaudePlain,   model: MODELS.CLAUDE_SONNET },
+        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3   },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH  },
+      ];
+    case 'basic':
+      return [
+        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3  },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
+      ];
+    default: // free
+      return [{ fn: callGeminiPlain, model: MODELS.GEMINI_FLASH }];
+  }
+}
+
+async function getAIInsight(kind, context, plan = 'free') {
+  const promptFn = INSIGHT_PROMPTS[kind];
+  if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
+  const prompt = promptFn(context);
+
+  const cascade = insightCascadeForPlan(plan);
+  let lastErr;
+  for (const step of cascade) {
+    try {
+      const { text, model } = await step.fn(step.model, prompt);
+      return { text, modelUsed: model || step.model };
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[getAIInsight:${kind}] ${step.model} failed, trying next in cascade:`, err.message);
+    }
+  }
+  throw lastErr || new Error('AI is not configured on the server.');
 }
 
 module.exports = { analyzeStock, getAIInsight, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor };
