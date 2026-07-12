@@ -665,49 +665,6 @@ async function getIndexQuotes() {
     fetchedAt: new Date().toISOString(),
   };
 }
-async function getIndexQuotes() {
-  const cacheKey = 'INDICES';
-  const cached = quoteBatchCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-
-  const accessToken = await getValidAccessToken();
-  const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
-
-  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
-    instrument_key: entries.map(([, key]) => key).join(','),
-  })}`;
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
-  }
-
-  const data = await res.json();
-  const byInstrumentKey = new Map(
-    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
-  );
-
-  const quotes = entries.map(([label, instrumentKey]) => {
-    const quote = byInstrumentKey.get(instrumentKey);
-    if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
-
-    const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
-    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
-      ? ((lastPrice - previousClose) / previousClose) * 100
-      : null;
-
-    return { label, instrumentKey, lastPrice, previousClose, changePct };
-  });
-
-  const result = { quotes, fetchedAt: new Date().toISOString() };
-  quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
-  return result;
-}
 
 
 async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5, from, to } = {}) {
