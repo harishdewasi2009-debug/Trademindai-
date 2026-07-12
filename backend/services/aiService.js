@@ -207,14 +207,13 @@ async function callGemini(model, system, user, maxTokens) {
     throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
   }
 
-  const data = await res.json();
+ const data = await res.json();
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   const tokIn  = data.usageMetadata?.promptTokenCount     || 0;
   const tokOut = data.usageMetadata?.candidatesTokenCount || 0;
+  const finishReason = data.candidates?.[0]?.finishReason || 'UNKNOWN';
 
-  return { text, tokIn, tokOut, model };
-}
-
+  return { text, tokIn, tokOut, model, finishReason };
 // ── Claude (Anthropic) ───────────────────────────────────────────────────
 async function callClaude(model, system, user, maxTokens) {
   const apiKey = process.env.CLAUDE_API_KEY;
@@ -449,7 +448,13 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     const maxTok = maxTokensFor(plan, 'gemini_flash');
     const raw = await callGemini(MODELS.GEMINI_FLASH, system, user, maxTok);
     const result = groundResult(safeParseJSON(raw.text), marketContext.indicators);
-    if (!result) throw new Error('AI returned unparseable JSON');
+    if (!result) {
+      console.error(
+        `[aiService/free] parse failed — finishReason=${raw.finishReason}, ` +
+        `tokOut=${raw.tokOut}/${maxTok}, textPreview=${JSON.stringify((raw.text || '').slice(0, 300))}`
+      );
+      throw new Error('AI returned unparseable JSON');
+    }
     const breakdown = [{ modelKey: 'gemini_flash', model: MODELS.GEMINI_FLASH, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(MODELS.GEMINI_FLASH, raw.tokIn, raw.tokOut) }];
     return {
       result,
