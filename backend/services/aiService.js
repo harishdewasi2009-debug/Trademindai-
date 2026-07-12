@@ -178,36 +178,31 @@ async function callGemini(model, system, user, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not set');
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const body = {
-    system_instruction: { parts: [{ text: system }] },
-    contents: [{ role: 'user', parts: [{ text: user }] }],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: maxTokens,
-      responseMimeType: 'application/json',
-    },
-  };
+ const body = {
+  system_instruction: { parts: [{ text: system }] },
+  contents: [{ role: 'user', parts: [{ text: user }] }],
+  generationConfig: {
+    temperature: 0.2,
+    maxOutputTokens: maxTokens,      // ← plan cap applied here
+    responseMimeType: 'application/json',
+    thinkingConfig: { thinkingBudget: 0 },
+  },
+};
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(30_000),
-  });
+const res = await fetch(endpoint, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+  signal: AbortSignal.timeout(30_000),
+});
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-  const tokIn  = data.usageMetadata?.promptTokenCount     || 0;
-  const tokOut = data.usageMetadata?.candidatesTokenCount || 0;
-
-  return { text, tokIn, tokOut, model };
+if (!res.ok) {
+  const errText = await res.text();
+  throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
 }
+
+const data = await res.json();
+const finishReason = data.candidates?.[0]?.finishReas
 
 async function callClaude(model, system, user, maxTokens) {
   const apiKey = process.env.CLAUDE_API_KEY;
