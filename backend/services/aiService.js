@@ -182,6 +182,12 @@ async function callGemini(model, system, user, maxTokens) {
   system_instruction: { parts: [{ text: system }] },
   contents: [{ role: 'user', parts: [{ text: user }] }],
   generationConfig: {
+  temperature: 0.2,
+  maxOutputTokens: maxTokens,
+  responseMimeType: 'application/json',
+  thinkingConfig: { thinkingBudget: 0 },
+},
+   generationConfig: {
     temperature: 0.2,
     maxOutputTokens: maxTokens,      // ← plan cap applied here
     responseMimeType: 'application/json',
@@ -230,13 +236,18 @@ async function callClaude(model, system, user, maxTokens) {
     throw new Error(`Claude ${res.status}: ${errText.slice(0, 200)}`);
   }
 
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '{}';
-  const tokIn  = data.usage?.input_tokens  || 0;
-  const tokOut = data.usage?.output_tokens || 0;
+ const data = await res.json();
 
-  return { text, tokIn, tokOut, model };
+ const finishReason = data.candidates?.[0]?.finishReason;
+ const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+ const tokIn  = data.usageMetadata?.promptTokenCount     || 0;
+ const tokOut = data.usageMetadata?.candidatesTokenCount || 0;
+
+ if (!text) {
+ throw new Error(`Gemini returned no text (finishReason: ${finishReason || 'unknown'})`);
 }
+
+ return { text, tokIn, tokOut, model };
 
 async function callGPT(model, system, user, maxTokens) {
   const apiKey = process.env.OPENAI_API_KEY;
