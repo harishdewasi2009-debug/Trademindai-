@@ -2691,7 +2691,7 @@ function setAnalysisExchange(ex,el){
 async function runAnalysis(){
   if(isAnalysing)return;
   const name=document.getElementById('inp-name').value.trim();
-  const sym=document.getElementById('inp-sym').value.trim().toUpperCase();
+ const sym=document.getElementById('inp-sym').value.trim().toUpperCase().replace(/[^A-Z0-9&_-]/g,'');
   if(!name&&!sym){alert('Please enter a stock name or symbol.');return;}
 
   if(!currentUser){
@@ -2715,7 +2715,7 @@ async function runAnalysis(){
     },delays[i]);
   });
 
-  const stockSym=sym||name.toUpperCase();
+ const stockSym=(sym||name.toUpperCase()).replace(/[^A-Z0-9&_-]/g,'');
   let result=null, errorMsg=null, quota=null, isQuotaError=false;
 
   try{
