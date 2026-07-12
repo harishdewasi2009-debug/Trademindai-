@@ -173,43 +173,67 @@ Return a JSON object with this exact structure:
   return { system, user };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  INDIVIDUAL MODEL CALLERS
+//  Each caller accepts maxTokens so the plan cap is enforced at the model
+//  level — preventing any single response from burning too many tokens.
+// ─────────────────────────────────────────────────────────────────────────
+
 // ── Gemini (Google AI Studio) ────────────────────────────────────────────
 async function callGemini(model, system, user, maxTokens) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not set');
 
- const body = {
-  system_instruction: { parts: [{ text: system }] },
-  contents: [{ role: 'user', parts: [{ text: user }] }],
-  generationConfig: {
-  temperature: 0.2,
-  maxOutputTokens: maxTokens,
-  responseMimeType: 'application/json',
-  thinkingConfig: { thinkingBudget: 0 },
-},
-   generationConfig: {
-    temperature: 0.2,
-    maxOutputTokens: maxTokens,      // ← plan cap applied here
-    responseMimeType: 'application/json',
-    thinkingConfig: { thinkingBudget: 0 },
-  },
-};
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const body = {
+    system_instruction: { parts: [{ text: system }] },
+    contents: [{ role: 'user', parts: [{ text: user }] }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: maxTokens,      // ← plan cap applied here
+      responseMimeType: 'application/json',
+      // FIX: Gemini 2.5 models reserve part of maxOutputTokens for internal
+      // "thinking" by default. On a small cap like the Free plan's 1,500
+      // tokens, the model could burn its whole budget thinking and return
+      // an EMPTY response — which then failed JSON parsing downstream and
+      // surfaced as the generic "AI analysis is temporarily unavailable"
+      // error with no clue why. We don't need chain-of-thought for a
+      // structured data-extraction task, so turn it off entirely.
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
 
-const res = await fetch(endpoint, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
-  signal: AbortSignal.timeout(30_000),
-});
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
+  });
 
-if (!res.ok) {
-  const errText = await res.text();
-  throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const finishReason = data.candidates?.[0]?.finishReason;
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const tokIn  = data.usageMetadata?.promptTokenCount     || 0;
+  const tokOut = data.usageMetadata?.candidatesTokenCount || 0;
+
+  // FIX: previously this silently fell back to '{}' when Gemini returned no
+  // text, which then failed JSON parsing further downstream with a vague
+  // "AI returned unparseable JSON" error and no indication of WHY the text
+  // was missing. Surface the real reason (e.g. MAX_TOKENS truncation) here
+  // instead, so logs actually explain the failure.
+  if (!text) {
+    throw new Error(`Gemini returned no text (finishReason: ${finishReason || 'unknown'})`);
+  }
+
+  return { text, tokIn, tokOut, model };
 }
 
-const data = await res.json();
-const finishReason = data.candidates?.[0]?.finishReas
-
+// ── Claude (Anthropic) ───────────────────────────────────────────────────
 async function callClaude(model, system, user, maxTokens) {
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) throw new Error('CLAUDE_API_KEY not set');
@@ -223,7 +247,7 @@ async function callClaude(model, system, user, maxTokens) {
     },
     body: JSON.stringify({
       model,
-      max_tokens: maxTokens,
+      max_tokens: maxTokens,           // ← plan cap applied here
       system,
       messages: [{ role: 'user', content: user }],
       temperature: 0.2,
@@ -236,19 +260,15 @@ async function callClaude(model, system, user, maxTokens) {
     throw new Error(`Claude ${res.status}: ${errText.slice(0, 200)}`);
   }
 
- const data = await res.json();
+  const data = await res.json();
+  const text = data.content?.[0]?.text || '{}';
+  const tokIn  = data.usage?.input_tokens  || 0;
+  const tokOut = data.usage?.output_tokens || 0;
 
- const finishReason = data.candidates?.[0]?.finishReason;
- const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
- const tokIn  = data.usageMetadata?.promptTokenCount     || 0;
- const tokOut = data.usageMetadata?.candidatesTokenCount || 0;
-
- if (!text) {
- throw new Error(`Gemini returned no text (finishReason: ${finishReason || 'unknown'})`);
+  return { text, tokIn, tokOut, model };
 }
 
- return { text, tokIn, tokOut, model };
-
+// ── ChatGPT (OpenAI) ──────────────────────────────────────────────────────
 async function callGPT(model, system, user, maxTokens) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error('OPENAI_API_KEY not set');
@@ -266,7 +286,7 @@ async function callGPT(model, system, user, maxTokens) {
         { role: 'user',   content: user   },
       ],
       temperature: 0.2,
-      max_tokens: maxTokens,
+      max_tokens: maxTokens,           // ← plan cap applied here
       response_format: { type: 'json_object' },
     }),
     signal: AbortSignal.timeout(40_000),
@@ -285,6 +305,7 @@ async function callGPT(model, system, user, maxTokens) {
   return { text, tokIn, tokOut, model };
 }
 
+// ── DeepSeek (OpenAI-compatible) ─────────────────────────────────────────
 async function callDeepSeek(model, system, user, maxTokens) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set');
@@ -302,7 +323,7 @@ async function callDeepSeek(model, system, user, maxTokens) {
         { role: 'user',   content: user   },
       ],
       temperature: 0.2,
-      max_tokens: maxTokens,
+      max_tokens: maxTokens,           // ← plan cap applied here
       response_format: { type: 'json_object' },
     }),
     signal: AbortSignal.timeout(40_000),
@@ -321,6 +342,9 @@ async function callDeepSeek(model, system, user, maxTokens) {
   return { text, tokIn, tokOut, model };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  SAFE JSON PARSE
+// ─────────────────────────────────────────────────────────────────────────
 function safeParseJSON(text) {
   try {
     const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
@@ -330,6 +354,12 @@ function safeParseJSON(text) {
   }
 }
 
+// Safety net: even though the prompt instructs the model to use the real
+// price/indicator values verbatim, we don't trust an LLM to always comply
+// exactly — so the real, server-computed numbers are force-written back
+// into the result before it's ever returned to a user. This guarantees
+// currentPrice/RSI/support/resistance shown to the user are always the
+// real computed values, never whatever the model happened to output.
 function groundResult(result, indicators) {
   if (!result || !indicators) return result;
   result.currentPrice = indicators.currentPrice;
@@ -340,6 +370,10 @@ function groundResult(result, indicators) {
   return result;
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  CONSENSUS BUILDER  (Pro + Elite — multiple models in parallel)
+//  Majority-vote on signal, average on numeric fields.
+// ─────────────────────────────────────────────────────────────────────────
 function buildConsensus(results) {
   const valid = results.filter(Boolean);
   if (valid.length === 0) return null;
@@ -352,6 +386,12 @@ function buildConsensus(results) {
   const avg  = key => Math.round(valid.reduce((s, r) => s + (r[key] || 0), 0) / valid.length);
   const avgF = key => parseFloat((valid.reduce((s, r) => s + (r[key] || 0), 0) / valid.length).toFixed(2));
 
+  // FIX: dot-path getter + averager so nested fields (e.g. "priceTargets.oneWeek")
+  // are actually read and averaged across models. Previously this used the same
+  // bracket lookup as the flat avg/avgF helpers, so r['priceTargets.oneWeek']
+  // was always undefined and the consensus silently fell back to the primary
+  // model's number on every request — i.e. price targets were NEVER actually
+  // averaged across models, despite that being the whole point of consensus.
   const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
   const avgNested = path => {
     const vals = valid.map(r => getPath(r, path)).filter(v => typeof v === 'number' && !isNaN(v));
@@ -384,12 +424,26 @@ function buildConsensus(results) {
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  MAIN ENTRY POINT
+//  Called by aiRoutes. Returns { result, modelUsed, tokensInput,
+//  tokensOutput, costUsd }
+//
+//  maxTokensPerRequest — set by enforceTokenQuota middleware (plan cap).
+//  Falls back to DEFAULT_MAX_TOKENS[plan] if not provided.
+// ─────────────────────────────────────────────────────────────────────────
+/** True if this model is allowed to be called — either no quota list was
+ *  passed (caller didn't check, e.g. internal/test usage) or the model's
+ *  own monthly quota isn't exhausted yet, per attachAvailableModels. */
 function isAvailable(availableModelKeys, modelKey) {
-  if (!availableModelKeys) return true;
+  if (!availableModelKeys) return true; // no restriction passed in
   return availableModelKeys.includes(modelKey);
 }
 
 async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, userPlan, availableModelKeys }) {
+  // Real data first — if this fails (Upstox not connected, symbol not
+  // found, no historical candles), we throw here and never reach an AI
+  // call at all. There is no fallback that lets the AI guess instead.
   let marketContext;
   try {
     marketContext = await fetchRealMarketContext(stockSymbol, exchange);
@@ -404,6 +458,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
   const { system, user } = buildPrompt(stockSymbol, horizon, riskTolerance, marketContext);
   const plan = (userPlan || 'free').toLowerCase();
 
+  // ── FREE: Gemini Flash only ───────────────────────────────────────────
   if (plan === 'free') {
     if (!isAvailable(availableModelKeys, 'gemini_flash')) {
       throw new Error('NO_MODELS_AVAILABLE');
@@ -424,6 +479,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     };
   }
 
+  // ── BASIC: Gemini Flash → DeepSeek V3 fallback ───────────────────────
   if (plan === 'basic') {
     const geminiOk   = isAvailable(availableModelKeys, 'gemini_flash');
     const deepseekOk = isAvailable(availableModelKeys, 'deepseek_v3');
@@ -458,6 +514,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     };
   }
 
+  // ── PRO: Gemini + Claude Sonnet + ChatGPT in parallel; DeepSeek fallback
   if (plan === 'pro') {
     const calls = [];
     if (process.env.GEMINI_API_KEY  && isAvailable(availableModelKeys, 'gemini_flash'))  calls.push(callGemini(MODELS.GEMINI_FLASH, system, user, maxTokensFor(plan, 'gemini_flash')).then(r => ({ ...r, modelKey: 'gemini_flash' })).catch(e => { console.warn('[Pro] Gemini failed:', e.message); return null; }));
@@ -515,6 +572,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     };
   }
 
+  // ── ELITE: all 4 flagship models in parallel consensus ────────────────
   if (plan === 'elite') {
     const eliteCalls = [
       (process.env.GEMINI_API_KEY   && isAvailable(availableModelKeys, 'gemini_pro'))    ? callGemini(MODELS.GEMINI_PRO,   system, user, maxTokensFor(plan, 'gemini_pro')).then(r => ({ ...r, modelKey: 'gemini_pro' })).catch(e => { console.warn('[Elite] Gemini Pro failed:', e.message); return null; }) : Promise.resolve(null),
@@ -538,7 +596,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     const consensusResult = groundResult(buildConsensus(parsed.filter(Boolean)), marketContext.indicators);
     if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
 
-    consensusResult.modelDebate = modelDebate;
+    consensusResult.modelDebate = modelDebate;  // Elite-only field
 
     const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
     const totalTokIn  = breakdown.reduce((s, b) => s + b.tokIn,  0);
@@ -556,9 +614,17 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     };
   }
 
+  // Fallback — unknown plan treated as free
   return analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan: 'free', availableModelKeys });
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  GENERIC AI INSIGHT — powers Trade Ideas, Portfolio Health, Market Brief,
+//  Option Strategy Advisor, Backtest Advisor, Multi-Timeframe Confluence.
+//  Unlike analyzeStock() this returns plain commentary text, not a forced
+//  JSON signal — these features are about explaining/synthesizing REAL data
+//  already fetched from Upstox, not generating a new Buy/Sell/Hold verdict.
+// ─────────────────────────────────────────────────────────────────────────
 const INSIGHT_PROMPTS = {
   tradeIdeas: (ctx) => `You are a trading assistant. Below are REAL scan results from a live NSE/BSE market scanner (real prices, real volume, real technical conditions — not simulated). Pick the 3-5 most compelling setups and explain briefly why each stands out, in plain language a retail trader would understand. Be direct about risk too, don't just hype. Scan type: ${ctx.scanType}. Results:\n${JSON.stringify(ctx.matches)}`,
 
