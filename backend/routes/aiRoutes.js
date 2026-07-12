@@ -118,7 +118,7 @@ router.post(
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
       });
     } catch (err) {
-      console.error('[/api/ai/analyze] AI call failed:', err.message);
+      console.error('[/api/ai/analyze] AI call failed:', err);
       // If every model on the plan is exhausted, give a clear, actionable
       // message instead of the generic "temporarily unavailable" one.
       if (err.message === 'NO_MODELS_AVAILABLE') {
