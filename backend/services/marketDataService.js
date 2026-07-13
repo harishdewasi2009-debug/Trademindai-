@@ -862,13 +862,15 @@ async function getTechnicalSignal(symbol, exchange) {
     const { candles } = await getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
     const ind = computeAllIndicators(candles);
     const derived = deriveSignal(ind);
+    // COMPLIANCE: exposes strength/bullishVotes (descriptive), not a
+    // signal/confidence verdict — see indicators.js deriveSignal() note.
     const data = derived
-      ? { symbol: symbol.toUpperCase(), signal: derived.signal, confidence: derived.confidence, votes: derived.votes }
-      : { symbol: symbol.toUpperCase(), signal: null, confidence: null, votes: [], error: 'Not enough candle history yet.' };
+      ? { symbol: symbol.toUpperCase(), strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
+      : { symbol: symbol.toUpperCase(), strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
     signalCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
     return data;
   } catch (err) {
-    return { symbol: symbol.toUpperCase(), signal: null, confidence: null, votes: [], error: err.message };
+    return { symbol: symbol.toUpperCase(), strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
   }
 }
 

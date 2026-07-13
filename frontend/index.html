@@ -1291,9 +1291,9 @@ html{scroll-behavior:smooth}
     <span style="width:1px;align-self:stretch;background:rgba(255,255,255,.1)"></span>
     <span class="filter-group-signal" style="display:contents">
         <button class="filter-chip active" id="scr-sig-all" onclick="setScreenerSignal('all',this)">All</button>
-        <button class="filter-chip" id="scr-sig-buy" onclick="setScreenerSignal('BUY',this)">Buy</button>
-        <button class="filter-chip" id="scr-sig-hold" onclick="setScreenerSignal('HOLD',this)">Hold</button>
-        <button class="filter-chip" id="scr-sig-sell" onclick="setScreenerSignal('SELL',this)">Sell</button>
+        <button class="filter-chip" id="scr-sig-buy" onclick="setScreenerSignal('Strong Bullish Bias',this)">Bullish</button>
+        <button class="filter-chip" id="scr-sig-hold" onclick="setScreenerSignal('Mixed / Neutral',this)">Mixed</button>
+        <button class="filter-chip" id="scr-sig-sell" onclick="setScreenerSignal('Strong Bearish Bias',this)">Bearish</button>
     </span>
 </div>
     <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Buy/Hold/Sell is computed from real technical indicators (RSI, EMA, MACD, Supertrend, VWAP) — not an AI model.</div>
@@ -2360,7 +2360,7 @@ async function fetchSignalsBatch(symbols){
     if(!res.ok)return {};
     const data=await res.json();
     const out={};
-    (data.signals||[]).forEach(s=>{ if(s.signal)out[s.symbol]=s; });
+    (data.signals||[]).forEach(s=>{ if(s.strength)out[s.symbol]=s; });
     return out;
   }catch{ return {}; }
 }
@@ -2718,8 +2718,10 @@ function setScreenerDirection(dir,el){
   screenerDirection=dir;
   renderScreener();
 }
-// Buy/Hold/Sell filter — driven by /api/market/signals (computed technical
-// indicators), completely independent of the AI Analysis page.
+// Bullish/Mixed/Bearish bias filter — driven by /api/market/signals
+// (computed technical indicators), completely independent of the AI
+// Analysis page. Deliberately labelled as a descriptive "bias" reading,
+// not a Buy/Hold/Sell instruction — see indicators.js deriveSignal().
 function setScreenerSignal(sig,el){
   ['scr-sig-all','scr-sig-buy','scr-sig-hold','scr-sig-sell'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
   el.classList.add('active');
@@ -2813,19 +2815,24 @@ async function runAnalysis(){
       return;
     }
 
-    const overallSig=(result.signal||'HOLD').toUpperCase();
-    const pt=result.priceTargets||{};
+    // COMPLIANCE: no BUY/SELL/HOLD badge, no price targets — this app is
+    // not SEBI-registered, and SEBI's rules treat "trading calls" and
+    // price/stop-loss targets as regulated activity regardless of who or
+    // what produced them. See aiService.js buildPrompt() note.
+    const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[result.sentiment]||'Neutral';
+    const sentimentCls=(result.sentiment||'').includes('bullish')?'b-buy':(result.sentiment||'').includes('bearish')?'b-sell':'b-hold';
     const tech=result.technicals||{};
     const debate=result.modelDebate||null; // present on Elite plan only
 
     rw.innerHTML=`
       <div class="accuracy-banner">
-        <div><span class="acc-num">${result.confidence??'—'}%</span>AI confidence${result.consensusFrom>1?` · ${result.consensusFrom}-model consensus`:''}</div>
+        <div><span class="acc-num">${result.technicalScore??'—'}/100</span>Technical score${result.consensusFrom>1?` · ${result.consensusFrom}-model consensus`:''}</div>
         <div style="display:flex;gap:6px">
-          <span class="badge b-${overallSig.toLowerCase()}">${overallSig}</span>
-          <span style="font-size:12px;color:var(--text3)">AI Analysis</span>
+          <span class="badge ${sentimentCls}">${sentimentLabel}</span>
+          <span style="font-size:12px;color:var(--text3)">Data reading, not a recommendation</span>
         </div>
       </div>
+      <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
       <div class="res-header">
         <div>
           <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
@@ -2837,27 +2844,21 @@ async function runAnalysis(){
         </div>
       </div>
       <div class="meta-row">
-        <div class="mc"><div class="mc-lbl">Risk score</div><div class="mc-val">${result.riskScore??'—'}/10</div></div>
+        <div class="mc"><div class="mc-lbl">Volatility level</div><div class="mc-val">${result.riskLevel??'—'}/10</div></div>
         <div class="mc"><div class="mc-lbl">Current price</div><div class="mc-val">${result.currentPrice?'₹'+Number(result.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
         <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`(${tech.rsiSignal})`:''}</div></div>
         <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
       </div>
-      ${(pt.oneWeek||pt.oneMonth||pt.threeMonths)?`<div style="margin-bottom:10px"><div class="res-block-title" style="padding:0 0 8px">AI Price Targets</div>
-      <div class="price-targets">
-        <div class="pt-card"><div class="pt-label">1 Week Target</div><div class="pt-price">${pt.oneWeek?'₹'+Number(pt.oneWeek).toLocaleString('en-IN'):'—'}</div><div class="pt-ret up">Short term</div></div>
-        <div class="pt-card"><div class="pt-label">1 Month Target</div><div class="pt-price">${pt.oneMonth?'₹'+Number(pt.oneMonth).toLocaleString('en-IN'):'—'}</div><div class="pt-ret up">Medium term</div></div>
-        <div class="pt-card"><div class="pt-label">3 Month Target</div><div class="pt-price">${pt.threeMonths?'₹'+Number(pt.threeMonths).toLocaleString('en-IN'):'—'}</div><div class="pt-ret up">Long term</div></div>
-      </div></div>`:''}
       ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate (Elite)</div>
       <div class="ai-debate" style="margin-bottom:10px">
         ${debate.map(m=>`<div class="debate-card">
-          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal signal-${(m.signal||'hold').toLowerCase()}">${m.signal}</span></div>
-          <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(${m.confidence}% conf.)</span></div>
+          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-buy':(m.sentiment||'').includes('bearish')?'signal-sell':'signal-hold'}">${sentimentLabel}</span></div>
+          <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
-      <div class="res-block"><div class="res-block-title">AI Reasoning</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
+      <div class="res-block"><div class="res-block-title">What the data shows</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
-      ${(result.catalysts&&result.catalysts.length)?`<div class="res-block"><div class="res-block-title">Catalysts</div><div class="res-block-text">${result.catalysts.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
+      ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
       <div class="admin-panel" style="margin-bottom:10px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Multi-Timeframe AI View</div>
@@ -2978,20 +2979,20 @@ async function renderScreener(){
       }
       if(screenerSignal){
         const s=signals[it.symbol];
-        if(!s||s.signal!==screenerSignal)return false;
+        if(!s||s.strength!==screenerSignal)return false;
       }
       return true;
     });
 
     if(!filtered.length){
       const dirLabel=screenerDirection==='up'?'up':screenerDirection==='down'?'down':null;
-      const sigLabel=screenerSignal?screenerSignal.charAt(0)+screenerSignal.slice(1).toLowerCase():null;
-      const bits=[dirLabel,sigLabel?`${sigLabel} signal`:null].filter(Boolean).join(' + ');
+      const sigLabel=screenerSignal||null;
+      const bits=[dirLabel,sigLabel?`${sigLabel} reading`:null].filter(Boolean).join(' + ');
       el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--text3)">${bits?`No stocks matching ${bits} on this page right now — try Next page or switch filters.`:'No stocks matched — this shows only real data, no placeholders.'}</div>`;
       return;
     }
 
-    const sigStyle={BUY:{c:'var(--green2)',bg:'rgba(34,197,94,.12)'},SELL:{c:'var(--rose2)',bg:'rgba(244,63,94,.12)'},HOLD:{c:'var(--text2)',bg:'rgba(255,255,255,.06)'}};
+    const sigStyle={'Strong Bullish Bias':{c:'var(--green2)',bg:'rgba(34,197,94,.12)'},'Strong Bearish Bias':{c:'var(--rose2)',bg:'rgba(244,63,94,.12)'},'Mixed / Neutral':{c:'var(--text2)',bg:'rgba(255,255,255,.06)'}};
     el.innerHTML=filtered.map((it,i)=>{
       const q=quotes[it.symbol];
       const s=signals[it.symbol];
@@ -2999,8 +3000,8 @@ async function renderScreener(){
       const priceHtml=q
         ?`<div style="text-align:right;min-width:90px"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--text)">₹${fmtINR(q.price)}</div><div style="font-size:10px;color:${q.up?'var(--green2)':'var(--rose2)'}">${q.up?'▲ +':'▼ '}${q.changePct.toFixed(2)}% ${changeLabel}</div></div>`
         :`<div style="text-align:right;min-width:90px;color:var(--text3);font-size:11px">No quote yet</div>`;
-      const sigHtml=s
-        ?`<span style="margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:${sigStyle[s.signal].c};background:${sigStyle[s.signal].bg}" title="Computed technical signal, not AI — ${s.confidence}% confidence">${s.signal} · ${s.confidence}%</span>`
+      const sigHtml=s&&sigStyle[s.strength]
+        ?`<span style="margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:${sigStyle[s.strength].c};background:${sigStyle[s.strength].bg}" title="Computed technical reading, not AI, not a recommendation — ${s.bullishVotes}/${s.totalVotes} bullish votes">${s.strength} · ${s.bullishVotes}/${s.totalVotes}</span>`
         :'';
       const exLabel=it.exchange==='BSE_EQ'?'BSE':'NSE';
       return `
@@ -4883,38 +4884,48 @@ function computeTradeSignalCard(candles){
   else if(trendStrength<=40){score-=1;votes.push('Weak trend momentum');}
 
   const bullish=score>=0;
-  const signal=score>=4?'Strong Buy':score>=2?'Buy':score<=-4?'Strong Sell':score<=-2?'Sell':'Hold';
-  const confidence=Math.max(0,Math.min(100,Math.round(50+(score/6)*50)));
+  // COMPLIANCE: no BUY/SELL/HOLD verdict — SEBI's Research Analyst /
+  // Investment Adviser rules cover "trading calls" and "stop-loss targets"
+  // as regulated activity requiring registration, regardless of whether a
+  // human, a formula, or an AI produced them. This app is not
+  // SEBI-registered, so it reports a descriptive strength reading instead
+  // of an instruction — see indicators.js deriveSignal() for the backend
+  // equivalent of this same change.
+  const strength=score>=4?'Strong Bullish Bias':score>=2?'Bullish Bias':score<=-4?'Strong Bearish Bias':score<=-2?'Bearish Bias':'Mixed / Neutral';
+  const strengthScore=Math.max(0,Math.min(100,Math.round(50+(score/6)*50)));
 
-  const entryLow=lastClose-0.3*atr, entryHigh=lastClose+0.3*atr;
+  // These are ATR-derived reference levels for the user's OWN risk
+  // planning, not a recommended entry/exit — see labels in
+  // tradeSignalCardHtml() below.
+  const refLow=lastClose-0.3*atr, refHigh=lastClose+0.3*atr;
   const riskDist=1.5*atr;
-  const stopLoss=bullish?lastClose-riskDist:lastClose+riskDist;
-  const t1=bullish?lastClose+riskDist:lastClose-riskDist;
-  const t2=bullish?lastClose+2*riskDist:lastClose-2*riskDist;
-  const t3=bullish?lastClose+3*riskDist:lastClose-3*riskDist;
+  const downsideRef=bullish?lastClose-riskDist:lastClose+riskDist;
+  const r1=bullish?lastClose+riskDist:lastClose-riskDist;
+  const r2=bullish?lastClose+2*riskDist:lastClose-2*riskDist;
+  const r3=bullish?lastClose+3*riskDist:lastClose-3*riskDist;
 
   const trendDirection=Math.abs(slopePct)<0.3?'Sideways':(ema20[last]>ema50[last]?'Bullish':'Bearish');
 
   const atrPct=(atr/lastClose)*100;
   const duration=atrPct>=3.5?'Intraday':atrPct>=1.8?'Swing (few days–2 weeks)':trendStrength>=55?'Positional (2–8 weeks)':'Long-Term';
 
-  return {signal,confidence,entryLow,entryHigh,stopLoss,t1,t2,t3,support,resistance,trendDirection,breakout,duration,votes,lastClose,bullish};
+  return {strength,strengthScore,entryLow:refLow,entryHigh:refHigh,stopLoss:downsideRef,t1:r1,t2:r2,t3:r3,support,resistance,trendDirection,breakout,duration,votes,lastClose,bullish};
 }
 function tradeSignalCardHtml(sig,sym){
-  if(!sig)return `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Not enough real candle history yet to compute a trade signal for ${sym}.</div>`;
-  const sigCls=sig.signal.includes('Buy')?'ind-bull':sig.signal.includes('Sell')?'ind-bear':'ind-neut';
+  if(!sig)return `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Not enough real candle history yet to compute a technical reading for ${sym}.</div>`;
+  const sigCls=sig.strength.includes('Bullish')?'ind-bull':sig.strength.includes('Bearish')?'ind-bear':'ind-neut';
   return `
-    <div style="font-size:11px;color:var(--text3);margin:18px 0 8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Computed trade signal (technical analysis, not AI) — RSI, MACD, EMA, VWAP, Supertrend and ATR run on real candles.</div>
+    <div style="font-size:11px;color:var(--text3);margin:18px 0 8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Computed technical reading (not AI, not investment advice) — RSI, MACD, EMA, VWAP, Supertrend and ATR run on real candles. These are reference numbers for your own research, not a recommendation.</div>
     <div class="indicator-grid">
-      <div class="ind-card"><div class="ind-name">Signal</div><div class="ind-value">${sig.signal}</div><div class="ind-signal ${sigCls}">${sig.confidence}% confidence</div></div>
-      <div class="ind-card"><div class="ind-name">Entry Point</div><div class="ind-value" style="font-size:14px">₹${fmtINR(sig.entryLow)}–₹${fmtINR(sig.entryHigh)}</div><div class="ind-signal ind-neut">Suggested entry range</div></div>
-      <div class="ind-card"><div class="ind-name">Stop Loss</div><div class="ind-value" style="font-size:14px">₹${fmtINR(sig.stopLoss)}</div><div class="ind-signal ind-bear">ATR-based risk level</div></div>
-      <div class="ind-card"><div class="ind-name">Target 1 / 2 / 3</div><div class="ind-value" style="font-size:12px">₹${fmtINR(sig.t1)} · ₹${fmtINR(sig.t2)} · ₹${fmtINR(sig.t3)}</div><div class="ind-signal ind-bull">1R / 2R / 3R</div></div>
+      <div class="ind-card"><div class="ind-name">Technical Bias</div><div class="ind-value" style="font-size:14px">${sig.strength}</div><div class="ind-signal ${sigCls}">${sig.strengthScore}/100 bullish-lean score</div></div>
+      <div class="ind-card"><div class="ind-name">Volatility Reference Zone</div><div class="ind-value" style="font-size:14px">₹${fmtINR(sig.entryLow)}–₹${fmtINR(sig.entryHigh)}</div><div class="ind-signal ind-neut">±0.3 ATR around last close — not a suggested entry</div></div>
+      <div class="ind-card"><div class="ind-name">1.5×ATR Downside Reference</div><div class="ind-value" style="font-size:14px">₹${fmtINR(sig.stopLoss)}</div><div class="ind-signal ind-bear">For your own risk planning — not a recommended stop</div></div>
+      <div class="ind-card"><div class="ind-name">1R / 2R / 3R Reference Levels</div><div class="ind-value" style="font-size:12px">₹${fmtINR(sig.t1)} · ₹${fmtINR(sig.t2)} · ₹${fmtINR(sig.t3)}</div><div class="ind-signal ind-bull">Multiples of the ATR risk unit above</div></div>
       <div class="ind-card"><div class="ind-name">Risk : Reward</div><div class="ind-value">1 : 2</div><div class="ind-signal ind-neut">At Target 2</div></div>
       <div class="ind-card"><div class="ind-name">Trend Direction</div><div class="ind-value">${sig.trendDirection}</div><div class="ind-signal ${sig.trendDirection==='Bullish'?'ind-bull':sig.trendDirection==='Bearish'?'ind-bear':'ind-neut'}">EMA20/EMA50 slope</div></div>
       <div class="ind-card"><div class="ind-name">Breakout Detection</div><div class="ind-value">${sig.breakout}</div><div class="ind-signal ${sig.breakout==='Breakout'?'ind-bull':sig.breakout==='Breakdown'?'ind-bear':'ind-neut'}">20-day range + volume</div></div>
       <div class="ind-card"><div class="ind-name">Support / Resistance</div><div class="ind-value" style="font-size:13px">₹${fmtINR(sig.support)} / ₹${fmtINR(sig.resistance)}</div><div class="ind-signal ind-neut">60-day real range</div></div>
-      <div class="ind-card"><div class="ind-name">Confidence Score</div><div class="ind-value">${sig.confidence}%</div><div class="ind-signal ind-neut">Of 6 technical votes</div></div>
+      <div class="ind-card"><div class="ind-name">Bullish-Lean Score</div><div class="ind-value">${sig.strengthScore}/100</div><div class="ind-signal ind-neut">Of 6 technical votes</div></div>
       <div class="ind-card"><div class="ind-name">Trade Duration</div><div class="ind-value" style="font-size:13px">${sig.duration}</div><div class="ind-signal ind-neut">Based on volatility</div></div>
     </div>
     <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px"><strong style="color:var(--text)">Technical reasoning:</strong> ${sig.votes.join(' · ')}.</div>
@@ -5205,18 +5216,19 @@ async function runCompareAnalysis(){
   rw.style.display='block';
   const card=(sym,r)=>{
     if(!r.ok)return `<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>${sym}:</strong> ${r.error}</div>`;
-    const d=r.data, sig=(d.signal||'HOLD').toUpperCase(), pt=d.priceTargets||{};
+    const d=r.data, sentiment=d.sentiment||'neutral';
+    const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[sentiment]||'Neutral';
+    const sentimentCls=sentiment.includes('bullish')?'b-buy':sentiment.includes('bearish')?'b-sell':'b-hold';
     return `<div class="admin-panel" style="flex:1;min-width:260px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="res-sym-big" style="font-size:18px">${d.stockSymbol||sym}</div>
-        <span class="badge b-${sig.toLowerCase()}">${sig}</span>
+        <span class="badge ${sentimentCls}">${sentimentLabel}</span>
       </div>
       <div class="meta-row" style="margin-bottom:10px">
-        <div class="mc"><div class="mc-lbl">Confidence</div><div class="mc-val">${d.confidence??'—'}%</div></div>
+        <div class="mc"><div class="mc-lbl">Tech. score</div><div class="mc-val">${d.technicalScore??'—'}/100</div></div>
         <div class="mc"><div class="mc-lbl">Price</div><div class="mc-val">${d.currentPrice?'₹'+Number(d.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
-        <div class="mc"><div class="mc-lbl">Risk</div><div class="mc-val">${d.riskScore??'—'}/10</div></div>
+        <div class="mc"><div class="mc-lbl">Volatility</div><div class="mc-val">${d.riskLevel??'—'}/10</div></div>
       </div>
-      ${pt.oneMonth?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px">1M target: <strong style="color:var(--text)">₹${Number(pt.oneMonth).toLocaleString('en-IN')}</strong></div>`:''}
       <div style="font-size:12px;color:var(--text2);line-height:1.6">${d.reasoning||''}</div>
     </div>`;
   };

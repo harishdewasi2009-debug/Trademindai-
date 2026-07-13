@@ -196,8 +196,13 @@ router.post(
     }
 
     // ── Log to prediction_history ─────────────────────────────────────────
+    // COMPLIANCE: this now records the descriptive "sentiment" reading
+    // (e.g. "moderate_bullish") rather than a buy/sell/hold recommendation,
+    // and does not store a target_price — this app doesn't predict future
+    // prices. `recommendation`/`target_price` columns are kept for schema
+    // compatibility but populated with the non-advisory equivalents.
     try {
-      if (result.signal && result.currentPrice) {
+      if (result.sentiment && result.currentPrice) {
         await query(
           `INSERT INTO prediction_history
              (user_id, stock_symbol, recommendation, entry_price,
@@ -206,15 +211,15 @@ router.post(
           [
             req.user.id,
             stockSymbol.toUpperCase(),
-            result.signal.toLowerCase(),
+            result.sentiment,       // descriptive reading, e.g. "moderate_bullish" — not an instruction
             result.currentPrice,
-            result.priceTargets?.oneMonth || null,
+            null,                   // no price prediction stored — see compliance note above
             // Matches every horizon value the frontend can actually send
             // (getAnalysisHorizonRisk() in index.html) — previously only
             // '1 week'/'3 months' were handled and everything else silently
             // fell back to 30, even a 6-12 month "long" horizon pick.
             { '1 week': 7, '1 month': 30, '3 months': 90 }[horizon] || 30,
-            result.confidence,
+            result.technicalScore,
           ]
         );
       }
@@ -274,8 +279,17 @@ router.post(
       throw new AppError('AI chat is not configured on this server.', 501);
     }
 
-    const system = `You are TradeMind AI, a knowledgeable Indian stock market assistant.
-Give concise, practical answers. Always add a brief disclaimer when giving specific investment opinions.
+    // COMPLIANCE: TradeMind is not a SEBI-registered Investment Adviser or
+    // Research Analyst. SEBI's regulations cover "trading calls" and
+    // stop-loss/price-target guidance regardless of whether a human or an
+    // AI produces them, so this assistant must never answer with a
+    // buy/sell/hold instruction, a price target, or a specific entry/exit
+    // level — even if the user directly asks for one. It can explain
+    // concepts, describe what indicators show, and point the user to their
+    // own research, but the decision must stay with the user.
+    const system = `You are TradeMind AI, a knowledgeable Indian stock market data assistant. You are NOT a SEBI-registered Investment Adviser or Research Analyst, and you must never act like one.
+Give concise, practical, educational answers about markets, indicators, and concepts.
+If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
 Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
     let reply, modelUsed, modelLabel;
