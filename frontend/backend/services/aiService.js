@@ -82,18 +82,38 @@ function calcCost(model, tokIn, tokOut) {
 //  Throws if Upstox isn't connected or returns no data — callers must
 //  surface that as "Data Unavailable", never fall back to invented numbers.
 // ─────────────────────────────────────────────────────────────────────────
-async function fetchRealMarketContext(stockSymbol) {
+// FIX (index analysis): NIFTY 50 / SENSEX / NIFTY BANK aren't equities —
+// resolveInstrumentKey() (used by getLtp/getHistoricalCandles) only knows
+// equity trading symbols, so analysing an index by name used to fail
+// outright. Route these three through the dedicated index quote/candle
+// functions instead (same ones the Charts/Options pages already use).
+const INDEX_LABELS = ['NIFTY 50', 'SENSEX', 'NIFTY BANK'];
+function normalizeIndexLabel(stockSymbol) {
+  const s = (stockSymbol || '').trim().toUpperCase();
+  if (INDEX_LABELS.includes(s)) return s;
+  // Accept common aliases so users typing "NIFTY", "BANKNIFTY" etc. in the
+  // Analysis search box still resolve to the right index.
+  if (s === 'NIFTY' || s === 'NIFTY50') return 'NIFTY 50';
+  if (s === 'BANKNIFTY' || s === 'NIFTYBANK' || s === 'BANK NIFTY') return 'NIFTY BANK';
+  return null;
+}
+
+async function fetchRealMarketContext(stockSymbol, exchange) {
+  const indexLabel = normalizeIndexLabel(stockSymbol);
+  if (indexLabel) return fetchRealIndexContext(indexLabel);
+
   const to = new Date();
   const from = new Date();
   from.setFullYear(from.getFullYear() - 1);
 
   const [quote, candleData] = await Promise.all([
-    marketDataService.getLtp(stockSymbol),
+    marketDataService.getLtp(stockSymbol, exchange),
     marketDataService.getHistoricalCandles(stockSymbol, {
       unit: 'days',
       interval: 1,
       from: from.toISOString().slice(0, 10),
       to: to.toISOString().slice(0, 10),
+      exchange,
     }),
   ]);
 
@@ -109,6 +129,46 @@ async function fetchRealMarketContext(stockSymbol) {
   return { quote, indicators, candleCount: candles.length };
 }
 
+async function fetchRealIndexContext(indexLabel) {
+  const to = new Date();
+  const from = new Date();
+  from.setFullYear(from.getFullYear() - 1);
+
+  const [quotes, candleData] = await Promise.all([
+    marketDataService.getIndexQuotes(),
+    marketDataService.getIndexHistoricalCandles(indexLabel, {
+      unit: 'days',
+      interval: 1,
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+    }),
+  ]);
+
+  const idx = quotes.indices.find((i) => i.label === indexLabel);
+  if (!idx || idx.lastPrice == null) {
+    throw new AppError(`Real index quote for ${indexLabel} is currently unavailable from Upstox.`, 503);
+  }
+  const quote = {
+    symbol: indexLabel,
+    instrumentKey: idx.instrumentKey,
+    lastPrice: idx.lastPrice,
+    previousClose: idx.previousClose,
+    changePct: idx.changePct,
+    fetchedAt: idx.fetchedAt,
+  };
+
+  const candles = candleData?.candles || [];
+  const indicators = computeAllIndicators(candles);
+  if (!indicators) {
+    throw new AppError(
+      `Not enough real historical data returned by Upstox for ${indexLabel} to compute indicators.`,
+      503
+    );
+  }
+
+  return { quote, indicators, candleCount: candles.length };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 //  PROMPT BUILDER
 //  Returns a structured system + user message pair for stock analysis.
@@ -116,16 +176,25 @@ async function fetchRealMarketContext(stockSymbol) {
 //  explicitly told to analyze only the numbers provided, never to invent
 //  or estimate a price/indicator value on its own.
 // ─────────────────────────────────────────────────────────────────────────
+// COMPLIANCE NOTE: This prompt intentionally does NOT ask for a BUY/SELL/HOLD
+// verdict, a future price prediction, or an expected return. Under SEBI's
+// Research Analyst / Investment Adviser regulations, "giving stop-loss
+// targets" and "providing trading calls" are explicitly regulated research
+// services requiring registration — regardless of whether a human or an AI
+// produced them. This app is not SEBI-registered, so it must describe what
+// the real indicator data shows (a "technical score") without instructing
+// the user to buy, sell, or hold, and without predicting a future price.
 function buildPrompt(stockSymbol, horizon, riskTolerance, marketContext) {
   const { quote, indicators } = marketContext;
 
-  const system = `You are TradeMind AI, an expert Indian stock market analyst.
+  const system = `You are TradeMind AI, an expert Indian stock market data analyst.
 You will be given REAL, live market data (price, volume, and computed technical indicators) for one NSE/BSE stock, fetched moments ago from Upstox. Base your entire analysis strictly on the numbers provided below — never invent, estimate, or recall a price or indicator value from your own training data or general knowledge, even if you believe you know this stock. If the provided data seems insufficient for some part of the analysis, say so in "reasoning" rather than guessing.
+IMPORTANT — this is a data-description tool, not investment advice: never tell the user to buy, sell, or hold; never state or imply a future price, price target, or expected return; do not use the words "buy", "sell", or "hold" as a recommendation. Describe only what the current indicators show and what they have historically meant, in neutral, descriptive language. The user makes their own decision.
 Return ONLY a JSON object — no prose, no markdown fences, no preamble. Prices in INR. All percentage values as numbers (not strings). The "currentPrice" field in your response MUST exactly equal the currentPrice given to you below.`;
 
-  const user = `Analyse the stock: ${stockSymbol.toUpperCase()}
-Horizon: ${horizon || '1 month'}
-Risk tolerance: ${riskTolerance || 'moderate'}
+  const user = `Describe the current technical picture for: ${stockSymbol.toUpperCase()}
+Horizon of interest: ${horizon || '1 month'}
+Stated risk tolerance: ${riskTolerance || 'moderate'}
 
 REAL LIVE MARKET DATA (fetched from Upstox just now — use these numbers, do not invent your own):
 - Current price (LTP): ${quote?.lastPrice ?? indicators.currentPrice}
@@ -146,16 +215,10 @@ REAL LIVE MARKET DATA (fetched from Upstox just now — use these numbers, do no
 
 Return a JSON object with this exact structure:
 {
-  "signal": "BUY" | "SELL" | "HOLD",
-  "confidence": <integer 0-100>,
+  "technicalScore": <integer 0-100, how strongly the CURRENT indicators lean bullish (100) vs bearish (0); 50 = mixed/neutral — this describes the data, it is not a recommendation>,
+  "sentiment": "strong_bullish" | "moderate_bullish" | "neutral" | "moderate_bearish" | "strong_bearish",
   "currentPrice": <number, must equal the current price given above>,
-  "priceTargets": {
-    "oneWeek": <number>,
-    "oneMonth": <number>,
-    "threeMonths": <number>
-  },
-  "expectedReturn": <number, percentage>,
-  "riskScore": <integer 1-10>,
+  "riskLevel": <integer 1-10, how volatile/risky this stock's recent price action has been, based on ATR — NOT a personalized suitability rating>,
   "technicals": {
     "rsi": ${indicators.rsi},
     "rsiSignal": "oversold" | "neutral" | "overbought",
@@ -164,9 +227,9 @@ Return a JSON object with this exact structure:
     "resistance": ${indicators.resistance},
     "macd": "bullish_crossover" | "bearish_crossover" | "neutral"
   },
-  "reasoning": "<2-3 sentence investment thesis grounded in the data above>",
-  "risks": ["<risk 1>", "<risk 2>", "<risk 3>"],
-  "catalysts": ["<catalyst 1>", "<catalyst 2>"]
+  "reasoning": "<2-3 sentences describing what the indicators show right now, in neutral descriptive language — no buy/sell/hold instruction, no future price>",
+  "risks": ["<risk factor 1>", "<risk factor 2>", "<risk factor 3>"],
+  "watchPoints": ["<technical level or event worth watching 1>", "<watch point 2>"]
 }`;
 
   return { system, user };
@@ -191,6 +254,14 @@ async function callGemini(model, system, user, maxTokens) {
       temperature: 0.2,
       maxOutputTokens: maxTokens,      // ← plan cap applied here
       responseMimeType: 'application/json',
+      // FIX: Gemini 2.5 models reserve part of maxOutputTokens for internal
+      // "thinking" by default. On a small cap like the Free plan's 1,500
+      // tokens, the model could burn its whole budget thinking and return
+      // an EMPTY response — which then failed JSON parsing downstream and
+      // surfaced as the generic "AI analysis is temporarily unavailable"
+      // error with no clue why. We don't need chain-of-thought for a
+      // structured data-extraction task, so turn it off entirely.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   };
 
@@ -207,9 +278,19 @@ async function callGemini(model, system, user, maxTokens) {
   }
 
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  const finishReason = data.candidates?.[0]?.finishReason;
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   const tokIn  = data.usageMetadata?.promptTokenCount     || 0;
   const tokOut = data.usageMetadata?.candidatesTokenCount || 0;
+
+  // FIX: previously this silently fell back to '{}' when Gemini returned no
+  // text, which then failed JSON parsing further downstream with a vague
+  // "AI returned unparseable JSON" error and no indication of WHY the text
+  // was missing. Surface the real reason (e.g. MAX_TOKENS truncation) here
+  // instead, so logs actually explain the failure.
+  if (!text) {
+    throw new Error(`Gemini returned no text (finishReason: ${finishReason || 'unknown'})`);
+  }
 
   return { text, tokIn, tokOut, model };
 }
@@ -348,6 +429,12 @@ function groundResult(result, indicators) {
   result.technicals.rsi = indicators.rsi;
   result.technicals.support = indicators.support;
   result.technicals.resistance = indicators.resistance;
+  // COMPLIANCE: strip these even if an older client/model still sends them —
+  // this endpoint must never surface a buy/sell/hold verdict or a price
+  // prediction (see buildPrompt() note above).
+  delete result.signal;
+  delete result.priceTargets;
+  delete result.expectedReturn;
   return result;
 }
 
@@ -355,52 +442,39 @@ function groundResult(result, indicators) {
 //  CONSENSUS BUILDER  (Pro + Elite — multiple models in parallel)
 //  Majority-vote on signal, average on numeric fields.
 // ─────────────────────────────────────────────────────────────────────────
+// COMPLIANCE: consensus is now built from descriptive fields only
+// (technicalScore, sentiment, riskLevel) — no signal vote, no price target
+// averaging. See buildPrompt() note above for why.
 function buildConsensus(results) {
   const valid = results.filter(Boolean);
   if (valid.length === 0) return null;
   if (valid.length === 1) return valid[0];
 
-  const signalCount = {};
-  valid.forEach(r => { signalCount[r.signal] = (signalCount[r.signal] || 0) + 1; });
-  const signal = Object.entries(signalCount).sort((a, b) => b[1] - a[1])[0][0];
+  const sentimentCount = {};
+  valid.forEach(r => { sentimentCount[r.sentiment] = (sentimentCount[r.sentiment] || 0) + 1; });
+  const sentimentEntries = Object.entries(sentimentCount);
+  const sentiment = sentimentEntries.length
+    ? sentimentEntries.sort((a, b) => b[1] - a[1])[0][0]
+    : 'neutral';
 
   const avg  = key => Math.round(valid.reduce((s, r) => s + (r[key] || 0), 0) / valid.length);
   const avgF = key => parseFloat((valid.reduce((s, r) => s + (r[key] || 0), 0) / valid.length).toFixed(2));
 
-  // FIX: dot-path getter + averager so nested fields (e.g. "priceTargets.oneWeek")
-  // are actually read and averaged across models. Previously this used the same
-  // bracket lookup as the flat avg/avgF helpers, so r['priceTargets.oneWeek']
-  // was always undefined and the consensus silently fell back to the primary
-  // model's number on every request — i.e. price targets were NEVER actually
-  // averaged across models, despite that being the whole point of consensus.
-  const getPath = (obj, path) => path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
-  const avgNested = path => {
-    const vals = valid.map(r => getPath(r, path)).filter(v => typeof v === 'number' && !isNaN(v));
-    if (!vals.length) return null;
-    return parseFloat((vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(2));
-  };
-
-  const allReasonings = valid.map(r => r.reasoning).filter(Boolean);
-  const allRisks      = [...new Set(valid.flatMap(r => r.risks      || []))].slice(0, 5);
-  const allCatalysts  = [...new Set(valid.flatMap(r => r.catalysts  || []))].slice(0, 4);
+  const allReasonings  = valid.map(r => r.reasoning).filter(Boolean);
+  const allRisks       = [...new Set(valid.flatMap(r => r.risks       || []))].slice(0, 5);
+  const allWatchPoints = [...new Set(valid.flatMap(r => r.watchPoints || []))].slice(0, 4);
 
   const primary = valid[0];
 
   return {
-    signal,
-    confidence:     avg('confidence'),
+    technicalScore: avg('technicalScore'),
+    sentiment,
     currentPrice:   avgF('currentPrice'),
-    priceTargets: {
-      oneWeek:      avgNested('priceTargets.oneWeek')     ?? primary.priceTargets?.oneWeek,
-      oneMonth:     avgNested('priceTargets.oneMonth')    ?? primary.priceTargets?.oneMonth,
-      threeMonths:  avgNested('priceTargets.threeMonths') ?? primary.priceTargets?.threeMonths,
-    },
-    expectedReturn: avgF('expectedReturn'),
-    riskScore:      avg('riskScore'),
+    riskLevel:      avg('riskLevel'),
     technicals:     primary.technicals,
     reasoning:      allReasonings.join(' | '),
     risks:          allRisks,
-    catalysts:      allCatalysts,
+    watchPoints:    allWatchPoints,
     consensusFrom:  valid.length,
   };
 }
@@ -421,13 +495,13 @@ function isAvailable(availableModelKeys, modelKey) {
   return availableModelKeys.includes(modelKey);
 }
 
-async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, availableModelKeys }) {
+async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, userPlan, availableModelKeys }) {
   // Real data first — if this fails (Upstox not connected, symbol not
   // found, no historical candles), we throw here and never reach an AI
   // call at all. There is no fallback that lets the AI guess instead.
   let marketContext;
   try {
-    marketContext = await fetchRealMarketContext(stockSymbol);
+    marketContext = await fetchRealMarketContext(stockSymbol, exchange);
   } catch (err) {
     console.error(`[aiService] Real market data fetch failed for ${stockSymbol}:`, err.message);
     throw new AppError(
@@ -568,10 +642,10 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
     const parsed = raws.map(r => safeParseJSON(r.text));
 
     const modelDebate = raws.map((r, i) => ({
-      model:      r.model,
-      signal:     parsed[i]?.signal     || 'HOLD',
-      confidence: parsed[i]?.confidence || 0,
-      reasoning:  parsed[i]?.reasoning  || '',
+      model:          r.model,
+      technicalScore: parsed[i]?.technicalScore || 50,
+      sentiment:      parsed[i]?.sentiment       || 'neutral',
+      reasoning:      parsed[i]?.reasoning       || '',
     }));
 
     const consensusResult = groundResult(buildConsensus(parsed.filter(Boolean)), marketContext.indicators);
@@ -606,48 +680,136 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan, ava
 //  JSON signal — these features are about explaining/synthesizing REAL data
 //  already fetched from Upstox, not generating a new Buy/Sell/Hold verdict.
 // ─────────────────────────────────────────────────────────────────────────
+// COMPLIANCE NOTE: these prompts are written to produce descriptive,
+// educational commentary — not stock-specific recommendations, strategy
+// suggestions, or trading calls. SEBI's Research Analyst / Investment
+// Adviser regulations cover "trading calls" and portfolio-level advice
+// regardless of whether a human or an AI produced them, and this app is
+// not SEBI-registered. Each prompt below explicitly instructs the model to
+// describe what the data shows and explain general concepts, and NOT to
+// tell the user what action to take.
 const INSIGHT_PROMPTS = {
-  tradeIdeas: (ctx) => `You are a trading assistant. Below are REAL scan results from a live NSE/BSE market scanner (real prices, real volume, real technical conditions — not simulated). Pick the 3-5 most compelling setups and explain briefly why each stands out, in plain language a retail trader would understand. Be direct about risk too, don't just hype. Scan type: ${ctx.scanType}. Results:\n${JSON.stringify(ctx.matches)}`,
+  tradeIdeas: (ctx) => `You are a markets data assistant. Below are REAL scan results from a live NSE/BSE market scanner (real prices, real volume, real technical conditions — not simulated). For the 3-5 most notable entries, describe in plain language WHAT technical condition triggered the match (e.g. "RSI dropped below 30 while volume rose") and what that condition has generally meant historically. Do NOT recommend buying, selling, or entering a position, and do NOT rank them as "best" opportunities — just describe the setups factually and note the risk in each. Scan type: ${ctx.scanType}. Results:\n${JSON.stringify(ctx.matches)}`,
 
-  portfolioHealth: (ctx) => `You are a portfolio risk reviewer. Below is a trader's REAL current holdings with real live prices (not simulated). Comment on: concentration risk (any single stock or sector too large?), correlated positions, and 2-3 concrete suggestions. Be specific using the actual numbers given, not generic advice. Holdings:\n${JSON.stringify(ctx.holdings)}`,
+  portfolioHealth: (ctx) => `You are a portfolio data reviewer. Below is a trader's REAL current holdings with real live prices (not simulated). Describe, using the actual numbers given: concentration levels (is any single stock or sector a large % of the total?), and any correlated positions you can identify. Flag these as observations only — do NOT tell the user to trim, add, sell, or rebalance any specific position; simply describe what the numbers show so the user can decide for themselves. Holdings:\n${JSON.stringify(ctx.holdings)}`,
 
-  marketBrief: (ctx) => `You are a markets writer. Write a 3-4 sentence morning market brief for Indian traders using ONLY these REAL numbers (not simulated) — today's NIFTY/SENSEX/BANKNIFTY levels and change%, plus the real top gainers/losers given. Be concise and factual, no invented reasons for moves unless obvious from the data. Data:\n${JSON.stringify(ctx.marketData)}`,
+  marketBrief: (ctx) => `You are a markets writer. Write a 3-4 sentence factual morning market brief for Indian traders using ONLY these REAL numbers (not simulated) — today's NIFTY/SENSEX/BANKNIFTY levels and change%, plus the real top gainers/losers given. Be concise and factual, no invented reasons for moves unless obvious from the data, and do not suggest any action the reader should take. Data:\n${JSON.stringify(ctx.marketData)}`,
 
-  optionStrategy: (ctx) => `You are an options strategy advisor. Below is a REAL option chain snapshot (real spot price, real PCR, real Max Pain, real OI, not simulated) for ${ctx.underlying} expiring ${ctx.expiry}. Suggest 1-2 strategies (e.g. straddle, bull call spread, iron condor) that fit this real setup, with brief reasoning grounded in the actual PCR/Max Pain/OI values given. Include the key risk. Data:\n${JSON.stringify(ctx.chainSummary)}`,
+  optionStrategy: (ctx) => `You are an options data educator. Below is a REAL option chain snapshot (real spot price, real PCR, real Max Pain, real OI, not simulated) for ${ctx.underlying} expiring ${ctx.expiry}. Explain in plain language what this specific combination of PCR, Max Pain, and OI concentration typically indicates about market positioning (e.g. what a PCR in this range or an OI concentration at this strike generally suggests). Do NOT suggest or name a specific strategy to enter (no "consider a straddle/spread/etc."); keep it educational — describing the data, not prescribing an action. Include a note on the general risks of options trading. Data:\n${JSON.stringify(ctx.chainSummary)}`,
 
-  backtestAdvisor: (ctx) => `You are a quant strategy reviewer. Below are REAL backtest results (real historical trades on real Upstox candle data, not simulated) for a ${ctx.strategy} strategy on ${ctx.symbol}. Critique the strategy in plain English: what does the win rate/drawdown/avg-return actually tell us, and what's the biggest weakness a trader should know before using this live? Results:\n${JSON.stringify(ctx.results)}`,
+  backtestAdvisor: (ctx) => `You are a quant data reviewer. Below are REAL backtest results (real historical trades on real Upstox candle data, not simulated) for a ${ctx.strategy} strategy on ${ctx.symbol}. Explain in plain English what the win rate/drawdown/avg-return numbers actually mean statistically, and what limitations or weaknesses this kind of backtest generally has (e.g. overfitting, regime dependence, no slippage modeled). Do NOT tell the user whether to use this strategy live or not — describe the numbers and their limitations only. Results:\n${JSON.stringify(ctx.results)}`,
 
-  multiTimeframe: (ctx) => `You are a technical analyst. Below are REAL daily and weekly indicator readings (real RSI/MACD/trend from real Upstox candles, not simulated) for ${ctx.symbol}. Synthesize a short multi-timeframe view — e.g. "bullish daily momentum but weak weekly trend" if that's what the data shows. Be honest if the timeframes agree or conflict. Data:\n${JSON.stringify(ctx.timeframes)}`,
+  multiTimeframe: (ctx) => `You are a technical data analyst. Below are REAL daily and weekly indicator readings (real RSI/MACD/trend from real Upstox candles, not simulated) for ${ctx.symbol}. Describe factually how the daily and weekly readings compare — e.g. "daily RSI shows X while the weekly trend indicator shows Y" — and note plainly if the two timeframes agree or conflict. Do NOT state or imply what the user should do with this information. Data:\n${JSON.stringify(ctx.timeframes)}`,
 };
 
-async function getAIInsight(kind, context) {
-  const promptFn = INSIGHT_PROMPTS[kind];
-  if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
+const INSIGHT_SYSTEM = 'You are a careful, honest markets data assistant, not an investment adviser. You only comment on the real data given to you — never invent numbers, news, or reasons not present in the input. You describe what the data shows and explain general market concepts, but you NEVER tell the user to buy, sell, hold, or enter/exit any position, and you never predict future prices. If the data is insufficient to say something meaningful, say so plainly.';
 
+// Plain-text (non-JSON-forced) callers for insight generation — these
+// features return prose commentary, not a structured signal, so they must
+// NOT use the JSON-forced callGemini/callGPT/callDeepSeek above (which would
+// either reject plain prose or truncate it awkwardly into a JSON shape).
+async function callGeminiPlain(model, prompt) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('AI is not configured on the server (GEMINI_API_KEY missing).');
-
-  const prompt = promptFn(context);
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.GEMINI_FLASH}:generateContent?key=${apiKey}`;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not set');
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: 'You are a careful, honest markets assistant. You only comment on the real data given to you — never invent numbers, news, or reasons not present in the input. If the data is insufficient to say something meaningful, say so plainly.' }] },
+      system_instruction: { parts: [{ text: INSIGHT_SYSTEM }] },
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 700 },
+      generationConfig: { temperature: 0.3, maxOutputTokens: 700, thinkingConfig: { thinkingBudget: 0 } },
     }),
     signal: AbortSignal.timeout(30_000),
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini ${res.status}: ${errText.slice(0, 200)}`);
-  }
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('AI returned an empty response.');
-  return text.trim();
+  const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  if (!text) throw new Error('Gemini returned no text');
+  return { text, model };
+}
+
+async function callClaudePlain(model, prompt) {
+  const apiKey = process.env.CLAUDE_API_KEY;
+  if (!apiKey) throw new Error('CLAUDE_API_KEY not set');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model, max_tokens: 700, system: INSIGHT_SYSTEM, messages: [{ role: 'user', content: prompt }], temperature: 0.3 }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  const text = (data.content?.[0]?.text || '').trim();
+  if (!text) throw new Error('Claude returned no text');
+  return { text, model };
+}
+
+async function callDeepSeekPlain(model, prompt) {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set');
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model, messages: [{ role: 'system', content: INSIGHT_SYSTEM }, { role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  const text = (data.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('DeepSeek returned no text');
+  return { text, model };
+}
+
+// FIX: previously every plan got the exact same Gemini Flash commentary on
+// Trade Ideas / Portfolio Health / Market Brief / Option Strategy /
+// Backtest Advisor / Multi-Timeframe — the model selector on the Analysis
+// tab had no effect anywhere else. This now cascades through the actual
+// model(s) each plan pays for (config/plans.js), same spirit as
+// analyzeStock(), and falls back down the chain (never all the way to
+// nothing) if a higher model is temporarily unavailable.
+function insightCascadeForPlan(plan) {
+  switch (plan) {
+    case 'elite':
+      return [
+        { fn: callClaudePlain,   model: MODELS.CLAUDE_OPUS  },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_PRO   },
+        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_R1  },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
+      ];
+    case 'pro':
+      return [
+        { fn: callClaudePlain,   model: MODELS.CLAUDE_SONNET },
+        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3   },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH  },
+      ];
+    case 'basic':
+      return [
+        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3  },
+        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
+      ];
+    default: // free
+      return [{ fn: callGeminiPlain, model: MODELS.GEMINI_FLASH }];
+  }
+}
+
+async function getAIInsight(kind, context, plan = 'free') {
+  const promptFn = INSIGHT_PROMPTS[kind];
+  if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
+  const prompt = promptFn(context);
+
+  const cascade = insightCascadeForPlan(plan);
+  let lastErr;
+  for (const step of cascade) {
+    try {
+      const { text, model } = await step.fn(step.model, prompt);
+      return { text, modelUsed: model || step.model };
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[getAIInsight:${kind}] ${step.model} failed, trying next in cascade:`, err.message);
+    }
+  }
+  throw lastErr || new Error('AI is not configured on the server.');
 }
 
 module.exports = { analyzeStock, getAIInsight, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor };

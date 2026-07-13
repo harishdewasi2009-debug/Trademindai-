@@ -263,18 +263,108 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   const json = zlib.gunzipSync(buf).toString('utf-8');
   const list = JSON.parse(json);
 
-  const bySymbol = new Map();
+  // NOTE: Upstox's NSE.json.gz and BSE.json.gz are NOT guaranteed to use
+  // identical field names/values row-to-row (reported by multiple devs on
+  // the Upstox community forum). Relying on a single exact field match
+  // (instrument_type === 'EQ') silently produced ZERO rows for BSE_EQ on
+  // some instrument-master snapshots — that's why "BSE only" in the
+  // screener came back empty even though API access was fine. To be
+  // resilient to schema drift we now:
+  //   1) Accept either `segment` (e.g. "BSE_EQ") or `instrument_type` as
+  //      the equity marker.
+  //   2) Accept a few known aliases for the trading-symbol/key fields.
+  //   3) Skip obvious derivative/options rows (expiry/strike present).
+ const bySymbol = new Map();
+  // F&O underlyings (stocks + indices that actually have listed options) —
+  // Upstox's per-exchange file mixes equity rows in with derivative rows
+  // (segment "NSE_FO"/"BSE_FO"), each derivative row carrying an
+  // `underlying_symbol`. We collect those into a Set here, in the same
+  // pass, instead of a hardcoded/stale F&O stock list that would need
+  // manual updates every quarter when NSE revises it.
+  const fnoUnderlyings = new Set();
+  let skippedNoSymbol = 0;
   for (const row of list) {
-    // Only keep plain equities; the exchange files also include indices/derivatives.
-    if (row.instrument_type === 'EQ' && row.trading_symbol) {
-      bySymbol.set(row.trading_symbol.toUpperCase(), {
-        instrumentKey: row.instrument_key,
-        name: row.name,
-      });
+    if (row.expiry || row.strike_price) {
+      if (row.underlying_symbol) fnoUnderlyings.add(String(row.underlying_symbol).toUpperCase());
+      continue; // derivatives/options rows — not added to the equity bySymbol map
+    }
+
+    const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
+    const instrumentKey = row.instrument_key || row.instrumentKey;
+    if (!tradingSymbol || !instrumentKey) { skippedNoSymbol++; continue; }
+
+    // Upstox's segment/instrument_type fields are unreliable on the BSE
+    // file (sometimes blank for real equities, sometimes shared with debt
+    // instruments) — that inconsistency is what caused BSE to alternate
+    // between "0 stocks" and "full of bonds/NCDs" depending on how strict
+    // this check was. The ISIN itself is reliable and exchange-agnostic:
+    // Indian ISINs encode a security-type code right after the issuer code
+    // — "01" is always equity shares (bonds/NCDs use "08", preference
+    // shares "02", etc). instrument_key is "EXCHANGE|ISIN", e.g.
+    // "BSE_EQ|INE002A01018" — so we check that instead of segment/type.
+    const isin = String(instrumentKey).split('|')[1] || '';
+    const isEquity = isin.slice(7, 9) === '01';
+    if (!isEquity) continue;
+
+    bySymbol.set(String(tradingSymbol).toUpperCase(), {
+      instrumentKey,
+      name: row.name || String(tradingSymbol),
+    });
+  }
+  if (bySymbol.size === 0) {
+    // Don't cache an empty result — a transient/malformed download shouldn't
+    // black out an entire exchange for the next 24h TTL. Throw so the route
+    // surfaces a real error instead of a silent "no stocks found".
+    throw new AppError(
+      `Upstox ${exchange} instrument master parsed to 0 equities (downloaded ${list.length} rows, ${skippedNoSymbol} missing symbol/key). The file format may have changed.`,
+      502
+    );
+  }
+
+  instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
+  return instrumentMasterCache[exchange];
+}
+
+// Every stock symbol (across NSE + BSE) that actually has listed options,
+// plus the tradeable indices (NIFTY, BANKNIFTY, SENSEX, etc). Backs the
+// Options page's search bar so it only ever suggests underlyings that will
+// actually return a real option chain, instead of all 5,000+ equities.
+async function getFnoUnderlyings() {
+  const symbols = new Set();
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
+    try {
+      const { fnoUnderlyings } = await loadInstrumentMaster(exchange);
+      fnoUnderlyings.forEach((s) => symbols.add(s));
+    } catch {
+      // let the other exchange still contribute
     }
   }
-  instrumentMasterCache[exchange] = { bySymbol, fetchedAt: new Date() };
-  return instrumentMasterCache[exchange];
+  return symbols;
+}
+
+// Same as searchSymbols() but filtered down to only F&O-enabled
+// underlyings — used by the Options page's underlying search bar.
+async function searchFnoSymbols(prefixRaw, limit = 20) {
+  const prefix = (prefixRaw || '').trim().toUpperCase();
+  if (!prefix) return [];
+
+  const fnoSet = await getFnoUnderlyings();
+  const results = [];
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
+    let bySymbol;
+    try {
+      ({ bySymbol } = await loadInstrumentMaster(exchange));
+    } catch {
+      continue;
+    }
+    for (const [symbol, info] of bySymbol) {
+      if (symbol.startsWith(prefix) && fnoSet.has(symbol)) {
+        results.push({ symbol, exchange, name: info.name });
+        if (results.length >= limit) return results;
+      }
+    }
+  }
+  return results;
 }
 
 /**
@@ -297,7 +387,12 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
     );
     if (rows.length) return rows[0].instrument_key;
 
-    const { bySymbol } = await loadInstrumentMaster(ex);
+    let bySymbol;
+    try {
+      ({ bySymbol } = await loadInstrumentMaster(ex));
+    } catch (e) {
+      continue; // this exchange's file failed to download/parse — still try the other one
+    }
     const hit = bySymbol.get(symbol);
     if (!hit) continue; // not on this exchange — try the next one
 
@@ -326,10 +421,20 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
 async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
   const exchanges = exchange ? [exchange] : ['NSE_EQ', 'BSE_EQ'];
   let all = [];
+  const failures = [];
   for (const ex of exchanges) {
-    const { bySymbol } = await loadInstrumentMaster(ex);
-    for (const [symbol, info] of bySymbol) {
-      all.push({ symbol, exchange: ex, name: info.name });
+    try {
+      const { bySymbol } = await loadInstrumentMaster(ex);
+      for (const [symbol, info] of bySymbol) {
+        all.push({ symbol, exchange: ex, name: info.name });
+      }
+    } catch (e) {
+      // If the person asked for one specific exchange, surface the error —
+      // that's the only data source they wanted. If they asked for "both",
+      // still return whichever exchange succeeded rather than blanking the
+      // whole screener because e.g. BSE's file had a bad day.
+      if (exchange) throw e;
+      failures.push(ex);
     }
   }
   all.sort((a, b) => a.symbol.localeCompare(b.symbol));
@@ -337,7 +442,10 @@ async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
   const total = all.length;
   const start = (Math.max(1, page) - 1) * limit;
   const items = all.slice(start, start + limit);
-  return { items, total, page: Math.max(1, page), limit, totalPages: Math.ceil(total / limit) };
+  return {
+    items, total, page: Math.max(1, page), limit, totalPages: Math.ceil(total / limit),
+    ...(failures.length ? { partialFailure: failures } : {}),
+  };
 }
 async function searchSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
@@ -345,7 +453,12 @@ async function searchSymbols(prefixRaw, limit = 20) {
 
   const results = [];
   for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
-    const { bySymbol } = await loadInstrumentMaster(exchange);
+    let bySymbol;
+    try {
+      ({ bySymbol } = await loadInstrumentMaster(exchange));
+    } catch (e) {
+      continue; // let the other exchange still return results
+    }
     for (const [symbol, info] of bySymbol) {
       if (symbol.startsWith(prefix)) {
         results.push({ symbol, exchange, name: info.name });
@@ -370,9 +483,9 @@ async function searchSymbols(prefixRaw, limit = 20) {
 // it's changed since. If ohlc.close turns out to be missing/different,
 // changePct below will just come back null and the frontend already
 // handles that (falls back to 0% rather than crashing).
-async function getLtp(symbol) {
+async function getLtp(symbol, exchange) {
   const accessToken = await getValidAccessToken();
-  const instrumentKey = await resolveInstrumentKey(symbol);
+  const instrumentKey = await resolveInstrumentKey(symbol, exchange);
 
   const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({ instrument_key: instrumentKey })}`;
   const res = await fetch(url, {
@@ -424,6 +537,67 @@ async function getLtp(symbol) {
 const quoteBatchCache = new Map(); // cacheKey -> { data, expiresAt }
 const QUOTE_CACHE_TTL_MS = 3000;
 
+// ─────────────────────────────────────────────────────────────────────────
+//  CANDLE CACHE + 429 RETRY — fixes "Error 1015: You are being rate
+//  limited" (Cloudflare, sitting in front of Upstox) cascading into 502s
+//  on the charts. Two causes were combined: (1) historical-candle calls had
+//  zero caching, so every chart open/reload re-hit Upstox even for data
+//  that was just fetched seconds ago, and (2) a single 429 was treated as
+//  a hard failure with no retry. Fixed with a short-lived shared cache
+//  (mirrors the quoteBatchCache pattern above) plus automatic backoff retry
+//  on 429 specifically.
+// ─────────────────────────────────────────────────────────────────────────
+const CANDLE_CACHE_TTL_MS = 60_000; // 1 minute — historical bars don't need per-second freshness
+const candleCache = new Map(); // cacheKey -> { data, expiresAt }
+
+/**
+ * fetch() wrapper that automatically retries on HTTP 429. Cloudflare
+ * returns 429 (with "Error 1015: You are being rate limited") when too
+ * many requests land in a short window — e.g. the hero chart and the main
+ * symbol chart both requesting candles on the same page load. Retries with
+ * backoff before giving up, honoring Retry-After when Upstox/Cloudflare
+ * sends one.
+ */
+async function fetchUpstoxWithRetry(url, options, retries = 2) {
+  let res;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    res = await fetch(url, options);
+    if (res.status !== 429 || attempt === retries) return res;
+    const retryAfterHeader = parseInt(res.headers.get('retry-after'), 10);
+    const waitMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 500 * (attempt + 1) ** 2;
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  return res;
+}
+/** Used by getLtpBatch() when Upstox's live quote has no usable last_price/
+ *  previousClose (e.g. after market close) — pulls the last two daily
+ *  candles instead, same pattern as the index fallback, so the caller
+ *  still gets a real last-close price and real day change instead of null. */
+async function getDailyCloseFallback(instrumentKey) {
+  try {
+    const accessToken = await getValidAccessToken();
+    const toDate = new Date().toISOString().slice(0, 10);
+    const fromDate = defaultFromDate('days');
+    const encodedKey = encodeURIComponent(instrumentKey);
+    const url = `${BASE_V3}/historical-candle/${encodedKey}/days/1/${toDate}/${fromDate}`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const candles = (data.data?.candles || []).slice().reverse(); // oldest-first
+    if (candles.length < 2) return null;
+    const lastClose = candles[candles.length - 1][4];
+    const prevClose = candles[candles.length - 2][4];
+    if (!(prevClose > 0)) return null;
+    return { lastPrice: lastClose, previousClose: prevClose, changePct: ((lastClose - prevClose) / prevClose) * 100 };
+  } catch {
+    return null;
+  }
+}
+
+
 async function getLtpBatch(symbols) {
   if (!Array.isArray(symbols) || !symbols.length) {
     throw new AppError('symbols must be a non-empty array.', 400);
@@ -473,111 +647,110 @@ async function getLtpBatch(symbols) {
     Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
   );
 
-  const quotes = resolved.map(({ symbol, instrumentKey }) => {
+ const quotes = await Promise.all(resolved.map(async ({ symbol, instrumentKey }) => {
     // Upstox keys the response object by a slightly different string than
     // the request instrument_key in some cases, so also try a loose match.
     const quote =
       byInstrumentKey.get(instrumentKey) ||
       Object.values(data.data || {}).find((q) => q.instrument_token === instrumentKey);
 
-    if (!quote) return { symbol, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    const lastPrice = quote?.last_price;
+    const netChange = quote?.net_change;
+const previousClose = (typeof lastPrice === 'number' && typeof netChange === 'number')
+  ? lastPrice - netChange
+  : (quote?.ohlc?.close ?? null);
 
-    const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
-    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
-      ? ((lastPrice - previousClose) / previousClose) * 100
-      : null;
+    // After market hours Upstox's live quote endpoint can return nothing for
+    // a symbol (no fresh tick to serve) — this is the same gap already
+    // handled for the index strip in the frontend's refreshIndices(). Fall
+    // back to the last two daily candles so the Screener's Up/Down filter
+    // still has real data instead of silently excluding every stock.
+    if (typeof lastPrice !== 'number' || typeof previousClose !== 'number' || previousClose <= 0) {
+      const fallback = await getDailyCloseFallback(instrumentKey).catch(() => null);
+      if (fallback) return { symbol, instrumentKey, ...fallback, closed: true };
+      return { symbol, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    }
 
+    const changePct = ((lastPrice - previousClose) / previousClose) * 100;
     return { symbol, instrumentKey, lastPrice, previousClose, changePct };
-  });
-
+  }));
   const result = { quotes, errors: unresolved, fetchedAt: new Date().toISOString() };
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
   return result;
 }
-async function getIndexQuotes() {
-  const cacheKey = 'INDICES';
-  const cached = quoteBatchCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-
-  const accessToken = await getValidAccessToken();
-  const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
-
-  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
-    instrument_key: entries.map(([, key]) => key).join(','),
-  })}`;
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
-  }
-
-  const data = await res.json();
-  const byInstrumentKey = new Map(
-    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
-  );
-
-  const quotes = entries.map(([label, instrumentKey]) => {
-    const quote = byInstrumentKey.get(instrumentKey);
-    if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
-
-    const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
-    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
-      ? ((lastPrice - previousClose) / previousClose) * 100
-      : null;
-
-    return { label, instrumentKey, lastPrice, previousClose, changePct };
-  });
-
-  const result = { quotes, fetchedAt: new Date().toISOString() };
-  quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
-  return result;
-}// ─────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
 //  INDEX QUOTES (NIFTY 50 / SENSEX / NIFTY BANK)
 // ─────────────────────────────────────────────────────────────────────────
 
+const lastGoodIndexQuotes = {}; // { 'NIFTY 50': {lastPrice, previousClose, changePct, fetchedAt}, ... }
+
+function isIndianMarketOpen(now = new Date()) {
+  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const day = ist.getUTCDay();
+  if (day === 0 || day === 6) return false;
+  const minutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  return minutes >= (9 * 60 + 15) && minutes < (15 * 60 + 30);
+}
+
 async function getIndexQuotes() {
-  const accessToken = await getValidAccessToken();
   const entries = Object.entries(INDEX_INSTRUMENT_KEYS);
+  const marketOpen = isIndianMarketOpen();
 
-  const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
-    instrument_key: entries.map(([, key]) => key).join(','),
-  })}`;
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
+  let values = [];
+  try {
+    const accessToken = await getValidAccessToken();
+    const url = `${BASE_V2}/market-quote/quotes?${new URLSearchParams({
+      instrument_key: entries.map(([, key]) => key).join(','),
+    })}`;
+    const res = await fetch(url, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new AppError(`Upstox index quote request failed: ${errText.slice(0, 200)}`, 502);
+    }
+    const data = await res.json();
+    values = Object.values(data.data || {});
+  } catch (err) {
+    values = [];
   }
-
-  const data = await res.json();
-  const values = Object.values(data.data || {});
 
   const indices = entries.map(([label, instrumentKey]) => {
     const quote =
       values.find((q) => q.instrument_token === instrumentKey) ||
       values.find((q) => q.instrument_token?.replace('%7C', '|') === instrumentKey);
 
-    if (!quote) return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
+    const cached = lastGoodIndexQuotes[label];
+    const lastPrice = quote?.last_price;
+    const rawPrevClose = quote?.ohlc?.close;
+    const previousClose = (typeof rawPrevClose === 'number' && rawPrevClose > 0)
+      ? rawPrevClose
+      : (cached?.previousClose ?? null);
 
-    const lastPrice = quote.last_price;
-    const previousClose = quote.ohlc?.close ?? null;
-    const changePct = (typeof previousClose === 'number' && previousClose > 0 && typeof lastPrice === 'number')
+    const haveFreshPrice = typeof lastPrice === 'number' && lastPrice > 0;
+    const changePct = (haveFreshPrice && typeof previousClose === 'number' && previousClose > 0)
       ? ((lastPrice - previousClose) / previousClose) * 100
       : null;
 
-    return { label, instrumentKey, lastPrice, previousClose, changePct };
+    if (haveFreshPrice && changePct !== null) {
+      const fresh = { lastPrice, previousClose, changePct, fetchedAt: new Date().toISOString() };
+      lastGoodIndexQuotes[label] = fresh;
+      return { label, instrumentKey, ...fresh, stale: false };
+    }
+    if (cached) {
+      return { label, instrumentKey, ...cached, stale: true };
+    }
+    return { label, instrumentKey, lastPrice: null, previousClose: null, changePct: null, stale: true };
   });
 
-  return { indices, fetchedAt: new Date().toISOString() };
+  return {
+    indices,
+    marketStatus: marketOpen ? 'open' : 'closed',
+    fetchedAt: new Date().toISOString(),
+  };
 }
+
 
 async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5, from, to } = {}) {
   const instrumentKey = INDEX_INSTRUMENT_KEYS[label.toUpperCase()];
@@ -585,24 +758,34 @@ async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5
   if (!VALID_UNITS.includes(unit)) {
     throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
   }
-  const accessToken = await getValidAccessToken();
   const toDate = to || new Date().toISOString().slice(0, 10);
   const fromDate = from || defaultFromDate(unit);
+
+  const cacheKey = `idx:${label.toUpperCase()}:${unit}:${interval}:${fromDate}:${toDate}`;
+  const cached = candleCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  const accessToken = await getValidAccessToken();
   const encodedKey = encodeURIComponent(instrumentKey);
   const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
-  const res = await fetch(url, {
+  const res = await fetchUpstoxWithRetry(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
     const errText = await res.text();
-    throw new AppError(`Upstox index candle request failed: ${errText.slice(0, 200)}`, 502);
+    const msg = res.status === 429
+      ? 'Upstox index candle request was rate limited even after retrying — try again shortly.'
+      : `Upstox index candle request failed: ${errText.slice(0, 200)}`;
+    throw new AppError(msg, 502);
   }
   const data = await res.json();
   const rawCandles = data.data?.candles || [];
   const candles = rawCandles.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
-  return { label, instrumentKey, unit, interval, candles };
+  const result = { label, instrumentKey, unit, interval, candles };
+  candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
+  return result;
 }
 // ─────────────────────────────────────────────────────────────────────────
 //  OPTION CHAIN (real Upstox v2 API — replaces fabricated OI/PCR data)
@@ -635,27 +818,34 @@ const VALID_UNITS = ['minutes', 'hours', 'days', 'weeks', 'months'];
 // ─────────────────────────────────────────────────────────────────────────
 //  HISTORICAL CANDLES
 // ─────────────────────────────────────────────────────────────────────────
-async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from, to } = {}) {
+async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from, to, exchange } = {}) {
   if (!VALID_UNITS.includes(unit)) {
     throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
   }
-  const accessToken = await getValidAccessToken();
-  const instrumentKey = await resolveInstrumentKey(symbol);
+  const instrumentKey = await resolveInstrumentKey(symbol, exchange);
 
   const toDate = to || new Date().toISOString().slice(0, 10);
   const fromDate = from || defaultFromDate(unit);
 
+  const cacheKey = `sym:${symbol.toUpperCase()}:${exchange || ''}:${unit}:${interval}:${fromDate}:${toDate}`;
+  const cached = candleCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  const accessToken = await getValidAccessToken();
   const encodedKey = encodeURIComponent(instrumentKey);
   const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
-  const res = await fetch(url, {
+  const res = await fetchUpstoxWithRetry(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(15_000),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new AppError(`Upstox historical-candle request failed: ${errText.slice(0, 200)}`, 502);
+    const msg = res.status === 429
+      ? 'Upstox historical-candle request was rate limited even after retrying — try again shortly.'
+      : `Upstox historical-candle request failed: ${errText.slice(0, 200)}`;
+    throw new AppError(msg, 502);
   }
 
   const data = await res.json();
@@ -672,22 +862,31 @@ const candles = rawCandles
   const intraday = await getIntradayCandles(instrumentKey, unit, interval);
   const merged = [...candles.filter((c) => !c.t.startsWith(todayStr)), ...intraday];
 
-  return { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
+  const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
+  candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
+  return result;
 }
 /** Fetches TODAY's candles (Upstox's separate intraday endpoint — historical never includes today). */
 async function getIntradayCandles(instrumentKey, unit, interval) {
   try {
+    const cacheKey = `intraday:${instrumentKey}:${unit}:${interval}`;
+    const cached = candleCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
     const accessToken = await getValidAccessToken();
     const encodedKey = encodeURIComponent(instrumentKey);
     const url = `${BASE_V3}/historical-candle/intraday/${encodedKey}/${unit}/${interval}`;
-    const res = await fetch(url, {
+    const res = await fetchUpstoxWithRetry(url, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return []; // e.g. market closed — don't break the whole chart over this
+    if (!res.ok) return []; // e.g. market closed, or still rate limited after retries — don't break the whole chart over this
     const data = await res.json();
     const raw = data.data?.candles || [];
-    return raw.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+    const result = raw.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+    // Short TTL — intraday candles should stay reasonably fresh during market hours.
+    candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + 15_000 });
+    return result;
   } catch {
     return [];
   }
@@ -700,6 +899,61 @@ function defaultFromDate(unit) {
   return d.toISOString().slice(0, 10);
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  SCREENER BUY / HOLD / SELL SIGNALS — computed technical analysis, not AI
+// ─────────────────────────────────────────────────────────────────────────
+// Every value here comes from real daily candles (same Upstox
+// historical-candle data the charts use) run through utils/indicators.js.
+// No LLM is involved anywhere in this path. Per-symbol results are cached
+// for SIGNAL_CACHE_TTL_MS since a daily-candle-based signal doesn't need
+// to move on every live tick like price does — this also keeps Upstox
+// request volume sane when the Screener renders 50 symbols at once.
+const { computeAllIndicators, deriveSignal } = require('../utils/indicators');
+const signalCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
+const SIGNAL_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
+
+async function getTechnicalSignal(symbol, exchange) {
+  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}`;
+  const cached = signalCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const { candles } = await getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
+    const ind = computeAllIndicators(candles);
+    const derived = deriveSignal(ind);
+    // COMPLIANCE: exposes strength/bullishVotes (descriptive), not a
+    // signal/confidence verdict — see indicators.js deriveSignal() note.
+    const data = derived
+      ? { symbol: symbol.toUpperCase(), strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
+      : { symbol: symbol.toUpperCase(), strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
+    signalCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
+    return data;
+  } catch (err) {
+    return { symbol: symbol.toUpperCase(), strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
+  }
+}
+
+// Fetches signals for many symbols with limited concurrency (Upstox has no
+// batch historical-candle endpoint, so this is N individual requests —
+// capped at 6 in flight at a time to stay well under rate limits).
+async function getSignalsBatch(symbols) {
+  const list = Array.isArray(symbols) ? symbols : [];
+  const CONCURRENCY = 6;
+  const results = [];
+  let i = 0;
+  async function worker() {
+    while (i < list.length) {
+      const idx = i++;
+      const s = list[idx];
+      const symbol = typeof s === 'string' ? s : s.symbol;
+      const exchange = typeof s === 'string' ? undefined : s.exchange;
+      results[idx] = await getTechnicalSignal(symbol, exchange);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker));
+  return results;
+}
+
 module.exports = {
   buildLoginUrl,
   exchangeCodeForToken,
@@ -709,6 +963,8 @@ module.exports = {
   storeNotifiedToken,
   resolveInstrumentKey,
   searchSymbols,
+  searchFnoSymbols,
+  getFnoUnderlyings,
   listAllSymbols,
   getLtp,
   getLtpBatch,
@@ -716,4 +972,6 @@ module.exports = {
   getHistoricalCandles,
   getIndexQuotes,
   getIndexHistoricalCandles,
+  getTechnicalSignal,
+  getSignalsBatch,
 };

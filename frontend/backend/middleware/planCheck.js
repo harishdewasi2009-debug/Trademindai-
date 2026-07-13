@@ -147,19 +147,27 @@ const attachAvailableModels = asyncHandler(async (req, res, next) => {
 
   // Real per-model usage this month, keyed by model_key (added to ai_requests
   // specifically so this query doesn't have to string-match model_used).
-  const { rows } = await query(
-    `SELECT model_key, COALESCE(SUM(tokens_input + tokens_output), 0)::bigint AS tokens_used
-     FROM ai_requests
-     WHERE user_id = $1 AND created_at >= date_trunc('month', now()) AND model_key IS NOT NULL
-     GROUP BY model_key`,
-    [req.user.id]
-  );
-  const usedByModel = Object.fromEntries(rows.map(r => [r.model_key, Number(r.tokens_used)]));
+ let usedByModel = {};
+  try {
+    const { rows } = await query(
+      `SELECT model_key, COALESCE(SUM(tokens_input + tokens_output), 0)::bigint AS tokens_used
+       FROM ai_requests
+       WHERE user_id = $1 AND created_at >= date_trunc('month', now()) AND model_key IS NOT NULL
+       GROUP BY model_key`,
+      [req.user.id]
+    );
+    usedByModel = Object.fromEntries(rows.map(r => [r.model_key, Number(r.tokens_used)]));
+  } catch (dbErr) {
+    console.error('[attachAvailableModels] per-model usage query failed:', dbErr.message);
+    req.availableModelKeys = modelKeys;
+    req.modelUsageThisMonth = {};
+    return next();
+  }
 
   const availableModelKeys = modelKeys.filter(key => {
     const cfg = plan.aiModels[key];
     const used = usedByModel[key] || 0;
-    return used < cfg.monthlyTokenQuota;
+    return !cfg || used < cfg.monthlyTokenQuota;
   });
 
   req.availableModelKeys = availableModelKeys;

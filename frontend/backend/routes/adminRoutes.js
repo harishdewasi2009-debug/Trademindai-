@@ -7,7 +7,6 @@ const { adminLimiter } = require('../middleware/rateLimit');
 const { validateUpdateUserPlan } = require('../middleware/validate');
 const ctrl = require('../controllers/adminController');
 
-// FIX: added adminLimiter + validation on plan update
 router.use(requireAuth, requireAdmin, adminLimiter);
 
 router.get('/stats', ctrl.getStats);

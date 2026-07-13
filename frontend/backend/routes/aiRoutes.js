@@ -104,7 +104,7 @@ router.post(
   attachAvailableModels,    // TERTIARY: skip individual models whose own sub-quota is exhausted
   validateAiAnalyze,
   asyncHandler(async (req, res) => {
-    const { stockSymbol, horizon, riskTolerance } = req.body;
+    const { stockSymbol, horizon, riskTolerance, exchange } = req.body;
     const start = Date.now();
 
     let analysisResult;
@@ -113,11 +113,12 @@ router.post(
         stockSymbol,
         horizon,
         riskTolerance,
+        exchange, // 'NSE_EQ' | 'BSE_EQ' | undefined (undefined = try NSE then BSE, same as before)
         userPlan: req.user.plan,
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
       });
     } catch (err) {
-      console.error('[/api/ai/analyze] AI call failed:', err.message);
+      console.error('[/api/ai/analyze] AI call failed:', err);
       // If every model on the plan is exhausted, give a clear, actionable
       // message instead of the generic "temporarily unavailable" one.
       if (err.message === 'NO_MODELS_AVAILABLE') {
@@ -195,8 +196,13 @@ router.post(
     }
 
     // ── Log to prediction_history ─────────────────────────────────────────
+    // COMPLIANCE: this now records the descriptive "sentiment" reading
+    // (e.g. "moderate_bullish") rather than a buy/sell/hold recommendation,
+    // and does not store a target_price — this app doesn't predict future
+    // prices. `recommendation`/`target_price` columns are kept for schema
+    // compatibility but populated with the non-advisory equivalents.
     try {
-      if (result.signal && result.currentPrice) {
+      if (result.sentiment && result.currentPrice) {
         await query(
           `INSERT INTO prediction_history
              (user_id, stock_symbol, recommendation, entry_price,
@@ -205,11 +211,15 @@ router.post(
           [
             req.user.id,
             stockSymbol.toUpperCase(),
-            result.signal.toLowerCase(),
+            result.sentiment,       // descriptive reading, e.g. "moderate_bullish" — not an instruction
             result.currentPrice,
-            result.priceTargets?.oneMonth || null,
-            horizon === '1 week' ? 7 : horizon === '3 months' ? 90 : 30,
-            result.confidence,
+            null,                   // no price prediction stored — see compliance note above
+            // Matches every horizon value the frontend can actually send
+            // (getAnalysisHorizonRisk() in index.html) — previously only
+            // '1 week'/'3 months' were handled and everything else silently
+            // fell back to 30, even a 6-12 month "long" horizon pick.
+            { '1 week': 7, '1 month': 30, '3 months': 90 }[horizon] || 30,
+            result.technicalScore,
           ]
         );
       }
@@ -248,54 +258,119 @@ router.post(
       throw new AppError('message must be 500 characters or less.', 400);
     }
 
-    // Pick model based on plan: Pro → Claude Sonnet 4, Elite → Claude Opus 4
+    // FIX: AI Assistant now picks its model from the user's plan config in
+    // plans.js instead of always hardcoding Claude. DeepSeek is the model
+    // TradeMind actually sells on Basic/Pro/Elite (DeepSeek V3 on
+    // Basic/Pro, DeepSeek R1 on Elite — see config/plans.js aiModels), so
+    // the assistant now runs on the DeepSeek model configured for that
+    // plan by default, falling back to Claude only if DeepSeek isn't
+    // configured/available on the server or the DeepSeek call fails.
+    const { getModelConfig } = require('../config/plans');
     const { MODELS } = require('../services/aiService');
-    const isElite = req.user.plan === 'elite';
-    const model   = isElite ? MODELS.CLAUDE_OPUS : MODELS.CLAUDE_SONNET;
-    const apiKey  = process.env.CLAUDE_API_KEY;
+    const plan = req.user.plan;
+    const deepseekKey = plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3';
+    const deepseekCfg = getModelConfig(plan, deepseekKey);
+    const deepseekAvailable = !!(deepseekCfg && process.env.DEEPSEEK_API_KEY);
 
-    if (!apiKey) throw new AppError('AI chat is not configured on this server.', 501);
+    const claudeApiKey = process.env.CLAUDE_API_KEY;
+    const claudeModel  = plan === 'elite' ? MODELS.CLAUDE_OPUS : MODELS.CLAUDE_SONNET;
 
-    const system = `You are TradeMind AI, a knowledgeable Indian stock market assistant.
-Give concise, practical answers. Always add a brief disclaimer when giving specific investment opinions.
+    if (!deepseekAvailable && !claudeApiKey) {
+      throw new AppError('AI chat is not configured on this server.', 501);
+    }
+
+    // COMPLIANCE: TradeMind is not a SEBI-registered Investment Adviser or
+    // Research Analyst. SEBI's regulations cover "trading calls" and
+    // stop-loss/price-target guidance regardless of whether a human or an
+    // AI produces them, so this assistant must never answer with a
+    // buy/sell/hold instruction, a price target, or a specific entry/exit
+    // level — even if the user directly asks for one. It can explain
+    // concepts, describe what indicators show, and point the user to their
+    // own research, but the decision must stay with the user.
+    const system = `You are TradeMind AI, a knowledgeable Indian stock market data assistant. You are NOT a SEBI-registered Investment Adviser or Research Analyst, and you must never act like one.
+Give concise, practical, educational answers about markets, indicators, and concepts.
+If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
 Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
-    let reply;
+    let reply, modelUsed, modelLabel;
     try {
-      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model,
-          max_tokens: 512,
-          system,
-          messages: [{ role: 'user', content: message.trim() }],
-          temperature: 0.4,
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (!res2.ok) throw new Error(`Claude chat ${res2.status}`);
-      const data = await res2.json();
-      reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+      if (deepseekAvailable) {
+        try {
+          const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+            },
+            body: JSON.stringify({
+              model: deepseekCfg.modelId,
+              messages: [
+                { role: 'system', content: system },
+                { role: 'user', content: message.trim() },
+              ],
+              temperature: 0.4,
+              max_tokens: Math.min(512, deepseekCfg.maxOutputTokens || 512),
+            }),
+            signal: AbortSignal.timeout(30_000),
+          });
+          if (!dsRes.ok) throw new Error(`DeepSeek chat ${dsRes.status}`);
+          const dsData = await dsRes.json();
+          reply = dsData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
+          modelUsed  = deepseekCfg.modelId;
+          modelLabel = deepseekKey === 'deepseek_r1' ? 'DeepSeek R1' : 'DeepSeek V3';
 
-      // Log chat usage
-      await query(
-        `INSERT INTO ai_requests
-           (user_id, stock_symbol, request_type, model_used,
-            tokens_input, tokens_output, cost_usd, latency_ms)
-         VALUES ($1, NULL, 'chat', $2, $3, $4, 0, 0)`,
-        [req.user.id, model, data.usage?.input_tokens || 0, data.usage?.output_tokens || 0]
-      );
+          await query(
+            `INSERT INTO ai_requests
+               (user_id, stock_symbol, request_type, model_used, model_key,
+                tokens_input, tokens_output, cost_usd, latency_ms)
+             VALUES ($1, NULL, 'chat', $2, $3, $4, $5, 0, 0)`,
+            [req.user.id, modelUsed, deepseekKey, dsData.usage?.prompt_tokens || 0, dsData.usage?.completion_tokens || 0]
+          );
+        } catch (dsErr) {
+          console.warn('[/api/ai/chat] DeepSeek failed, falling back to Claude:', dsErr.message);
+          if (!claudeApiKey) throw dsErr;
+          reply = undefined; // fall through to Claude below
+        }
+      }
+
+      if (reply === undefined) {
+        if (!claudeApiKey) throw new Error('No AI provider available');
+        const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': claudeApiKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: claudeModel,
+            max_tokens: 512,
+            system,
+            messages: [{ role: 'user', content: message.trim() }],
+            temperature: 0.4,
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+        if (!res2.ok) throw new Error(`Claude chat ${res2.status}`);
+        const data = await res2.json();
+        reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
+        modelUsed  = claudeModel;
+        modelLabel = plan === 'elite' ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6';
+
+        await query(
+          `INSERT INTO ai_requests
+             (user_id, stock_symbol, request_type, model_used, model_key,
+              tokens_input, tokens_output, cost_usd, latency_ms)
+           VALUES ($1, NULL, 'chat', $2, $3, $4, $5, 0, 0)`,
+          [req.user.id, modelUsed, 'claude_fallback', data.usage?.input_tokens || 0, data.usage?.output_tokens || 0]
+        );
+      }
     } catch (err) {
       console.error('[/api/ai/chat] failed:', err.message);
       throw new AppError('AI chat is temporarily unavailable.', 503);
     }
 
-    res.json({ reply, model: isElite ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6' });
+    res.json({ reply, model: modelLabel });
   })
 );
 
@@ -310,7 +385,7 @@ const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'op
 router.post(
   '/insight',
   requireAuth,
-  requireFeature('ai_chat'), // reuse the existing chat-tier gate — same cost class as chat
+  requireFeature('ai_chat'),
   aiLimiter,
   asyncHandler(async (req, res) => {
     const { kind, context } = req.body || {};
@@ -322,9 +397,11 @@ router.post(
     }
 
     const { getAIInsight } = require('../services/aiService');
-    let text;
+    let text, modelUsed;
     try {
-      text = await getAIInsight(kind, context);
+      const result = await getAIInsight(kind, context, req.user.plan);
+      text = result.text;
+      modelUsed = result.modelUsed;
     } catch (err) {
       console.error(`[/api/ai/insight:${kind}] failed:`, err.message);
       throw new AppError('AI insight is temporarily unavailable.', 503);
@@ -335,10 +412,10 @@ router.post(
          (user_id, stock_symbol, request_type, model_used,
           tokens_input, tokens_output, cost_usd, latency_ms)
        VALUES ($1, NULL, $2, $3, 0, 0, 0, 0)`,
-      [req.user.id, `insight_${kind}`, 'gemini-2.5-flash']
+      [req.user.id, `insight_${kind}`, modelUsed]
     );
 
-    res.json({ kind, text });
+    res.json({ kind, text, model: modelUsed });
   })
 );
 

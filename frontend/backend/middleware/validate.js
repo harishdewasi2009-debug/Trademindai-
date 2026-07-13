@@ -97,7 +97,7 @@ const validateAiAnalyze = [
   body('stockSymbol')
     .trim().notEmpty().withMessage('stockSymbol is required.')
     .isLength({ max: 30 }).withMessage('stockSymbol too long.')
-    .matches(/^[A-Za-z0-9&_-]+$/).withMessage('stockSymbol contains invalid characters.'),
+    .matches(/^[A-Za-z0-9&_ -]+$/).withMessage('stockSymbol contains invalid characters.'),
   body('horizon')
     .optional()
     .isIn(['1 week', '1 month', '3 months', 'short', 'medium', 'long'])
@@ -106,6 +106,10 @@ const validateAiAnalyze = [
     .optional()
     .isIn(['low', 'moderate', 'high'])
     .withMessage('riskTolerance must be low, moderate, or high.'),
+  body('exchange')
+    .optional()
+    .isIn(['NSE_EQ', 'BSE_EQ'])
+    .withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   handleValidationErrors,
 ];
 

@@ -36,12 +36,13 @@ const PLANS = {
     aiModels: {
       gemini_flash: {
         modelId:           'gemini-2.5-flash',
-        maxOutputTokens:   1_500,
+        maxOutputTokens:   2_500,
         monthlyTokenQuota: 50_000,        // ~₹1 worst-case AI cost/mo
       },
     },
     features: [
       'watchlist_5',
+      'screener',
     ],
   },
 
@@ -76,6 +77,7 @@ const PLANS = {
     features: [
       'prediction_history',
       'watchlist_10',
+      'screener',
     ],
   },
 
