@@ -708,7 +708,7 @@ const INSIGHT_SYSTEM = 'You are a careful, honest markets data assistant, not an
 // features return prose commentary, not a structured signal, so they must
 // NOT use the JSON-forced callGemini/callGPT/callDeepSeek above (which would
 // either reject plain prose or truncate it awkwardly into a JSON shape).
-async function callGeminiPlain(model, prompt) {
+async function callGeminiPlain(model, prompt, systemText = INSIGHT_SYSTEM) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not set');
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -716,7 +716,7 @@ async function callGeminiPlain(model, prompt) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: INSIGHT_SYSTEM }] },
+      system_instruction: { parts: [{ text: systemText }] },
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.3, maxOutputTokens: 700, thinkingConfig: { thinkingBudget: 0 } },
     }),
@@ -729,13 +729,13 @@ async function callGeminiPlain(model, prompt) {
   return { text, model };
 }
 
-async function callClaudePlain(model, prompt) {
+async function callClaudePlain(model, prompt, systemText = INSIGHT_SYSTEM) {
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey) throw new Error('CLAUDE_API_KEY not set');
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model, max_tokens: 700, system: INSIGHT_SYSTEM, messages: [{ role: 'user', content: prompt }], temperature: 0.3 }),
+    body: JSON.stringify({ model, max_tokens: 700, system: systemText, messages: [{ role: 'user', content: prompt }], temperature: 0.3 }),
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`Claude ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -745,13 +745,13 @@ async function callClaudePlain(model, prompt) {
   return { text, model };
 }
 
-async function callDeepSeekPlain(model, prompt) {
+async function callDeepSeekPlain(model, prompt, systemText = INSIGHT_SYSTEM) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error('DEEPSEEK_API_KEY not set');
   const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model, messages: [{ role: 'system', content: INSIGHT_SYSTEM }, { role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
+    body: JSON.stringify({ model, messages: [{ role: 'system', content: systemText }, { role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -812,4 +812,12 @@ async function getAIInsight(kind, context, plan = 'free') {
   throw lastErr || new Error('AI is not configured on the server.');
 }
 
-module.exports = { analyzeStock, getAIInsight, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor };
+module.exports = {
+  analyzeStock, getAIInsight, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor,
+  // Exported so /api/ai/chat (aiRoutes.js) can reuse the SAME per-plan model
+  // cascade and calling code that /api/ai/insight already uses, instead of
+  // its own separate hardcoded deepseek→claude-only logic (see FIX note in
+  // aiRoutes.js's chat handler for the item this resolves — "AI Assistant
+  // wasn't using DeepSeek according to plan").
+  insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain,
+};

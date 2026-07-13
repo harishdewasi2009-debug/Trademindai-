@@ -3,6 +3,17 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<!-- FIX: this whole app is one static index.html with no hashed/versioned
+     filename, so most static hosts (and browsers) were caching it like any
+     other static asset — after a new deploy, visitors kept seeing the old
+     cached page until they did a manual hard refresh. These meta tags stop
+     the browser itself from caching the document. The _headers/vercel.json
+     files added alongside this do the same at the CDN/host level (meta
+     tags alone don't control proxy/CDN caching), covering Netlify, Vercel
+     and similar static hosts without knowing which one is in use. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <title>TradeMind AI — India's AI-Powered Stock Market Intelligence Platform</title>
 <meta name="description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -546,6 +557,10 @@ nav{
 .sub-chart-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:6px 18px 0}
 /* ── chart drawing / zoom toolbar ── */
 .chart-draw-toolbar{display:flex;align-items:center;gap:4px;padding:8px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.chart-drawings-list{display:flex;flex-wrap:wrap;gap:6px;padding:0 18px 8px}
+.chart-drawing-chip{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 6px 3px 10px}
+.chart-drawing-chip i{cursor:pointer;font-size:12px;color:var(--text3);padding:2px}
+.chart-drawing-chip i:hover{color:var(--rose2)}
 .chart-tool-btn{font-size:11px;padding:5px 10px;border-radius:6px;color:var(--text3);cursor:pointer;border:1px solid transparent;display:flex;align-items:center;gap:5px;user-select:none;background:transparent}
 .chart-tool-btn:hover{background:rgba(255,255,255,.06);color:var(--text2)}
 .chart-tool-btn.active{background:rgba(56,189,248,.15);color:#38bdf8;border-color:rgba(56,189,248,.4)}
@@ -1196,22 +1211,26 @@ html{scroll-behavior:smooth}
         </div>
         <div class="inp-group" style="margin-bottom:16px">
           <label class="inp-lbl">Search stock</label>
-          ${stockSearchBarHtml('analysis-search-inp','Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…',{wrapStyle:'margin-bottom:0'})}
+          <div style="position:relative;margin-bottom:0">
+            <input class="tm-inp" id="analysis-search-inp" placeholder="Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…" style="width:100%;height:44px;padding-left:40px" value="" autocomplete="off"
+              oninput="onGenericStockSearchInput('analysis-search-inp',this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('analysis-search-inp-dropdown').style.display='none';}"/>
+            <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
+            <div id="analysis-search-inp-dropdown" style="display:none;position:absolute;top:48px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:30;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
+          </div>
           <input type="hidden" id="inp-name"/>
           <input type="hidden" id="inp-sym"/>
-        </div>
-        <div class="inp-group" style="margin-bottom:16px">
-          <label class="inp-lbl">Exchange</label>
-          <div style="display:flex;gap:8px">
-            <span class="chart-tool-btn active" id="analysis-ex-auto" onclick="setAnalysisExchange(undefined,this)" title="Try NSE first, fall back to BSE"><i class="ti ti-sparkles"></i> Auto</span>
-            <span class="chart-tool-btn" id="analysis-ex-nse" onclick="setAnalysisExchange('NSE_EQ',this)" title="Analyse this symbol's NSE listing"><i class="ti ti-building"></i> NSE</span>
-            <span class="chart-tool-btn" id="analysis-ex-bse" onclick="setAnalysisExchange('BSE_EQ',this)" title="Analyse this symbol's BSE listing"><i class="ti ti-building"></i> BSE</span>
-          </div>
         </div>
         <div class="inp-row" id="compare-row-2" style="display:none">
           <div class="inp-group" style="grid-column:1/-1">
             <label class="inp-lbl">Search 2nd stock to compare</label>
-            ${stockSearchBarHtml('analysis-search-inp2','Search any NSE or BSE stock (e.g. TCS, INFY, 500325)…',{wrapStyle:'margin-bottom:0'})}
+            <div style="position:relative;margin-bottom:0">
+              <input class="tm-inp" id="analysis-search-inp2" placeholder="Search any NSE or BSE stock (e.g. TCS, INFY, 500325)…" style="width:100%;height:44px;padding-left:40px" value="" autocomplete="off"
+                oninput="onGenericStockSearchInput('analysis-search-inp2',this.value)"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('analysis-search-inp2-dropdown').style.display='none';}"/>
+              <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
+              <div id="analysis-search-inp2-dropdown" style="display:none;position:absolute;top:48px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:30;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
+            </div>
             <input type="hidden" id="inp-name2"/>
             <input type="hidden" id="inp-sym2"/>
           </div>
@@ -1358,6 +1377,7 @@ html{scroll-behavior:smooth}
         <span class="chart-tool-btn" onclick="clearChartDrawings()" title="Remove all drawings"><i class="ti ti-trash"></i> Clear Drawings</span>
       </div>
       <div class="chart-tool-hint" id="chart-tool-hint"></div>
+      <div class="chart-drawings-list" id="chart-drawings-list"></div>
       <div id="mainChart" style="width:100%;height:380px"></div>
       <div class="sub-chart-lbl" id="rsi-lbl">RSI (14)</div>
       <canvas id="rsiChart"></canvas>
@@ -1426,7 +1446,13 @@ html{scroll-behavior:smooth}
     <div class="backtest-controls">
       <div class="inp-group">
         <label class="inp-lbl">Stock / Index</label>
-        ${stockSearchBarHtml('bt-sym','Search any NSE or BSE stock…',{value:'RELIANCE',wrapStyle:'margin-bottom:0',onEnter:'runBacktest'})}
+        <div style="position:relative;margin-bottom:0">
+          <input class="tm-inp" id="bt-sym" placeholder="Search any NSE or BSE stock…" style="width:100%;height:44px;padding-left:40px" value="RELIANCE" autocomplete="off"
+            oninput="onGenericStockSearchInput('bt-sym',this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();runBacktest(this.value);document.getElementById('bt-sym-dropdown').style.display='none';}"/>
+          <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
+          <div id="bt-sym-dropdown" style="display:none;position:absolute;top:48px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:30;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
+        </div>
       </div>
       <div class="inp-group">
         <label class="inp-lbl">Strategy</label>
@@ -2217,8 +2243,9 @@ function show(id){
   const p=document.getElementById('page-'+id);
   if(p){p.classList.remove('active');void p.offsetWidth;p.classList.add('active');} // re-trigger pageIn animation every time
   document.querySelectorAll('.nav-link[data-page="'+id+'"]').forEach(l=>l.classList.add('active'));
+  stopScreenerAutoRefresh(); // leaving/entering any page: reset, then re-arm below only if we're on Screener
   if(id==='dashboard')renderDashboard('overview');
-  if(id==='screener')renderScreener();
+  if(id==='screener'){ renderScreener(); startScreenerAutoRefresh(); }
   if(id==='charts')initChartsPage();
   if(id==='options')renderOptionsChain();
   if(id==='analysis')refreshModelChipLocks();
@@ -2454,6 +2481,24 @@ function renderScreenerThrottled(){
   lastScreenerRender=now;
   if(typeof renderScreener==='function' && document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
 }
+
+// The Screener's own stocks (whichever 50 the current page/filter shows)
+// are NOT part of the live WebSocket subscription — only the ~30 fixed
+// TICKER_SYMBOLS and the 3 indices tick over WS. Previously the screener
+// only refreshed as a side-effect of those unrelated ticks, so it visibly
+// lagged NIFTY/SENSEX. This runs its own fetch loop (real REST quotes,
+// backend-cached 3s) on a fixed cadence the whole time Screener is open —
+// same idea as index refresh, but not gated behind "only if WS is down".
+let screenerAutoRefreshTimer=null;
+function startScreenerAutoRefresh(){
+  stopScreenerAutoRefresh();
+  screenerAutoRefreshTimer=setInterval(()=>{
+    if(document.getElementById('page-screener')?.classList.contains('active'))renderScreener();
+  },4000);
+}
+function stopScreenerAutoRefresh(){
+  if(screenerAutoRefreshTimer){ clearInterval(screenerAutoRefreshTimer); screenerAutoRefreshTimer=null; }
+}
   
 // ══════════════ LIVE WEBSOCKET FEED (real-time, no polling) ══════════════
 // Connects to our backend's /ws/market, which relays Upstox's live tick
@@ -2470,6 +2515,7 @@ function connectLiveFeed(){
 liveSocket.onopen=()=>{
     liveSocketRetryMs=1000;
     if(chartCurrentSymbol)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
+    if(typeof subscribeScreenerLiveTicks==='function' && lastScreenerItems.length)subscribeScreenerLiveTicks(lastScreenerItems);
   };
 
 liveSocket.onmessage=(evt)=>{
@@ -2489,6 +2535,20 @@ liveSocket.onmessage=(evt)=>{
           : q; // no prior value either — best we can do is pass it through
         persistIndexCache();
         got=true;
+      }
+      // Screener rows: patch in place if this tick's symbol is currently
+      // rendered on screen — true tick-by-tick movement, same as Upstox,
+      // independent of the ~30 fixed TICKER_SYMBOLS or the 4s REST poll.
+      const bareSym=sym.startsWith('BSE:')?sym.slice(4):sym;
+      const cell=document.getElementById('scr-px-'+bareSym);
+      if(cell && (cell.dataset.ex==='BSE_EQ')===sym.startsWith('BSE:') && typeof q.price==='number'){
+        const up=typeof q.changePct==='number'?q.changePct>=0:q.up;
+        const valEl=cell.querySelector('.scr-px-val'), chgEl=cell.querySelector('.scr-px-chg');
+        if(valEl)valEl.textContent='₹'+fmtINR(q.price);
+        if(chgEl && typeof q.changePct==='number'){
+          chgEl.style.color=up?'var(--green2)':'var(--rose2)';
+          chgEl.textContent=(up?'▲ +':'▼ ')+q.changePct.toFixed(2)+'% '+(isIndianMarketOpenNow()?'today':'vs prev. close');
+        }
       }
     }
     // Live ticks for a BSE-selected symbol arrive keyed "BSE:SYMBOL" (see
@@ -2660,6 +2720,25 @@ function getAnalysisHorizonRisk(){
   const riskTolerance={low:'low',medium:'moderate',high:'high'}[r]||'moderate';
   return {horizon,riskTolerance};
 }
+// FIX: AI analyze/chat errors used to be shown to the user verbatim
+// (e.fromApi ? e.message : ...), which meant real backend/infra details —
+// "Data Unavailable: could not load real market data ... from Upstox",
+// raw Gemini/Claude/GPT/DeepSeek HTTP errors, etc. — ended up on screen.
+// That's confusing (and looks broken) for a user who has no idea what
+// "Upstox" is. Now: only the two error types that are ALREADY written as
+// plain, actionable, user-facing copy — a 403 "this feature needs a
+// higher plan" or a 429 "you've used your quota" — are shown as-is (they
+// name the exact plan to upgrade to), with an upgrade CTA. Every other
+// failure (Upstox disconnected, symbol data missing, a model API down,
+// a timeout, a 5xx, anything) collapses into one generic, non-technical
+// message — no product/vendor names, just "try again shortly".
+function friendlyAiError(status,rawMsg){
+  const isPlanOrQuota = status===403 || status===429;
+  return {
+    message: (isPlanOrQuota && rawMsg) ? rawMsg : 'Insights AI is temporarily unavailable right now. Please try again shortly.',
+    showUpgrade: isPlanOrQuota,
+  };
+}
 // ══════════════ CHIP TOGGLE ══════════════
 const PLAN_RANK={free:0,basic:1,pro:2,elite:3};
 function toggleChip(el){
@@ -2716,6 +2795,7 @@ function setScreenerDirection(dir,el){
   ['scr-dir-all','scr-dir-up','scr-dir-down'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
   el.classList.add('active');
   screenerDirection=dir;
+  const resEl=document.getElementById('screener-results'); if(resEl)resEl.dataset.loaded='false';
   renderScreener();
 }
 // Bullish/Mixed/Bearish bias filter — driven by /api/market/signals
@@ -2726,6 +2806,7 @@ function setScreenerSignal(sig,el){
   ['scr-sig-all','scr-sig-buy','scr-sig-hold','scr-sig-sell'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
   el.classList.add('active');
   screenerSignal=sig==='all'?undefined:sig;
+  const resEl=document.getElementById('screener-results'); if(resEl)resEl.dataset.loaded='false';
   renderScreener();
 }
 // Real IST market-hours check (Mon–Fri 9:15–15:30), used only to label the
@@ -2740,10 +2821,15 @@ function isIndianMarketOpenNow(){
 }
 // ══════════════ AI ANALYSIS ══════════════
 let isAnalysing=false;
+// FIX: the Analysis page used to have its own manual "Exchange: Auto / NSE /
+// BSE" picker, separate from — and redundant with — the stock search bar
+// (which already tells the backend exactly which exchange a result came
+// from the moment it's picked, same as Screener/Options). That extra
+// control was removed; analysisExchange is now set only from a real search
+// selection (or left undefined = "Auto", NSE tried first then BSE, for
+// index picks and anything typed in without using the dropdown).
 let analysisExchange; // undefined='Auto' (NSE then BSE), or 'NSE_EQ'/'BSE_EQ'
-function setAnalysisExchange(ex,el){
-  ['analysis-ex-auto','analysis-ex-nse','analysis-ex-bse'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
-  el.classList.add('active');
+function setAnalysisExchange(ex){
   analysisExchange=ex;
 }
 function setAnalysisIndex(label){
@@ -2751,7 +2837,7 @@ function setAnalysisIndex(label){
   document.getElementById('inp-name').value=label;
   // Indices aren't NSE_EQ/BSE_EQ equities — always use Auto so the backend
   // routes them to the dedicated index quote/candle endpoints.
-  setAnalysisExchange(undefined,document.getElementById('analysis-ex-auto'));
+  setAnalysisExchange(undefined);
   runAnalysis();
 }
 async function runAnalysis(){
@@ -2792,15 +2878,16 @@ async function runAnalysis(){
     const data=await res.json();
     if(!res.ok){
       const err=new Error(data.error || 'AI analysis failed. Please try again.');
-      err.isQuota=res.status===429;
+      err.status=res.status;
       throw err;
     }
     result=data;
     quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
     syncModelChipsWithResult(result);
   }catch(e){
-    isQuotaError=!!e.isQuota;
-    errorMsg=isQuotaError ? e.message : 'AI analysis is temporarily unavailable. Please try again shortly.';
+    const friendly=friendlyAiError(e.status,e.message);
+    errorMsg=friendly.message;
+    isQuotaError=friendly.showUpgrade;
   }
 
   setTimeout(()=>{
@@ -2872,6 +2959,142 @@ async function runAnalysis(){
   },2400);
 }
 
+// FIX: Deep Research used to be a permanent "coming soon" stub with no
+// backend behind it. It now runs two REAL calls against the same endpoints
+// Quick Analysis and the Multi-Timeframe view already use for real —
+// (1) /api/ai/analyze for the core AI signal, (2) real daily+weekly candles
+// summarised and sent to /api/ai/insight kind=multiTimeframe — and renders
+// both together as one report. No new backend route needed; no fake data.
+async function runDeepResearch(){
+  if(isAnalysing)return;
+  const name=document.getElementById('inp-name').value.trim();
+  const sym=document.getElementById('inp-sym').value.trim().toUpperCase().replace(/[^A-Z0-9&_ -]/g,'');
+  if(!name&&!sym){alert('Please enter a stock name or symbol.');return;}
+  if(!currentUser){
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
+    show('login');
+    return;
+  }
+
+  const lw=document.getElementById('load-wrap');
+  const rw=document.getElementById('result-wrap');
+  const btn=document.getElementById('btn-analyse');
+  lw.style.display='block';rw.style.display='none';rw.innerHTML='';
+  btn.disabled=true;isAnalysing=true;
+  ['ls1','ls2','ls3','ls4'].forEach(id=>document.getElementById(id).classList.add('active'));
+
+  const stockSym=(sym||name.toUpperCase()).replace(/[^A-Z0-9&_ -]/g,'').trim();
+  let result=null, mtfText=null, mtfModel=null, mtfTimeframes=null, errorMsg=null, quota=null, isQuotaError=false;
+
+  try{
+    const res=await apiFetch('/api/ai/analyze',{
+      method:'POST',
+      body:JSON.stringify({stockSymbol:stockSym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
+    });
+    const data=await res.json();
+    if(!res.ok){
+      const err=new Error(data.error || 'AI analysis failed. Please try again.');
+      err.status=res.status;
+      throw err;
+    }
+    result=data;
+    quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
+    syncModelChipsWithResult(result);
+
+    // Real daily + weekly candles → real RSI/EMA trend read → AI commentary
+    // on whether the two timeframes agree. Same data path as the
+    // "check daily vs weekly" button, just run automatically as part of
+    // the deep report instead of needing a second click.
+    try{
+      const [dailyRes,weeklyRes]=await Promise.all([
+        apiFetch(`/api/market/candles/${encodeURIComponent(result.stockSymbol||stockSym)}?unit=days&interval=1`,{cache:'no-store'}),
+        apiFetch(`/api/market/candles/${encodeURIComponent(result.stockSymbol||stockSym)}?unit=weeks&interval=1`,{cache:'no-store'}),
+      ]);
+      const daily=await dailyRes.json(), weekly=await weeklyRes.json();
+      if(dailyRes.ok&&weeklyRes.ok&&daily.candles?.length&&weekly.candles?.length){
+        const summarize=(candles)=>{
+          const closes=candles.map(c=>c.c);
+          const rsi=calcRSI(closes); const rsiLast=rsi[rsi.length-1];
+          const ema20=calcEMA(closes,20), ema50=calcEMA(closes,50);
+          const trend=ema20[ema20.length-1]>ema50[ema50.length-1]?'Uptrend (EMA20>EMA50)':'Downtrend (EMA20<EMA50)';
+          return {rsi:rsiLast.toFixed(1),trend};
+        };
+        mtfTimeframes={daily:summarize(daily.candles),weekly:summarize(weekly.candles)};
+        const mtfRes=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'multiTimeframe',context:{symbol:result.stockSymbol||stockSym,timeframes:mtfTimeframes}})});
+        const mtfData=await mtfRes.json();
+        if(mtfRes.ok){ mtfText=mtfData.text; mtfModel=mtfData.model; }
+      }
+    }catch(mtfErr){ /* deep report still shows the core signal even if the multi-timeframe half fails */ }
+  }catch(e){
+    const friendly=friendlyAiError(e.status,e.message);
+    errorMsg=friendly.message;
+    isQuotaError=friendly.showUpgrade;
+  }
+
+  setTimeout(()=>{
+    document.getElementById('ls4').classList.add('done');
+    lw.style.display='none';
+    btn.disabled=false;isAnalysing=false;
+
+    if(!result){
+      rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run analysis:</strong> ${errorMsg}</div>${isQuotaError?'<div style="margin-top:12px"><button class="btn-lg" onclick="show(\'pricing\')">View plans</button></div>':''}`;
+      rw.style.display='block';
+      rw.scrollIntoView({behavior:'smooth',block:'nearest'});
+      return;
+    }
+
+    const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[result.sentiment]||'Neutral';
+    const sentimentCls=(result.sentiment||'').includes('bullish')?'b-buy':(result.sentiment||'').includes('bearish')?'b-sell':'b-hold';
+    const tech=result.technicals||{};
+    const debate=result.modelDebate||null;
+
+    rw.innerHTML=`
+      <div class="disclaimer" style="margin-bottom:10px"><i class="ti ti-telescope" style="margin-right:4px"></i><strong>Deep Research Report</strong> — core AI signal + real daily-vs-weekly technical read, combined.</div>
+      <div class="accuracy-banner">
+        <div><span class="acc-num">${result.technicalScore??'—'}/100</span>Technical score${result.consensusFrom>1?` · ${result.consensusFrom}-model consensus`:''}</div>
+        <div style="display:flex;gap:6px">
+          <span class="badge ${sentimentCls}">${sentimentLabel}</span>
+          <span style="font-size:12px;color:var(--text3)">Data reading, not a recommendation</span>
+        </div>
+      </div>
+      <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
+      <div class="res-header">
+        <div>
+          <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
+          <div class="res-meta">NSE/BSE · ${new Date(result.analysedAt||Date.now()).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}${quota&&quota.remaining!=null?` · ${quota.remaining} analyses left this month`:''}</div>
+        </div>
+        <div class="res-actions">
+          <button class="btn-sm" onclick="quickAddToWatchlist('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-star"></i> Watchlist</button>
+        </div>
+      </div>
+      <div class="meta-row">
+        <div class="mc"><div class="mc-lbl">Volatility level</div><div class="mc-val">${result.riskLevel??'—'}/10</div></div>
+        <div class="mc"><div class="mc-lbl">Current price</div><div class="mc-val">${result.currentPrice?'₹'+Number(result.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
+        <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`(${tech.rsiSignal})`:''}</div></div>
+        <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
+      </div>
+      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate (Elite)</div>
+      <div class="ai-debate" style="margin-bottom:10px">
+        ${debate.map(m=>`<div class="debate-card">
+          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-buy':(m.sentiment||'').includes('bearish')?'signal-sell':'signal-hold'}">${sentimentLabel}</span></div>
+          <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
+        </div>`).join('')}
+      </div>`:''}
+      <div class="res-block"><div class="res-block-title">What the data shows</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
+      ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
+      ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
+      <div class="admin-panel" style="margin-bottom:10px">
+        <div class="sec-title"><i class="ti ti-layers-intersect"></i> Daily vs Weekly (Multi-Timeframe)</div>
+        ${mtfTimeframes?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${mtfTimeframes.daily.rsi}, ${mtfTimeframes.daily.trend} · Weekly: RSI ${mtfTimeframes.weekly.rsi}, ${mtfTimeframes.weekly.trend}</div>`:''}
+        <div style="font-size:13px;color:var(--text2);line-height:1.7">${mtfText?mtfText.replace(/\n/g,'<br/>'):'Real daily/weekly candle history wasn\'t available for this symbol right now — core signal above still reflects real current data.'}</div>
+        ${mtfModel?`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(mtfModel)||'AI'}</div>`:''}
+      </div>
+      <div class="disclaimer"><strong>Disclaimer:</strong> This is AI-generated analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>`;
+    rw.style.display='block';
+    rw.scrollIntoView({behavior:'smooth',block:'nearest'});
+  },2400);
+}
+
 async function getMultiTimeframeView(sym){
   const el=document.getElementById('mtf-view');
   if(!el)return;
@@ -2897,7 +3120,7 @@ async function getMultiTimeframeView(sym){
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'multiTimeframe',context:{symbol:sym,timeframes}})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${timeframes.daily.rsi}, ${timeframes.daily.trend} · Weekly: RSI ${timeframes.weekly.rsi}, ${timeframes.weekly.trend}</div>${data.text.replace(/\n/g,'<br/>')}`;
+    el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${timeframes.daily.rsi}, ${timeframes.daily.trend} · Weekly: RSI ${timeframes.weekly.rsi}, ${timeframes.weekly.trend}</div>${data.text.replace(/\n/g,'<br/>')}<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not build multi-timeframe view right now — please try again shortly.</span>`;
   }
@@ -2938,9 +3161,16 @@ async function renderScreener(){
       :'<i class="ti ti-moon" style="margin-right:4px"></i>Market is closed right now — up/down % shown below is the change vs the last session\'s close.';
   }
 
- if(el.dataset.loaded!=='true'){
-  el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="font-size:18px;display:block;margin:0 auto 8px;animation:spin 1s linear infinite"></i>Loading stocks… <span style="opacity:.7">(first load of the day can take a few seconds)</span></div>`;
-}
+  // Only show the loading spinner on the very first render for this view.
+  // Live-tick-triggered re-renders (every ~3s while the market is open, via
+  // renderScreenerThrottled) used to always wipe the list back to this
+  // spinner first — that's what caused the screener to continuously
+  // "blink" while the market was open. Now a refresh with something
+  // already on screen just updates in place; the spinner only appears
+  // when there's genuinely nothing shown yet.
+  if(el.dataset.loaded!=='true'){
+    el.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px"><i class="ti ti-loader-2" style="font-size:18px;display:block;margin:0 auto 8px;animation:spin 1s linear infinite"></i>Loading stocks… <span style="opacity:.7">(first load of the day can take a few seconds)</span></div>`;
+  }
   try{
     const qs=new URLSearchParams({page:screenerPage,limit:50});
     if(screenerExchange)qs.set('exchange',screenerExchange);
@@ -2999,9 +3229,14 @@ async function renderScreener(){
       const q=quotes[it.symbol];
       const s=signals[it.symbol];
       const changeLabel=marketOpen?'today':'vs prev. close';
+      // FIX: id'd + classed so live WS ticks (see onmessage below) can patch
+      // the price/change text in place the instant a new tick arrives,
+      // instead of the screener only updating once every 4s REST poll —
+      // this is what makes prices move continuously while the tab is open,
+      // the same way they do inside Upstox itself.
       const priceHtml=q
-        ?`<div style="text-align:right;min-width:90px"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--text)">₹${fmtINR(q.price)}</div><div style="font-size:10px;color:${q.up?'var(--green2)':'var(--rose2)'}">${q.up?'▲ +':'▼ '}${q.changePct.toFixed(2)}% ${changeLabel}</div></div>`
-        :`<div style="text-align:right;min-width:90px;color:var(--text3);font-size:11px">No quote yet</div>`;
+        ?`<div id="scr-px-${it.symbol}" data-ex="${it.exchange}" style="text-align:right;min-width:90px"><div class="scr-px-val" style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--text)">₹${fmtINR(q.price)}</div><div class="scr-px-chg" style="font-size:10px;color:${q.up?'var(--green2)':'var(--rose2)'}">${q.up?'▲ +':'▼ '}${q.changePct.toFixed(2)}% ${changeLabel}</div></div>`
+        :`<div id="scr-px-${it.symbol}" data-ex="${it.exchange}" style="text-align:right;min-width:90px;color:var(--text3);font-size:11px">No quote yet</div>`;
       const sigHtml=s&&sigStyle[s.strength]
         ?`<span style="margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:${sigStyle[s.strength].c};background:${sigStyle[s.strength].bg}" title="Computed technical reading, not AI, not a recommendation — ${s.bullishVotes}/${s.totalVotes} bullish votes">${s.strength} · ${s.bullishVotes}/${s.totalVotes}</span>`
         :'';
@@ -3020,21 +3255,43 @@ async function renderScreener(){
       <button class="btn-lg-ghost" style="padding:8px 20px;font-size:12px" ${screenerPage<=1?'disabled':''} onclick="changeScreenerPage(-1)">← Previous</button>
       <span style="font-size:12px;color:var(--text3)">Page ${screenerPage} of ${screenerTotalPages}</span>
       <button class="btn-lg-ghost" style="padding:8px 20px;font-size:12px" ${screenerPage>=screenerTotalPages?'disabled':''} onclick="changeScreenerPage(1)">Next →</button>
-   </div>`;
+    </div>`;
     el.dataset.loaded='true';
+    subscribeScreenerLiveTicks(filtered);
   }catch(e){
     el.innerHTML=e.isPlanGate
       ? `<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-lock" style="font-size:22px;color:var(--text3);display:block;margin-bottom:10px"></i><strong>${e.message}</strong><div style="margin-top:14px"><button class="btn-lg" onclick="show('pricing')">View plans</button></div></div>`
-      : `<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load stocks — ${e.message}</div>`;
+      : `<div style="padding:24px;text-align:center;color:var(--rose2)">Stocks are temporarily unavailable — please try again shortly.</div>`;
   }
+}
+// Tells the backend's live feed to start streaming ticks for whichever
+// symbols the Screener is currently showing (page/filter dependent), same
+// mechanism the Charts page already uses for its single active symbol —
+// see connectLiveFeed()/onmessage below, which patches scr-px-<SYMBOL>
+// directly on every tick so prices move continuously, not just once every
+// 4s REST poll. Client-side Set just avoids re-sending a watch request for
+// a symbol already subscribed this session (the backend also dedupes).
+const screenerWatchedSymbols=new Set();
+let lastScreenerItems=[];
+function subscribeScreenerLiveTicks(items){
+  lastScreenerItems=items;
+  if(!liveSocket||liveSocket.readyState!==1)return;
+  items.forEach(it=>{
+    const key=(it.exchange==='BSE_EQ'?'BSE:':'')+it.symbol;
+    if(screenerWatchedSymbols.has(key))return;
+    screenerWatchedSymbols.add(key);
+    liveSocket.send(JSON.stringify({type:'watch',symbol:it.symbol,exchange:it.exchange}));
+  });
 }
 function changeScreenerPage(delta){
   screenerPage=Math.max(1,Math.min(screenerTotalPages,screenerPage+delta));
+  const resEl=document.getElementById('screener-results'); if(resEl)resEl.dataset.loaded='false';
   renderScreener();
 }
 function setScreenerExchange(ex){
   screenerExchange=ex||undefined;
   screenerPage=1;
+  const resEl=document.getElementById('screener-results'); if(resEl)resEl.dataset.loaded='false';
   renderScreener();
 }
 // ══════════════ SCREENER SEARCH (all 5,000+ NSE + BSE stocks) ══════════════
@@ -3110,6 +3367,19 @@ function stockSearchBarHtml(inputId,placeholder,opts){
 
 const genericStockSearchHandlers={}; // inputId -> function(symbol,name,exchange)
 function registerStockSearch(inputId,onSelect){ genericStockSearchHandlers[inputId]=onSelect; }
+
+// FIX: Analysis (Quick + Compare) and Backtest used to have
+// "${stockSearchBarHtml(...)}" written directly into the static page HTML
+// instead of inside a JS template string — since that HTML isn't inside a
+// <script> block, the browser just printed that text literally instead of
+// running it, so those three inputs showed raw code instead of a working
+// search box. A later fix replaced them with empty mount <div>s filled in
+// by a runtime IIFE — but that still depends on this script reaching that
+// point without an earlier error, so on the live site the raw text kept
+// showing up. These 3 inputs are now written as real, permanent static
+// HTML (see the Analysis/Backtest page markup) — nothing needs to run for
+// them to exist, they're just there in the DOM from page load like the
+// Portfolio/Watchlist/Scanner/Indicators search bars already were.
 
 let genericSearchDebounce=null;
 function onGenericStockSearchInput(inputId,val){
@@ -3698,7 +3968,7 @@ async function generateMarketBrief(){
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'marketBrief',context:{marketData:{indices,gainers,losers}}})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>');
+    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not generate brief right now — please try again shortly.</span>`;
   }
@@ -3911,7 +4181,7 @@ async function runPortfolioHealthCheck(){
     const res2=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'portfolioHealth',context:{holdings}})});
     const data2=await res2.json();
     if(!res2.ok)throw new Error(data2.error||'HTTP '+res2.status);
-    el.innerHTML=data2.text.replace(/\n/g,'<br/>');
+    el.innerHTML=data2.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data2.model)||'AI'}</div>`;
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not run health check right now — please try again shortly.</span>`;
   }
@@ -4197,7 +4467,7 @@ async function generateAITradeIdeas(){
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'tradeIdeas',context:{scanType:lastScanType,matches:lastScanMatches}})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>');
+    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not get AI commentary right now — please try again shortly.</span>`;
   }
@@ -4676,7 +4946,7 @@ async function sendChat(){
   try{
     const res=await apiFetch('/api/ai/chat',{method:'POST',body:JSON.stringify({message:msg.slice(0,500)})});
     const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'AI chat is temporarily unavailable.');
+    if(!res.ok){ const err=new Error(data.error||'AI chat is temporarily unavailable.'); err.status=res.status; throw err; }
     const reply=data.reply||'Sorry, I could not generate a response.';
     chatHistory.push({role:'assistant',content:reply});
 
@@ -4685,7 +4955,13 @@ async function sendChat(){
     msgs.insertAdjacentHTML('beforeend',aiBubble);
   }catch(e){
     document.getElementById('typing-indicator')?.remove();
-    msgs.insertAdjacentHTML('beforeend',`<div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">I'm having trouble connecting right now. Please try again in a moment.</div></div>`);
+    // FIX: same rule as AI analysis — only a plan/quota error (already
+    // plain-language, names the plan) is shown; anything else (Upstox,
+    // model provider, server issues) collapses into one generic line.
+    const friendly=friendlyAiError(e.status,e.message);
+    const bubbleText=friendly.showUpgrade?friendly.message:'I\'m having trouble connecting right now. Please try again in a moment.';
+    const upgradeBtn=friendly.showUpgrade?`<div style="margin-top:8px"><button class="btn-lg" style="padding:4px 12px;font-size:12px" onclick="show('pricing')">View plans</button></div>`:'';
+    msgs.insertAdjacentHTML('beforeend',`<div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">${bubbleText}${upgradeBtn}</div></div>`);
   }
   msgs.scrollTop=msgs.scrollHeight;
 }
@@ -5099,7 +5375,7 @@ let analysisMode='quick';
 registerStockSearch('analysis-search-inp',(sym,name,exchange)=>{
   document.getElementById('inp-sym').value=sym;
   document.getElementById('inp-name').value=name||'';
-  if(exchange)setAnalysisExchange(exchange,document.getElementById(exchange==='BSE_EQ'?'analysis-ex-bse':'analysis-ex-nse'));
+  if(exchange)setAnalysisExchange(exchange);
 });
 registerStockSearch('analysis-search-inp2',(sym,name)=>{
   document.getElementById('inp-sym2').value=sym;
@@ -5116,10 +5392,14 @@ function setAnalysisTab(mode){
   const btn=document.getElementById('btn-analyse');
   const rw=document.getElementById('result-wrap');
   if(mode==='deep'){
-    // Not implemented server-side yet — say so plainly instead of a fake flow.
+    // FIX: this used to be a permanent "coming soon" stub. Deep Research now
+    // runs for real — it's the same real /api/ai/analyze signal PLUS a real
+    // daily-vs-weekly multi-timeframe read (/api/ai/insight kind=multiTimeframe),
+    // both against real Upstox data, combined into one report instead of
+    // requiring a second click on Quick Analysis's "check daily vs weekly" button.
     row2.style.display='none';
-    rw.style.display='block';
-    rw.innerHTML=`<div class="disclaimer"><strong>Deep Research is coming soon.</strong> Use <strong>Quick Analysis</strong> for a full AI signal today, or <strong>Compare Stocks</strong> to run two side by side.</div>`;
+    btn.innerHTML='<i class="ti ti-telescope"></i> Run Deep Research';
+    rw.style.display='none'; rw.innerHTML='';
     analysisMode=mode;
     return;
   }
@@ -5139,8 +5419,7 @@ function handleAnalyseClick(){
   if(analysisMode==='compare')runCompareAnalysis();
   else if(analysisMode==='quick')runAnalysis();
   else if(analysisMode==='portfolio')runPortfolioScan();
-  // deep: button click does nothing extra, the tab click already explained
-  // this isn't available yet.
+  else if(analysisMode==='deep')runDeepResearch();
 }
 // FIX: this used to be a permanent "coming soon" stub even though the exact
 // same AI portfolio review already existed and worked on the Portfolio page
@@ -5207,10 +5486,11 @@ async function runCompareAnalysis(){
         body:JSON.stringify({stockSymbol:sym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
       });
       const data=await res.json();
-      if(!res.ok)throw new Error(data.error||'AI analysis failed.');
+      if(!res.ok){ const err=new Error(data.error||'AI analysis failed.'); err.status=res.status; throw err; }
       return {ok:true,data};
     }catch(e){
-      return {ok:false,error:e.message||'AI analysis failed.'};
+      const friendly=friendlyAiError(e.status,e.message);
+      return {ok:false,error:friendly.message,showUpgrade:friendly.showUpgrade};
     }
   };
   const [a,b]=await Promise.all([runOne(symA),runOne(symB)]);
@@ -5218,7 +5498,7 @@ async function runCompareAnalysis(){
   lw.style.display='none'; btn.disabled=false; isAnalysing=false;
   rw.style.display='block';
   const card=(sym,r)=>{
-    if(!r.ok)return `<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>${sym}:</strong> ${r.error}</div>`;
+    if(!r.ok)return `<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>${sym}:</strong> ${r.error}${r.showUpgrade?' <button class="btn-lg" style="margin-left:8px;padding:4px 12px;font-size:12px" onclick="show(\'pricing\')">View plans</button>':''}</div>`;
     const d=r.data, sentiment=d.sentiment||'neutral';
     const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[sentiment]||'Neutral';
     const sentimentCls=sentiment.includes('bullish')?'b-buy':sentiment.includes('bearish')?'b-sell':'b-hold';
@@ -5675,16 +5955,29 @@ async function fetchRealCandles(symbol,tf,exchange){
 }
 
 function renderMainChart(){
-  // Show a lightweight loading state immediately (not fake candles — see
-  // renderMainChartWith's early-return "NO LIVE DATA" branch below), then
-  // swap in real candles once the backend responds.
   const requestedSym=chartCurrentSymbol;
   const requestedExchange=chartCurrentExchange;
-  // Clear any live-tick state left over from the previous symbol so a
-  // stray in-flight tick can never be applied to the wrong chart while
-  // the new symbol's real candles are still loading.
-  lwLastBar=null; lastChartTick=null;
-  renderMainChartWith(null);
+  // FIX (root cause of trendlines vanishing every few seconds): this function
+  // runs both (a) on a genuine symbol/timeframe/exchange switch, and (b) on
+  // every REFRESH_MS background poll refreshing the SAME chart's candles.
+  // It used to call renderMainChartWith(null) unconditionally every time —
+  // including case (b) — which tears down lwChart entirely (see the
+  // "NO LIVE DATA" branch below) and wipes chartDrawings as a side effect.
+  // The isNewChart guard inside renderLightweightMainChart() never got a
+  // chance to help, because this destructive null-render happened first.
+  // Now: only show the "loading" null state when this is actually a
+  // different chart than what's already on screen. A background refresh of
+  // the same symbol/timeframe/exchange just fetches fresh candles and
+  // updates in place, leaving the user's trendlines/price-levels alone.
+  const requestedKey=`${requestedSym}|${chartCurrentTF}|${requestedExchange}|${chartCustomInterval?chartCustomInterval.unit+chartCustomInterval.interval:''}`;
+  const isSameChartRefresh = !!(lwChart && requestedKey===lwFitKey);
+  if(!isSameChartRefresh){
+    // Clear any live-tick state left over from the previous symbol so a
+    // stray in-flight tick can never be applied to the wrong chart while
+    // the new symbol's real candles are still loading.
+    lwLastBar=null; lastChartTick=null;
+    renderMainChartWith(null);
+  }
   fetchRealCandles(requestedSym,chartCurrentTF,requestedExchange).then(real=>{
     // Guard against the user switching symbols/timeframes/exchange while this was in flight.
     if(real&&chartCurrentSymbol===requestedSym&&chartCurrentExchange===requestedExchange)renderMainChartWith(real);
@@ -5736,8 +6029,11 @@ function ensureLightweightChart(){
 // plugin, since Lightweight Charts v4 has no built-in drawing tools.
 let chartDrawMode=null; // 'trend' | 'hline' | null
 let chartTrendStart=null; // {time, price} — first click of a trendline
-let chartDrawnTrendlines=[]; // LineSeries[]
-let chartDrawnPriceLines=[]; // IPriceLine[] (owned by lwCandleSeries)
+// Every trendline/price-level the user has drawn, tracked individually so
+// each one can be removed on its own (previously only "Clear Drawings" —
+// wipe everything — existed; there was no way to undo just one line).
+let chartDrawings=[]; // {id, type:'trend'|'hline', obj, label}
+let chartDrawIdSeq=0;
 
 function setChartDrawMode(mode,btn){
   chartDrawMode = (chartDrawMode===mode) ? null : mode;
@@ -5760,15 +6056,41 @@ function setChartDrawMode(mode,btn){
 }
 
 function clearChartDrawings(){
-  if(lwChart){
-    chartDrawnTrendlines.forEach(s=>{ try{lwChart.removeSeries(s);}catch(e){} });
-  }
-  if(lwCandleSeries){
-    chartDrawnPriceLines.forEach(pl=>{ try{lwCandleSeries.removePriceLine(pl);}catch(e){} });
-  }
-  chartDrawnTrendlines=[];
-  chartDrawnPriceLines=[];
+  chartDrawings.forEach(d=>removeOneDrawingObj(d));
+  chartDrawings=[];
   chartTrendStart=null;
+  renderChartDrawingsList();
+}
+
+/** Actually detaches a single drawing's underlying chart object. Split out
+ *  from removeChartDrawing() so clearChartDrawings() can reuse it without
+ *  re-rendering the list on every single item. */
+function removeOneDrawingObj(d){
+  try{
+    if(d.type==='trend' && lwChart) lwChart.removeSeries(d.obj);
+    else if(d.type==='hline' && lwCandleSeries) lwCandleSeries.removePriceLine(d.obj);
+  }catch(e){/* chart/series may already be gone (symbol switch) — fine */}
+}
+
+/** Removes exactly one drawing (trendline or price level) by id, leaving
+ *  every other drawing on the chart untouched — the actual fix for "after
+ *  drawing a trendline it can only be cleared all at once, not removed
+ *  individually." */
+function removeChartDrawing(id){
+  const idx=chartDrawings.findIndex(d=>d.id===id);
+  if(idx===-1)return;
+  removeOneDrawingObj(chartDrawings[idx]);
+  chartDrawings.splice(idx,1);
+  renderChartDrawingsList();
+}
+
+function renderChartDrawingsList(){
+  const el=document.getElementById('chart-drawings-list');
+  if(!el)return;
+  if(!chartDrawings.length){ el.innerHTML=''; return; }
+  el.innerHTML=chartDrawings.map(d=>`
+    <span class="chart-drawing-chip">${d.label}<i class="ti ti-x" onclick="removeChartDrawing(${d.id})" title="Remove this drawing"></i></span>
+  `).join('');
 }
 
 function handleChartDrawClick(param){
@@ -5786,7 +6108,8 @@ function handleChartDrawClick(param){
       axisLabelVisible:true,
       title:'₹'+price.toFixed(2),
     });
-    chartDrawnPriceLines.push(pl);
+    chartDrawings.push({id:++chartDrawIdSeq,type:'hline',obj:pl,label:'Level ₹'+price.toFixed(2)});
+    renderChartDrawingsList();
     return;
   }
 
@@ -5799,7 +6122,8 @@ function handleChartDrawClick(param){
     const pts=[chartTrendStart,{time:param.time,price}].sort((a,b)=>a.time-b.time);
     const line=lwChart.addLineSeries({color:'#38bdf8',lineWidth:2,lastValueVisible:true,priceLineVisible:false});
     line.setData(pts.map(p=>({time:p.time,value:p.price})));
-    chartDrawnTrendlines.push(line);
+    chartDrawings.push({id:++chartDrawIdSeq,type:'trend',obj:line,label:'Trendline ₹'+pts[0].price.toFixed(2)+' → ₹'+pts[1].price.toFixed(2)});
+    renderChartDrawingsList();
     chartTrendStart=null;
   }
 }
@@ -5900,7 +6224,7 @@ function renderMainChartWith(realCandles){
     // No fake candles — show a clear empty state instead of inventing a chart.
     titleEl.innerHTML=`${sym} <span style="font-size:10px;font-weight:600;color:var(--text3);border:1px solid var(--border2);padding:2px 7px;border-radius:8px;vertical-align:middle">NO LIVE DATA</span>`;
     if(lwChart){ lwChart.remove(); lwChart=null; lwCandleSeries=null; lwFitKey=null; Object.keys(lwOverlaySeries).forEach(k=>delete lwOverlaySeries[k]); }
-    chartDrawnTrendlines=[]; chartDrawnPriceLines=[]; chartTrendStart=null;
+    chartDrawings=[]; chartTrendStart=null; renderChartDrawingsList();
     const container=document.getElementById('mainChart');
     if(container)container.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;text-align:center;padding:20px">Chart data for ${sym} isn't available right now. Please check back shortly.</div>`;
     if(rsiCanvas){rsiCanvas.style.display='none';} if(rsiLbl)rsiLbl.style.display='none';
@@ -6140,7 +6464,7 @@ async function getOptionStrategyAdvice(){
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'optionStrategy',context:{underlying:lastOptionChainSummary.underlying,expiry:lastOptionChainSummary.expiry,chainSummary:lastOptionChainSummary}})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>');
+    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not get AI suggestion right now — please try again shortly.</span>`;
   }
@@ -6237,7 +6561,7 @@ async function getBacktestAdvice(symbol,strategy,totalReturn,buyHoldReturn,winRa
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'backtestAdvisor',context:{symbol,strategy,results:{totalReturn,buyHoldReturn,winRate,maxDrawdown:maxDD,avgTradeReturn:avgRet,tradeCount}}})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>');
+    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not get AI critique right now — please try again shortly.</span>`;
   }

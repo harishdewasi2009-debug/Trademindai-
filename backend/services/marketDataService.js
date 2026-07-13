@@ -536,6 +536,39 @@ async function getLtp(symbol, exchange) {
  */
 const quoteBatchCache = new Map(); // cacheKey -> { data, expiresAt }
 const QUOTE_CACHE_TTL_MS = 3000;
+
+// ─────────────────────────────────────────────────────────────────────────
+//  CANDLE CACHE + 429 RETRY — fixes "Error 1015: You are being rate
+//  limited" (Cloudflare, sitting in front of Upstox) cascading into 502s
+//  on the charts. Two causes were combined: (1) historical-candle calls had
+//  zero caching, so every chart open/reload re-hit Upstox even for data
+//  that was just fetched seconds ago, and (2) a single 429 was treated as
+//  a hard failure with no retry. Fixed with a short-lived shared cache
+//  (mirrors the quoteBatchCache pattern above) plus automatic backoff retry
+//  on 429 specifically.
+// ─────────────────────────────────────────────────────────────────────────
+const CANDLE_CACHE_TTL_MS = 60_000; // 1 minute — historical bars don't need per-second freshness
+const candleCache = new Map(); // cacheKey -> { data, expiresAt }
+
+/**
+ * fetch() wrapper that automatically retries on HTTP 429. Cloudflare
+ * returns 429 (with "Error 1015: You are being rate limited") when too
+ * many requests land in a short window — e.g. the hero chart and the main
+ * symbol chart both requesting candles on the same page load. Retries with
+ * backoff before giving up, honoring Retry-After when Upstox/Cloudflare
+ * sends one.
+ */
+async function fetchUpstoxWithRetry(url, options, retries = 2) {
+  let res;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    res = await fetch(url, options);
+    if (res.status !== 429 || attempt === retries) return res;
+    const retryAfterHeader = parseInt(res.headers.get('retry-after'), 10);
+    const waitMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 500 * (attempt + 1) ** 2;
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  return res;
+}
 /** Used by getLtpBatch() when Upstox's live quote has no usable last_price/
  *  previousClose (e.g. after market close) — pulls the last two daily
  *  candles instead, same pattern as the index fallback, so the caller
@@ -725,24 +758,34 @@ async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5
   if (!VALID_UNITS.includes(unit)) {
     throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
   }
-  const accessToken = await getValidAccessToken();
   const toDate = to || new Date().toISOString().slice(0, 10);
   const fromDate = from || defaultFromDate(unit);
+
+  const cacheKey = `idx:${label.toUpperCase()}:${unit}:${interval}:${fromDate}:${toDate}`;
+  const cached = candleCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  const accessToken = await getValidAccessToken();
   const encodedKey = encodeURIComponent(instrumentKey);
   const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
-  const res = await fetch(url, {
+  const res = await fetchUpstoxWithRetry(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
     const errText = await res.text();
-    throw new AppError(`Upstox index candle request failed: ${errText.slice(0, 200)}`, 502);
+    const msg = res.status === 429
+      ? 'Upstox index candle request was rate limited even after retrying — try again shortly.'
+      : `Upstox index candle request failed: ${errText.slice(0, 200)}`;
+    throw new AppError(msg, 502);
   }
   const data = await res.json();
   const rawCandles = data.data?.candles || [];
   const candles = rawCandles.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
-  return { label, instrumentKey, unit, interval, candles };
+  const result = { label, instrumentKey, unit, interval, candles };
+  candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
+  return result;
 }
 // ─────────────────────────────────────────────────────────────────────────
 //  OPTION CHAIN (real Upstox v2 API — replaces fabricated OI/PCR data)
@@ -779,23 +822,30 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   if (!VALID_UNITS.includes(unit)) {
     throw new AppError(`unit must be one of: ${VALID_UNITS.join(', ')}`, 400);
   }
-  const accessToken = await getValidAccessToken();
   const instrumentKey = await resolveInstrumentKey(symbol, exchange);
 
   const toDate = to || new Date().toISOString().slice(0, 10);
   const fromDate = from || defaultFromDate(unit);
 
+  const cacheKey = `sym:${symbol.toUpperCase()}:${exchange || ''}:${unit}:${interval}:${fromDate}:${toDate}`;
+  const cached = candleCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  const accessToken = await getValidAccessToken();
   const encodedKey = encodeURIComponent(instrumentKey);
   const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
-  const res = await fetch(url, {
+  const res = await fetchUpstoxWithRetry(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(15_000),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new AppError(`Upstox historical-candle request failed: ${errText.slice(0, 200)}`, 502);
+    const msg = res.status === 429
+      ? 'Upstox historical-candle request was rate limited even after retrying — try again shortly.'
+      : `Upstox historical-candle request failed: ${errText.slice(0, 200)}`;
+    throw new AppError(msg, 502);
   }
 
   const data = await res.json();
@@ -812,22 +862,31 @@ const candles = rawCandles
   const intraday = await getIntradayCandles(instrumentKey, unit, interval);
   const merged = [...candles.filter((c) => !c.t.startsWith(todayStr)), ...intraday];
 
-  return { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
+  const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
+  candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
+  return result;
 }
 /** Fetches TODAY's candles (Upstox's separate intraday endpoint — historical never includes today). */
 async function getIntradayCandles(instrumentKey, unit, interval) {
   try {
+    const cacheKey = `intraday:${instrumentKey}:${unit}:${interval}`;
+    const cached = candleCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
     const accessToken = await getValidAccessToken();
     const encodedKey = encodeURIComponent(instrumentKey);
     const url = `${BASE_V3}/historical-candle/intraday/${encodedKey}/${unit}/${interval}`;
-    const res = await fetch(url, {
+    const res = await fetchUpstoxWithRetry(url, {
       headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return []; // e.g. market closed — don't break the whole chart over this
+    if (!res.ok) return []; // e.g. market closed, or still rate limited after retries — don't break the whole chart over this
     const data = await res.json();
     const raw = data.data?.candles || [];
-    return raw.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+    const result = raw.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+    // Short TTL — intraday candles should stay reasonably fresh during market hours.
+    candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + 15_000 });
+    return result;
   } catch {
     return [];
   }

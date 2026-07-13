@@ -2,6 +2,7 @@
 const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { getAccuracyStats, evaluateDuePredictions } = require('../services/predictionAccuracyService');
 
 // ── GET /api/admin/stats ──
 const getStats = asyncHandler(async (req, res) => {
@@ -73,4 +74,19 @@ const getApiUsage = asyncHandler(async (req, res) => {
   res.json({ usage: rows });
 });
 
-module.exports = { getStats, listUsers, updateUserPlan, getApiUsage };
+// ── GET /api/admin/ai-accuracy ── (studies REAL price outcomes vs the AI's
+// past sentiment reads, aggregated across ALL users — backward-looking
+// quality check, not a new prediction. See predictionAccuracyService.js.)
+const getAiAccuracy = asyncHandler(async (req, res) => {
+  const stats = await getAccuracyStats();
+  res.json(stats);
+});
+
+// ── POST /api/admin/ai-accuracy/evaluate-now ── (manual trigger, in case
+// you don't want to wait for the 18:00 IST daily cron job)
+const runAiAccuracyEvaluationNow = asyncHandler(async (req, res) => {
+  const result = await evaluateDuePredictions();
+  res.json({ message: 'Evaluation run complete.', ...result });
+});
+
+module.exports = { getStats, listUsers, updateUserPlan, getApiUsage, getAiAccuracy, runAiAccuracyEvaluationNow };

@@ -78,6 +78,12 @@ const PLANS = {
       'prediction_history',
       'watchlist_10',
       'screener',
+      // FIX: Basic already has a real DeepSeek V3 + Gemini Flash cascade
+      // built for it in aiService.js's insightCascadeForPlan() — this was
+      // just never reachable because /api/ai/insight required 'ai_chat'
+      // (Pro+Elite only). Adding this unlocks Deep Research's daily-vs-
+      // weekly section and the other insight-powered features for Basic.
+      'ai_insight',
     ],
   },
 
@@ -141,6 +147,7 @@ const PLANS = {
       'whatsapp_alerts',
       'watchlist_50',
       'ai_chat',
+      'ai_insight',
       'referral',
     ],
   },
@@ -205,6 +212,7 @@ const PLANS = {
       'whatsapp_alerts',
       'watchlist_unlimited',
       'ai_chat',
+      'ai_insight',
       'referral',
       'consensus_analysis',
       'backtesting',

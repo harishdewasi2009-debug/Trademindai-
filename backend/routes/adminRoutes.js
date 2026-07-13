@@ -13,5 +13,7 @@ router.get('/stats', ctrl.getStats);
 router.get('/users', ctrl.listUsers);
 router.patch('/users/:id/plan', validateUpdateUserPlan, ctrl.updateUserPlan);
 router.get('/api-usage', ctrl.getApiUsage);
+router.get('/ai-accuracy', ctrl.getAiAccuracy);
+router.post('/ai-accuracy/evaluate-now', ctrl.runAiAccuracyEvaluationNow);
 
 module.exports = router;

@@ -257,27 +257,19 @@ router.post(
     if (message.length > 500) {
       throw new AppError('message must be 500 characters or less.', 400);
     }
-
-    // FIX: AI Assistant now picks its model from the user's plan config in
-    // plans.js instead of always hardcoding Claude. DeepSeek is the model
-    // TradeMind actually sells on Basic/Pro/Elite (DeepSeek V3 on
-    // Basic/Pro, DeepSeek R1 on Elite — see config/plans.js aiModels), so
-    // the assistant now runs on the DeepSeek model configured for that
-    // plan by default, falling back to Claude only if DeepSeek isn't
-    // configured/available on the server or the DeepSeek call fails.
-    const { getModelConfig } = require('../config/plans');
-    const { MODELS } = require('../services/aiService');
     const plan = req.user.plan;
-    const deepseekKey = plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3';
-    const deepseekCfg = getModelConfig(plan, deepseekKey);
-    const deepseekAvailable = !!(deepseekCfg && process.env.DEEPSEEK_API_KEY);
 
-    const claudeApiKey = process.env.CLAUDE_API_KEY;
-    const claudeModel  = plan === 'elite' ? MODELS.CLAUDE_OPUS : MODELS.CLAUDE_SONNET;
-
-    if (!deepseekAvailable && !claudeApiKey) {
-      throw new AppError('AI chat is not configured on this server.', 501);
-    }
+    // FIX (item: "AI Assistant should use the DeepSeek model according to
+    // plan"): this used to ONLY ever try DeepSeek then fall back straight to
+    // Claude — Gemini was never used for chat at all, and the order didn't
+    // reflect what each plan actually pays for (e.g. Pro pays for Claude
+    // Sonnet as its main model, with DeepSeek as a secondary option — the
+    // old code had DeepSeek ahead of Claude on every plan). Now reuses the
+    // exact same insightCascadeForPlan() cascade that /api/ai/insight
+    // already uses (config/plans.js is the single source of truth for
+    // which models each plan gets and in what order), just with the
+    // chat-specific system prompt below instead of the insight one.
+    const { MODELS, insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain } = require('../services/aiService');
 
     // COMPLIANCE: TradeMind is not a SEBI-registered Investment Adviser or
     // Research Analyst. SEBI's regulations cover "trading calls" and
@@ -292,81 +284,49 @@ Give concise, practical, educational answers about markets, indicators, and conc
 If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
 Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
-    let reply, modelUsed, modelLabel;
-    try {
-      if (deepseekAvailable) {
-        try {
-          const dsRes = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: deepseekCfg.modelId,
-              messages: [
-                { role: 'system', content: system },
-                { role: 'user', content: message.trim() },
-              ],
-              temperature: 0.4,
-              max_tokens: Math.min(512, deepseekCfg.maxOutputTokens || 512),
-            }),
-            signal: AbortSignal.timeout(30_000),
-          });
-          if (!dsRes.ok) throw new Error(`DeepSeek chat ${dsRes.status}`);
-          const dsData = await dsRes.json();
-          reply = dsData.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
-          modelUsed  = deepseekCfg.modelId;
-          modelLabel = deepseekKey === 'deepseek_r1' ? 'DeepSeek R1' : 'DeepSeek V3';
+    const CHAT_CALLERS = { callGeminiPlain, callClaudePlain, callDeepSeekPlain };
+    const cascade = insightCascadeForPlan(plan);
 
-          await query(
-            `INSERT INTO ai_requests
-               (user_id, stock_symbol, request_type, model_used, model_key,
-                tokens_input, tokens_output, cost_usd, latency_ms)
-             VALUES ($1, NULL, 'chat', $2, $3, $4, $5, 0, 0)`,
-            [req.user.id, modelUsed, deepseekKey, dsData.usage?.prompt_tokens || 0, dsData.usage?.completion_tokens || 0]
-          );
-        } catch (dsErr) {
-          console.warn('[/api/ai/chat] DeepSeek failed, falling back to Claude:', dsErr.message);
-          if (!claudeApiKey) throw dsErr;
-          reply = undefined; // fall through to Claude below
-        }
-      }
+    let reply, modelUsed, modelLabel, lastErr;
+    for (const step of cascade) {
+      // Match each cascade entry's function reference back to a name so we
+      // can (a) call the exported version of it and (b) skip cleanly when
+      // that provider's API key isn't configured on this server.
+      const fnName = step.fn.name; // 'callGeminiPlain' | 'callClaudePlain' | 'callDeepSeekPlain'
+      const caller = CHAT_CALLERS[fnName];
+      const keyPresent =
+        (fnName === 'callGeminiPlain'   && !!process.env.GEMINI_API_KEY) ||
+        (fnName === 'callClaudePlain'   && !!process.env.CLAUDE_API_KEY) ||
+        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY);
+      if (!caller || !keyPresent) continue;
 
-      if (reply === undefined) {
-        if (!claudeApiKey) throw new Error('No AI provider available');
-        const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': claudeApiKey,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: claudeModel,
-            max_tokens: 512,
-            system,
-            messages: [{ role: 'user', content: message.trim() }],
-            temperature: 0.4,
-          }),
-          signal: AbortSignal.timeout(30_000),
-        });
-        if (!res2.ok) throw new Error(`Claude chat ${res2.status}`);
-        const data = await res2.json();
-        reply = data.content?.[0]?.text || 'Sorry, I could not generate a response.';
-        modelUsed  = claudeModel;
-        modelLabel = plan === 'elite' ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6';
+      try {
+        const { text, model } = await caller(step.model, message.trim(), system);
+        reply = text;
+        modelUsed = model || step.model;
+        modelLabel =
+          fnName === 'callGeminiPlain'   ? (step.model === MODELS.GEMINI_PRO ? 'Gemini Pro' : 'Gemini Flash') :
+          fnName === 'callClaudePlain'   ? (step.model === MODELS.CLAUDE_OPUS ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6') :
+          (step.model === MODELS.DEEPSEEK_R1 ? 'DeepSeek R1' : 'DeepSeek V3');
 
         await query(
           `INSERT INTO ai_requests
              (user_id, stock_symbol, request_type, model_used, model_key,
               tokens_input, tokens_output, cost_usd, latency_ms)
-           VALUES ($1, NULL, 'chat', $2, $3, $4, $5, 0, 0)`,
-          [req.user.id, modelUsed, 'claude_fallback', data.usage?.input_tokens || 0, data.usage?.output_tokens || 0]
+           VALUES ($1, NULL, 'chat', $2, $3, 0, 0, 0, 0)`,
+          [req.user.id, modelUsed, fnName === 'callGeminiPlain' ? (plan === 'elite' ? 'gemini_pro' : 'gemini_flash')
+                                  : fnName === 'callClaudePlain' ? (plan === 'elite' ? 'claude_opus4' : 'claude_sonnet')
+                                  : (plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3')]
         );
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[/api/ai/chat] ${fnName} (${step.model}) failed, trying next in cascade:`, err.message);
       }
-    } catch (err) {
-      console.error('[/api/ai/chat] failed:', err.message);
+    }
+
+    if (reply === undefined) {
+      console.error('[/api/ai/chat] All models in cascade failed:', lastErr?.message);
       throw new AppError('AI chat is temporarily unavailable.', 503);
     }
 
@@ -376,16 +336,27 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
 // ── POST /api/ai/insight — real-data-grounded AI commentary ──────────────
 // Powers: Trade Idea Generator, Portfolio Health Check, Morning Market
-// Brief, Option Strategy Advisor, Backtest Advisor, Multi-Timeframe view.
+// Brief, Option Strategy Advisor, Backtest Advisor, Multi-Timeframe view
+// (the latter is also what "Deep Research" runs as its second half).
 // Unlike /analyze, this doesn't produce a new Buy/Sell/Hold signal — it
 // only explains/synthesizes REAL data the frontend already fetched from
 // Upstox and passes in as `context`. Kept to one shared endpoint since all
 // 6 features are the same shape: real data in, AI commentary out.
+//
+// FIX: this used to require the 'ai_chat' feature (Pro+Elite only), but the
+// Deep Research tab is shown to EVERY plan in the frontend, and
+// insightCascadeForPlan() in aiService.js already has a real DeepSeek V3 +
+// Gemini Flash cascade written specifically for the Basic plan — it could
+// simply never run, so Basic users got a half-empty Deep Research report
+// every time (the daily-vs-weekly section silently failed). Now gated on
+// 'ai_insight' (Basic/Pro/Elite — see config/plans.js), so Basic users
+// actually get the cascade that was already built for them. Free stays
+// excluded, consistent with prediction_history and other Basic+ features.
 const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe'];
 router.post(
   '/insight',
   requireAuth,
-  requireFeature('ai_chat'),
+  requireFeature('ai_insight'),
   aiLimiter,
   asyncHandler(async (req, res) => {
     const { kind, context } = req.body || {};

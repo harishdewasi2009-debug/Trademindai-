@@ -25,6 +25,7 @@ const cron = require('node-cron');
 const { config } = require('../config');
 const marketDataService = require('./marketDataService');
 const { sendUpstoxTokenAlert } = require('./emailService');
+const { evaluateDuePredictions } = require('./predictionAccuracyService');
 
 function isUpstoxConfigured() {
   return !!(config.upstox.apiKey && config.upstox.apiSecret);
@@ -84,7 +85,18 @@ function startUpstoxTokenScheduler() {
   // 08:45 IST daily — confirm it actually landed; alert by email if not.
   cron.schedule('45 8 * * *', runFollowUpCheck, { timezone: 'Asia/Kolkata' });
 
+  // 18:00 IST daily (well after market close at 15:30 IST) — check every
+  // sentiment call whose horizon has now passed against the REAL price and
+  // record correct/incorrect, so the admin AI-accuracy dashboard is always
+  // studying real outcomes, not stale/pending rows.
+  cron.schedule('0 18 * * *', () => {
+    evaluateDuePredictions().catch(err =>
+      console.error('[tokenScheduler] Prediction accuracy evaluation failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
   console.log('[tokenScheduler] Automatic daily Upstox token refresh scheduled (08:00 IST request, 08:45 IST follow-up check).');
+  console.log('[tokenScheduler] Automatic daily AI-prediction accuracy evaluation scheduled (18:00 IST).');
 }
 
 module.exports = { startUpstoxTokenScheduler, runDailyTokenRequest, runFollowUpCheck };
