@@ -25,7 +25,7 @@
 
 const { getModelConfig } = require('../config/plans');
 const marketDataService = require('./marketDataService');
-const { computeAllIndicators } = require('../utils/indicators');
+const { computeAllIndicators, buildFullTechnicalReport } = require('../utils/indicators');
 const AppError = require('../utils/AppError');
 
 // ── Model identifiers ────────────────────────────────────────────────────
@@ -212,6 +212,10 @@ REAL LIVE MARKET DATA (fetched from Upstox just now — use these numbers, do no
 - Supertrend: ${indicators.supertrend} (${indicators.supertrendDirection})
 - Support: ${indicators.support} | Resistance: ${indicators.resistance}
 - Trend strength score (0-100): ${indicators.trendStrength}
+- ADX (14): ${indicators.adx} (+DI ${indicators.plusDI} / -DI ${indicators.minusDI})
+- Volume ratio vs 20d avg: ${indicators.volumeRatio ?? 'n/a'}×
+- Candlestick read (last real candle): ${indicators.candlePattern}
+- Fibonacci zone (real swing high/low): ${indicators.fibonacci ? indicators.fibonacci.zone : 'n/a'}
 
 Return a JSON object with this exact structure:
 {
@@ -429,6 +433,15 @@ function groundResult(result, indicators) {
   result.technicals.rsi = indicators.rsi;
   result.technicals.support = indicators.support;
   result.technicals.resistance = indicators.resistance;
+  // FULL TECHNICAL REPORT: the exact same rule-based, real-number-only
+  // report the Screener's "full analysis" view uses (Trend, Price Action,
+  // Support/Resistance, Moving Average, RSI, MACD, Volume, Candlestick
+  // Analysis, Volatility, Trend Strength/ADX, Bollinger Bands, Fibonacci
+  // Zone, Indicator Summary, Technical Score, Conclusion). Computed here
+  // server-side (not by the LLM) so the numbers are guaranteed correct and
+  // consistent between the Screener and AI Analysis pages — the model's own
+  // "reasoning" text is kept alongside as supplementary AI commentary.
+  result.fullReport = buildFullTechnicalReport(indicators, { lookback: 60 });
   // COMPLIANCE: strip these even if an older client/model still sends them —
   // this endpoint must never surface a buy/sell/hold verdict or a price
   // prediction (see buildPrompt() note above).

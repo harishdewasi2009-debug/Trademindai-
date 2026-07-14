@@ -723,7 +723,19 @@ async function getIndexQuotes() {
 
     const cached = lastGoodIndexQuotes[label];
     const lastPrice = quote?.last_price;
-    const rawPrevClose = quote?.ohlc?.close;
+    // IMPORTANT: don't use quote.ohlc.close as "previous close". While the
+    // market is open, Upstox's ohlc.close is indeed yesterday's close — but
+    // once the market shuts for the day, Upstox updates ohlc.close to *today's*
+    // close, which by then equals last_price. That silently collapsed every
+    // index's change to exactly 0.00% (and always "up", since 0 >= 0) the
+    // moment the market closed. net_change is Upstox's own already-correct
+    // absolute change vs. the real previous close and doesn't have this
+    // after-hours flip, so prefer it — this mirrors the same fix already
+    // applied to getQuotes() for individual stocks above.
+    const netChange = quote?.net_change;
+    const rawPrevClose = (typeof lastPrice === 'number' && typeof netChange === 'number')
+      ? lastPrice - netChange
+      : quote?.ohlc?.close;
     const previousClose = (typeof rawPrevClose === 'number' && rawPrevClose > 0)
       ? rawPrevClose
       : (cached?.previousClose ?? null);
@@ -900,7 +912,7 @@ function defaultFromDate(unit) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-//  SCREENER BUY / HOLD / SELL SIGNALS — computed technical analysis, not AI
+//  SCREENER BULLISH / BEARISH / NEUTRAL BIAS — computed technical analysis, not AI
 // ─────────────────────────────────────────────────────────────────────────
 // Every value here comes from real daily candles (same Upstox
 // historical-candle data the charts use) run through utils/indicators.js.
@@ -908,9 +920,37 @@ function defaultFromDate(unit) {
 // for SIGNAL_CACHE_TTL_MS since a daily-candle-based signal doesn't need
 // to move on every live tick like price does — this also keeps Upstox
 // request volume sane when the Screener renders 50 symbols at once.
-const { computeAllIndicators, deriveSignal } = require('../utils/indicators');
+const { computeAllIndicators, deriveSignal, buildFullTechnicalReport } = require('../utils/indicators');
 const signalCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
 const SIGNAL_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
+const reportCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
+
+// ── FULL TECHNICAL REPORT (Screener "full analysis" view) ────────────────
+// Rule-based, no AI/LLM involved — same real candles + indicators as the
+// screener bias, but returns every section of the full descriptive report
+// (Trend, Price Action, Support/Resistance, Moving Average, RSI, MACD,
+// Volume, Candlestick Analysis, Volatility, Trend Strength/ADX, Bollinger
+// Bands, Fibonacci Zone, Indicator Summary, Technical Score, Conclusion).
+// COMPLIANCE: purely descriptive, no buy/sell/hold verdict — see
+// buildFullTechnicalReport() in utils/indicators.js.
+async function getFullTechnicalReport(symbol, exchange) {
+  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}`;
+  const cached = reportCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const { candles } = await getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
+    const ind = computeAllIndicators(candles);
+    const report = buildFullTechnicalReport(ind, { lookback: 60 });
+    const data = report
+      ? { symbol: symbol.toUpperCase(), currentPrice: ind.currentPrice, ...report }
+      : { symbol: symbol.toUpperCase(), error: 'Not enough real candle history yet to build a full report.' };
+    reportCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
+    return data;
+  } catch (err) {
+    return { symbol: symbol.toUpperCase(), error: err.message };
+  }
+}
 
 async function getTechnicalSignal(symbol, exchange) {
   const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}`;
@@ -974,4 +1014,5 @@ module.exports = {
   getIndexHistoricalCandles,
   getTechnicalSignal,
   getSignalsBatch,
+  getFullTechnicalReport,
 };

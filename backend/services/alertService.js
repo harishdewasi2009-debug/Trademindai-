@@ -79,7 +79,7 @@ function detectAlertsForCandles(symbol, exchange, candles) {
   const out = [];
 
   if (last.c > last20High && volRatio > 1.3) {
-    out.push({ type: 'breakout', severity: 'green', title: `${symbol} — Strong BUY signal detected`,
+    out.push({ type: 'breakout', severity: 'green', title: `${symbol} — Strong bullish breakout detected`,
       description: `Broke the 20-day high of ₹${last20High.toFixed(0)} on ${volRatio.toFixed(1)}x average volume.` });
   }
   const rsi = calcRSI(closes);

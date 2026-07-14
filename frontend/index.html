@@ -250,9 +250,9 @@ nav{
 .debate-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .debate-ai{font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
 .debate-signal{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase}
-.signal-buy{background:rgba(16,185,129,.15);color:var(--green2)}
-.signal-hold{background:rgba(245,158,11,.15);color:var(--amber)}
-.signal-sell{background:rgba(239,68,68,.15);color:var(--rose2)}
+.signal-bull{background:rgba(16,185,129,.15);color:var(--green2)}
+.signal-neutral{background:rgba(245,158,11,.15);color:var(--amber)}
+.signal-bear{background:rgba(239,68,68,.15);color:var(--rose2)}
 .debate-text{font-size:12px;color:var(--text2);line-height:1.6}
 .res-block{padding:18px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px}
 .res-block-title{font-size:10px;font-weight:700;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:7px}
@@ -265,6 +265,16 @@ nav{
 .ti-sig{font-size:10px;margin-top:3px}
 .ti-bull{color:var(--green2)}.ti-bear{color:var(--rose2)}.ti-neut{color:var(--amber)}
 .disclaimer{padding:14px 18px;border-radius:var(--radius);font-size:11px;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.2);color:var(--text3);line-height:1.65;margin-top:16px}
+.legal-content{max-width:760px}
+.legal-content h3{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin:32px 0 12px}
+.legal-content h3:first-child{margin-top:0}
+.legal-content p{font-size:13.5px;color:var(--text2);line-height:1.8;margin-bottom:14px}
+.legal-content ul{margin:0 0 16px 20px;padding:0}
+.legal-content li{font-size:13.5px;color:var(--text2);line-height:1.8;margin-bottom:8px}
+.legal-highlight{padding:18px 22px;border-radius:var(--radius-lg);background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);color:var(--text2);font-size:13.5px;line-height:1.75;margin-bottom:28px}
+.legal-highlight strong{color:var(--gold)}
+.legal-updated{font-size:12px;color:var(--text3);margin-bottom:28px}
+.legal-content a{color:var(--teal-light)}
 .accuracy-banner{padding:12px 18px;border-radius:var(--radius);background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;font-size:12px;color:var(--text2)}
 .acc-num{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--green);margin-right:6px}
 
@@ -291,9 +301,9 @@ nav{
 .tbl tr:last-child td{border-bottom:none}
 .tbl tr:hover td{background:var(--bg3)}
 .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px}
-.b-buy{background:rgba(16,185,129,.12);color:var(--green2)}
-.b-sell{background:rgba(239,68,68,.12);color:var(--rose2)}
-.b-hold{background:rgba(245,158,11,.12);color:#fbbf24}
+.b-bull{background:rgba(16,185,129,.12);color:var(--green2)}
+.b-bear{background:rgba(239,68,68,.12);color:var(--rose2)}
+.b-neutral{background:rgba(245,158,11,.12);color:#fbbf24}
 .b-plan{background:rgba(124,92,252,.15);color:#A78BFA}
 .b-active{background:rgba(16,185,129,.1);color:var(--green2)}
 .b-pending{background:rgba(245,158,11,.1);color:#fbbf24}
@@ -990,6 +1000,7 @@ html{scroll-behavior:smooth}
     <div class="hero-badge"><span class="hero-badge-dot"></span> Live NSE &amp; BSE data · 4 AI engines · Real Upstox market feed</div>
     <h1 class="hero-h1">India's <em>AI-Powered</em><br/>Stock Market Intelligence<br/>Platform</h1>
     <p class="hero-sub">Live NSE &amp; BSE market data, professional TradingView charts, and AI-powered market insights — all in one place. Sign in to unlock real-time analysis on 5,000+ stocks.</p>
+    <div style="font-size:12px;color:var(--text3);max-width:620px;line-height:1.6;margin-bottom:20px">Educational &amp; informational analysis only — not SEBI-registered investment advice. Always consult a SEBI-registered investment adviser before making investment decisions. <span style="cursor:pointer;text-decoration:underline" onclick="show('terms')">Read our Terms</span>.</div>
     <div class="hero-btns">
       <button class="btn-lg-ghost" onclick="show('analysis')"><i class="ti ti-sparkles"></i>Start Live Analysis</button>
       <button class="btn-lg-ghost" onclick="show('charts')"><i class="ti ti-chart-candle"></i>Explore Markets</button>
@@ -1046,8 +1057,8 @@ html{scroll-behavior:smooth}
       </div>
       <div class="feat-card">
         <div class="feat-icon"><i class="ti ti-target-arrow"></i></div>
-        <div class="feat-title">AI Price Targets</div>
-        <p class="feat-desc">1-week, 1-month, and 3-month price targets with expected return percentage. Backed by technical pattern recognition.</p>
+        <div class="feat-title">AI Technical Score</div>
+        <p class="feat-desc">A 0-100 technical score and bullish/bearish bias reading, built from real indicator data — not a price prediction or trading call.</p>
         <span class="feat-tag tag-pro">Pro +</span>
       </div>
       <div class="feat-card">
@@ -1079,7 +1090,7 @@ html{scroll-behavior:smooth}
       <div class="feat-card is-soon">
         <div class="feat-icon"><i class="ti ti-brand-telegram"></i></div>
         <div class="feat-title">Telegram / WhatsApp Alerts</div>
-        <p class="feat-desc">Instant buy/sell signal notifications to Telegram or WhatsApp the moment AI detects an opportunity.</p>
+        <p class="feat-desc">Instant technical-alert notifications to Telegram or WhatsApp the moment a watchlist stock hits a notable condition.</p>
         <span class="feat-tag tag-soon">Coming Soon</span>
       </div>
       <div class="feat-card">
@@ -1100,18 +1111,18 @@ html{scroll-behavior:smooth}
   <!-- ACCURACY PROOF -->
   <div class="section section-alt">
     <div class="sec-eyebrow">Accuracy & trust</div>
-    <h2 class="sec-h2">Every prediction is logged and tracked, from day one</h2>
-    <p class="sec-sub">We're just launching, so there's no track record to show you yet — but every signal our AI generates is timestamped, logged, and scored against what actually happens. Nothing gets hidden after the fact.</p>
+    <h2 class="sec-h2">Every AI reading is logged and tracked, from day one</h2>
+    <p class="sec-sub">We're just launching, so there's no track record to show you yet — but every bullish/bearish bias reading our AI generates is timestamped, logged, and checked against what actually happens next. Nothing gets hidden after the fact. This is an accuracy audit, not investment advice.</p>
     <div class="feat-grid">
       <div class="feat-card" style="text-align:center">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--green)">Logged automatically</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:8px">Every Signal</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:6px">Each AI call, target price, and horizon is recorded the moment it's generated</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:8px">Every Reading</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Each AI call, bias reading, and analysis timeframe is recorded the moment it's generated</div>
       </div>
       <div class="feat-card" style="text-align:center">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--violet-light)">Scored against outcomes</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:8px">After the hold period</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:6px">Once a signal's recommended horizon passes, we check it against actual price action</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--violet-light)">Checked against outcomes</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:8px">After the timeframe passes</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Once a reading's analysis timeframe passes, we check it against actual price action</div>
       </div>
       <div class="feat-card" style="text-align:center">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--gold)">Published, not curated</div>
@@ -1172,9 +1183,9 @@ html{scroll-behavior:smooth}
       </div>
       <div>
         <div class="footer-col-title">Company</div>
-        <span class="footer-link">Privacy Policy</span>
-        <span class="footer-link">Terms of Service</span>
-        <span class="footer-link">Contact</span>
+        <span class="footer-link" onclick="show('privacy')">Privacy Policy</span>
+        <span class="footer-link" onclick="show('terms')">Terms of Service</span>
+        <a class="footer-link" href="mailto:harishdewasi2009@gmail.com" style="text-decoration:none">Contact</a>
       </div>
     </div>
     <div class="footer-bottom">
@@ -1191,8 +1202,8 @@ html{scroll-behavior:smooth}
 <div id="page-analysis" class="page">
   <div class="section">
     <div class="sec-eyebrow">AI Stock Analysis</div>
-    <h2 class="sec-h2">Get your trading signal</h2>
-    <p class="sec-sub">Enter any NSE or BSE stock. Gemini 2.5 Flash returns a Buy, Sell or Hold signal with full reasoning, price targets, risk scoring, technical breakdown, and per-AI debate — with Claude, GPT-4o, and DeepSeek on higher plans.</p>
+    <h2 class="sec-h2">Get your technical analysis</h2>
+    <p class="sec-sub">Enter any NSE or BSE stock. Gemini 2.5 Flash returns a bullish/bearish bias reading with full reasoning, technical score, risk scoring, and technical breakdown — with Claude, GPT-4o, and DeepSeek on higher plans for a per-AI debate. This is data-driven analysis, not investment advice.</p>
     <div class="analysis-outer">
       <div class="analysis-wrap">
         <div class="analysis-tabs">
@@ -1273,7 +1284,7 @@ html{scroll-behavior:smooth}
             <span class="load-step" id="ls1"><i class="ti ti-clock"></i> Fetching data</span>
             <span class="load-step" id="ls2"><i class="ti ti-clock"></i> Running Gemini AI</span>
             <span class="load-step" id="ls3"><i class="ti ti-clock"></i> Technical scan</span>
-            <span class="load-step" id="ls4"><i class="ti ti-clock"></i> Generating targets</span>
+            <span class="load-step" id="ls4"><i class="ti ti-clock"></i> Compiling analysis</span>
           </div>
         </div>
         <div class="result-wrap" id="result-wrap">
@@ -1315,7 +1326,7 @@ html{scroll-behavior:smooth}
         <button class="filter-chip" id="scr-sig-sell" onclick="setScreenerSignal('Strong Bearish Bias',this)">Bearish</button>
     </span>
 </div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Buy/Hold/Sell is computed from real technical indicators (RSI, EMA, MACD, Supertrend, VWAP) — not an AI model.</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Bullish/Bearish/Mixed bias is computed from real technical indicators (RSI, EMA, MACD, Supertrend, VWAP) — not an AI model, and not a trading recommendation.</div>
     <div id="screener-market-note" style="font-size:12px;color:var(--text3);margin-bottom:12px"></div>
     <div id="screener-results"></div>
   </div>
@@ -1373,7 +1384,7 @@ html{scroll-behavior:smooth}
         <span class="chart-tool-btn" onclick="chartZoomReset()" title="Fit all candles"><i class="ti ti-maximize"></i> Fit</span>
         <span class="chart-tool-sep"></span>
         <span class="chart-tool-btn" id="chart-draw-trend" onclick="setChartDrawMode('trend',this)" title="Draw a trendline between two points"><i class="ti ti-slash"></i> Draw Trendline</span>
-        <span class="chart-tool-btn" id="chart-draw-hline" onclick="setChartDrawMode('hline',this)" title="Click the chart to mark an entry/target/stop-loss level"><i class="ti ti-minus"></i> Price Level</span>
+        <span class="chart-tool-btn" id="chart-draw-hline" onclick="setChartDrawMode('hline',this)" title="Click the chart to mark a custom price level"><i class="ti ti-minus"></i> Price Level</span>
         <span class="chart-tool-btn" onclick="clearChartDrawings()" title="Remove all drawings"><i class="ti ti-trash"></i> Clear Drawings</span>
       </div>
       <div class="chart-tool-hint" id="chart-tool-hint"></div>
@@ -1485,6 +1496,7 @@ html{scroll-behavior:smooth}
     <div class="sec-eyebrow">Subscription plans</div>
     <h2 class="sec-h2">Choose your intelligence tier</h2>
     <p class="sec-sub">Monthly rolling subscriptions. Payments processed securely by Razorpay.</p>
+    <div class="disclaimer" style="max-width:680px;margin:-24px 0 32px">Subscribing pays for AI compute, data, and platform access — it does not purchase investment advice. TradeMind AI is not SEBI registered; please consult a SEBI-registered investment adviser before making investment decisions. See our <span style="cursor:pointer;text-decoration:underline" onclick="show('terms')">Terms</span>.</div>
     <div class="pricing-grid">
       <!-- FREE PLAN -->
       <div class="plan">
@@ -1496,7 +1508,7 @@ html{scroll-behavior:smooth}
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash analysis · 50,000 tokens/mo</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Buy / Sell / Hold signals</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Bullish / Bearish / Neutral bias signals</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Basic risk scoring</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>News sentiment analysis <span class="soon-badge">Coming Soon</span></span></li>
@@ -1538,7 +1550,7 @@ html{scroll-behavior:smooth}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Claude Sonnet 4.6 (reasoning) · 187,500 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>GPT-4o (deep analysis) · 187,500 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>DeepSeek V3 (fallback) · 250,000 tokens/mo</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Price Targets</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Technical Score</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Portfolio Tracker + P&amp;L</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>Telegram/WhatsApp Alerts <span class="soon-badge">Coming Soon</span></span></li>
@@ -1593,7 +1605,7 @@ html{scroll-behavior:smooth}
         <tbody>
           <tr><td>AI Models</td><td class="comp-partial">Gemini Flash + DeepSeek</td><td class="comp-partial">Gemini + DeepSeek + Claude Sonnet</td><td class="comp-partial">Gemini + Claude Sonnet 4.6 + GPT-4o + DeepSeek</td><td class="comp-partial">Gemini 2.5 Pro + Claude Opus 4.7 + GPT-4o + DeepSeek R1</td></tr>
           <tr><td>Monthly Queries</td><td class="comp-partial">15</td><td class="comp-partial">150</td><td class="comp-partial">400</td><td class="comp-partial">Unlimited</td></tr>
-          <tr><td>AI Price Targets</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Technical Score</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>AI Stock Screener</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Telegram / WhatsApp Alerts</td><td colspan="4" class="comp-soon" style="text-align:center">Coming Soon — Pro &amp; Elite</td></tr>
@@ -1772,6 +1784,139 @@ html{scroll-behavior:smooth}
     </div>
   </div>
 </div>
+<!-- ══════════════ TERMS OF SERVICE ══════════════ -->
+<div id="page-terms" class="page">
+  <div class="section">
+    <div class="sec-eyebrow">Legal</div>
+    <h2 class="sec-h2">Terms of Service</h2>
+    <div class="legal-updated">Last updated: 14 July 2026 · Applies to trademindai.com and the TradeMind AI application</div>
+    <div class="legal-highlight">
+      <strong>TradeMind AI is not registered with the Securities and Exchange Board of India (SEBI)</strong> as a Research Analyst under the SEBI (Research Analysts) Regulations, 2014, or as an Investment Adviser under the SEBI (Investment Advisers) Regulations, 2013. Nothing on this platform is investment advice, a research report, or a recommendation to buy, sell, or hold any security. All charts, scores, AI commentary, backtests, and screener results are provided purely for education and informational purposes. Please consult a SEBI-registered Investment Adviser or Research Analyst before making any investment decision.
+    </div>
+    <div class="legal-content">
+      <h3>1. Acceptance of these Terms</h3>
+      <p>By creating an account, accessing, or using TradeMind AI (the "Platform", "we", "us"), you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree, please do not use the Platform. We may update these Terms from time to time; continued use after an update means you accept the revised Terms.</p>
+
+      <h3>2. What TradeMind AI Is — and Is Not</h3>
+      <p>TradeMind AI is an educational and informational technology tool. It uses AI models (including third-party language models) alongside real market data from licensed data providers to describe chart patterns, technical indicators, trend and volatility conditions, option-chain metrics, and historical backtests for stocks listed on the NSE and BSE.</p>
+      <ul>
+        <li>The Platform does not provide personalized investment advice, portfolio management, or "buy/sell/hold" recommendations.</li>
+        <li>The Platform is not a substitute for advice from a SEBI-registered Investment Adviser or Research Analyst.</li>
+        <li>AI-generated output can be incomplete, delayed, or wrong. It reflects patterns in historical and current data, not a prediction of future price movement.</li>
+        <li>Backtest results are based on historical candles and do not guarantee similar performance going forward.</li>
+      </ul>
+
+      <h3>3. Eligibility & Account Registration</h3>
+      <p>You must be at least 18 years old and capable of entering into a binding contract under Indian law to use the Platform. You are responsible for maintaining the confidentiality of your account and for all activity that occurs under it. You agree to provide accurate information during sign-up (including via Google Sign-In) and to keep it up to date.</p>
+
+      <h3>4. Subscription Plans, Billing & Refunds</h3>
+      <p>TradeMind AI offers Free, Basic, Pro, and Elite subscription tiers. Paid subscriptions are billed in advance on a recurring basis via Razorpay, a licensed third-party payment processor. We do not store your card, UPI, or bank details — these are handled entirely by Razorpay under its own security and compliance standards.</p>
+      <ul>
+        <li>Subscriptions renew automatically until cancelled. You can cancel any time from your account settings; cancellation takes effect at the end of the current billing cycle.</li>
+        <li>Fees, once charged, are generally non-refundable except where required by law or expressly stated at the time of purchase.</li>
+        <li>We may change plan pricing or features with reasonable prior notice; continued use after a price change constitutes acceptance.</li>
+      </ul>
+
+      <h3>5. Broker Account Integration</h3>
+      <p>If you choose to link a broking account (e.g., via Upstox OAuth) to view your live portfolio or holdings inside TradeMind AI, you authorize us to fetch read access data such as holdings, positions, and quotes on your behalf. We do not have the ability to place trades on your behalf unless you separately and explicitly enable such a feature. You can revoke this access at any time from your broker's app or from your TradeMind AI account settings.</p>
+
+      <h3>6. Acceptable Use</h3>
+      <p>You agree not to: reverse-engineer or scrape the Platform; resell or redistribute AI-generated output as your own licensed research; use the Platform to violate securities law, manipulate markets, or engage in fraud; attempt to bypass plan limits, rate limits, or security controls; or use automated means to access the Platform outside of documented APIs.</p>
+
+      <h3>7. Intellectual Property</h3>
+      <p>All Platform software, design, branding, and compiled analysis formats belong to TradeMind AI. Underlying market data belongs to its respective licensed providers (e.g., Upstox, NSE, BSE) and is used under license; you may not extract or redistribute it in bulk.</p>
+
+      <h3>8. Disclaimer of Warranties</h3>
+      <p>The Platform is provided "as is" and "as available". We do not warrant that data feeds will be uninterrupted, error-free, or perfectly synced with exchange data, or that AI outputs will be accurate, complete, or suitable for any particular purpose. Market data may be delayed or temporarily unavailable, including around exchange outages or provider token expiry windows.</p>
+
+      <h3>9. Limitation of Liability</h3>
+      <p>To the maximum extent permitted by law, TradeMind AI and its founders/operators shall not be liable for any trading losses, lost profits, or indirect, incidental, or consequential damages arising from your use of, or reliance on, any content, analysis, signal, or feature on the Platform. You alone are responsible for your trading and investment decisions.</p>
+
+      <h3>10. Indemnification</h3>
+      <p>You agree to indemnify and hold harmless TradeMind AI, its founders, and personnel from any claims, losses, or damages arising out of your misuse of the Platform or violation of these Terms.</p>
+
+      <h3>11. Termination</h3>
+      <p>We may suspend or terminate your account if we reasonably believe you have violated these Terms, engaged in fraud, or misused the Platform. You may stop using the Platform and close your account at any time.</p>
+
+      <h3>12. Governing Law & Dispute Resolution</h3>
+      <p>These Terms are governed by the laws of India. Courts at Rajasthan, India shall have exclusive jurisdiction over any disputes, subject to applicable consumer-protection law.</p>
+
+      <h3>13. Contact</h3>
+      <p>Questions about these Terms can be sent to <a href="mailto:harishdewasi2009@gmail.com">harishdewasi2009@gmail.com</a>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PRIVACY POLICY ══════════════ -->
+<div id="page-privacy" class="page">
+  <div class="section">
+    <div class="sec-eyebrow">Legal</div>
+    <h2 class="sec-h2">Privacy Policy</h2>
+    <div class="legal-updated">Last updated: 14 July 2026 · Applies to trademindai.com and the TradeMind AI application</div>
+    <div class="legal-highlight">
+      We built TradeMind AI as an <strong>educational market-analysis tool</strong>, not a broker or investment adviser, and we handle your data accordingly: we collect only what's needed to run the Platform, we never sell your personal data, and we never share your broker credentials with anyone.
+    </div>
+    <div class="legal-content">
+      <h3>1. Information We Collect</h3>
+      <ul>
+        <li><strong>Account data:</strong> name, email address, and profile details from Google Sign-In.</li>
+        <li><strong>Subscription & billing data:</strong> plan tier, subscription status, and transaction references from Razorpay. We do not receive or store your card, UPI, or bank account numbers.</li>
+        <li><strong>Broker connection data:</strong> if you link a broking account (e.g., Upstox), we store an OAuth access token to fetch your holdings/positions/quotes on your behalf, and we refresh it automatically. We do not receive your broker login password.</li>
+        <li><strong>Usage data:</strong> which features you use (analysis runs, screener queries, watchlist symbols, chart interactions), daily query counts against your plan limits, and basic device/browser information for security and debugging.</li>
+        <li><strong>Communications:</strong> messages you send us for support, and any inputs you provide to in-app AI chat features.</li>
+      </ul>
+
+      <h3>2. How We Use Your Information</h3>
+      <ul>
+        <li>To operate core features: live quotes, AI analysis, option-chain data, screener, backtesting, portfolio sync, and alerts.</li>
+        <li>To manage your subscription, enforce plan limits, and process billing through Razorpay.</li>
+        <li>To secure your account, detect abuse, and prevent fraud.</li>
+        <li>To send transactional emails (e.g., billing receipts, password/session notices) — we do not send marketing emails without your consent.</li>
+        <li>To improve the Platform, including which AI models and features are most useful.</li>
+      </ul>
+
+      <h3>3. AI Processing of Your Queries</h3>
+      <p>When you request analysis, your query may be sent to third-party AI providers (such as Google, Anthropic, OpenAI, or DeepSeek, depending on your plan's model cascade) to generate a response. These requests typically include stock symbols, timeframes, and technical data — not your name, email, or account credentials.</p>
+
+      <h3>4. Third Parties We Share Data With</h3>
+      <ul>
+        <li><strong>Upstox:</strong> market data and, if you opt in, your broker portfolio sync.</li>
+        <li><strong>Razorpay:</strong> subscription payments and billing.</li>
+        <li><strong>Google:</strong> Sign-In authentication.</li>
+        <li><strong>AI model providers:</strong> to generate analysis content, as described above.</li>
+        <li><strong>Cloud infrastructure providers</strong> (e.g., our hosting and database providers) who store data on our behalf under standard confidentiality obligations.</li>
+      </ul>
+      <p>We do not sell your personal data to advertisers or data brokers.</p>
+
+      <h3>5. Cookies & Similar Technologies</h3>
+      <p>We use essential cookies/local storage to keep you signed in and remember basic preferences. We do not use third-party advertising trackers.</p>
+
+      <h3>6. Data Retention</h3>
+      <p>We retain account and usage data for as long as your account is active, and for a reasonable period afterward to comply with legal, tax, and dispute-resolution obligations. Broker OAuth tokens are deleted when you disconnect your broker account or close your TradeMind AI account.</p>
+
+      <h3>7. Your Rights</h3>
+      <ul>
+        <li>Access or correct your account information from your profile settings.</li>
+        <li>Disconnect your broker account at any time.</li>
+        <li>Request deletion of your account and associated personal data by contacting us.</li>
+        <li>Opt out of any non-essential communications.</li>
+      </ul>
+
+      <h3>8. Data Security</h3>
+      <p>We use industry-standard measures — encrypted connections (SSL/TLS), hashed/tokenized credentials, and access controls — to protect your data. No system is 100% secure, and we cannot guarantee absolute security of information transmitted over the internet.</p>
+
+      <h3>9. Children's Privacy</h3>
+      <p>The Platform is not directed at, and should not be used by, anyone under 18 years of age.</p>
+
+      <h3>10. Changes to This Policy</h3>
+      <p>We may update this Privacy Policy periodically. Material changes will be reflected by updating the "Last updated" date above.</p>
+
+      <h3>11. Grievance & Contact</h3>
+      <p>For privacy questions, data access/deletion requests, or grievances, contact us at <a href="mailto:harishdewasi2009@gmail.com">harishdewasi2009@gmail.com</a>. We aim to respond within a reasonable time frame in line with applicable Indian data protection law.</p>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════════ LOGIN ══════════════ -->
 <div id="page-login" class="page">
   <div class="login-outer">
@@ -1798,7 +1943,7 @@ html{scroll-behavior:smooth}
         <span class="trust-item"><i class="ti ti-shield-check" style="color:var(--blue)"></i>2FA ready</span>
         <span class="trust-item"><i class="ti ti-eye-off" style="color:var(--purple)"></i>No data sharing</span>
       </div>
-      <p class="login-terms">By signing in you agree to our <u>Terms</u> and <u>Privacy Policy</u>. TradeMind AI does not provide SEBI-regulated financial advice.</p>
+      <p class="login-terms">By signing in you agree to our <u style="cursor:pointer" onclick="show('terms')">Terms</u> and <u style="cursor:pointer" onclick="show('privacy')">Privacy Policy</u>. TradeMind AI is not SEBI registered and does not provide SEBI-regulated investment advice — please consult a SEBI-registered investment adviser before investing.</p>
     </div>
   </div>
 </div>
@@ -1824,6 +1969,7 @@ html{scroll-behavior:smooth}
       <i class="ti ti-lock"></i> Pay securely via Razorpay
     </button>
     <p class="rzp-note"><i class="ti ti-shield-check" style="color:var(--green)"></i> Secured by <strong>Razorpay</strong> · UPI · Cards · Netbanking · Wallets</p>
+    <p style="font-size:11px;color:var(--text3);line-height:1.6;margin-top:10px">This payment is for platform access only. TradeMind AI is not SEBI registered and this is not investment advice.</p>
   </div>
 </div>
 
@@ -2375,8 +2521,8 @@ async function fetchBackendQuotesBatch(symbols){
   return out;
 }
 
-// Computed (non-AI) BUY/HOLD/SELL signals for the Screener — technical
-// indicators (RSI, EMA, MACD, Supertrend, VWAP, trend strength) run
+// Computed (non-AI) Bullish/Bearish/Neutral bias signals for the Screener —
+// technical indicators (RSI, EMA, MACD, Supertrend, VWAP, trend strength) run
 // through backend/utils/indicators.js. No LLM call happens here; this is
 // deliberately kept on a separate, longer-cached endpoint from live quotes.
 async function fetchSignalsBatch(symbols){
@@ -2819,6 +2965,46 @@ function isIndianMarketOpenNow(){
   const mins=now.getHours()*60+now.getMinutes();
   return mins>=555 && mins<=930; // 09:15–15:30 IST
 }
+// ══════════════ FULL TECHNICAL REPORT (shared: AI Analysis + Screener) ══════════════
+// Renders the rich, section-by-section technical breakdown (Trend, Price
+// Action, Support/Resistance, Moving Average, RSI, MACD, Volume, Candlestick
+// Analysis, Volatility, Trend Strength/ADX, Bollinger Bands, Fibonacci Zone,
+// Indicator Summary, Technical Score, Conclusion) from a `fullReport` object
+// returned by either /api/ai/analyze (result.fullReport) or
+// /api/market/report/:symbol. Purely descriptive — no buy/sell/hold badge,
+// no price target, ever.
+function renderFullReportHtml(r){
+  if(!r)return '';
+  const trendCls=(r.trend?.label||'').toLowerCase()==='bullish'?'ind-bull':(r.trend?.label||'').toLowerCase()==='bearish'?'ind-bear':'ind-neut';
+  const scoreRow=(label,val)=>`<div class="ind-card"><div class="ind-name">${label}</div><div class="ind-value">${val}/100</div></div>`;
+  const summaryRows=(r.indicatorSummary||[]).map(s=>`<tr><td style="padding:6px 10px;color:var(--text2);font-size:12px">${s.label}</td><td style="padding:6px 10px;font-size:12px;font-weight:600;color:var(--text)">${s.signal}</td></tr>`).join('');
+  const fib=r.fibonacci;
+  return `
+    <div style="font-size:11px;color:var(--text3);margin:18px 0 8px"><i class="ti ti-chart-candle" style="margin-right:4px"></i>Full technical breakdown — descriptive data reading, not a recommendation.</div>
+    <div class="res-block"><div class="res-block-title">Overall Trend</div><div class="res-block-text"><span class="badge ${trendCls==='ind-bull'?'b-bull':trendCls==='ind-bear'?'b-bear':'b-neutral'}" style="margin-right:8px">${r.trend?.label||'Neutral'}</span>${r.trend?.text||''}</div></div>
+    <div class="res-block"><div class="res-block-title">Price Action</div><div class="res-block-text"><strong>${r.priceAction?.pattern||r.candlestick?.pattern||'—'}</strong> — ${r.priceAction?.text||r.candlestick?.text||''}</div></div>
+    <div class="res-block"><div class="res-block-title">Support &amp; Resistance</div><div class="res-block-text">Support: ₹${r.supportResistance?.support??'—'} &nbsp;·&nbsp; Resistance: ₹${r.supportResistance?.resistance??'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">Moving Average</div><div class="res-block-text">${r.movingAverage?.text||'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">RSI</div><div class="res-block-text">${r.rsi?.text||'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">MACD</div><div class="res-block-text">${r.macd?.text||'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">Volume</div><div class="res-block-text">${r.volume?.text||'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">Volatility</div><div class="res-block-text">${r.volatility?.text||'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">Trend Strength (ADX)</div><div class="res-block-text">${r.trendStrength?.text||'—'}</div></div>
+    <div class="res-block"><div class="res-block-title">Bollinger Bands</div><div class="res-block-text">${r.bollinger?.text||'—'} (upper ₹${r.bollinger?.upper??'—'} / mid ₹${r.bollinger?.mid??'—'} / lower ₹${r.bollinger?.lower??'—'})</div></div>
+    ${fib?`<div class="res-block"><div class="res-block-title">Fibonacci Zone</div><div class="res-block-text">${fib.text} (swing ₹${fib.swingLow}–₹${fib.swingHigh})</div></div>`:''}
+    <div class="res-block-title" style="padding:10px 0 6px">Indicator Summary</div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;background:var(--bg3);border-radius:var(--radius);overflow:hidden">${summaryRows}</table>
+    <div class="res-block-title" style="padding:0 0 6px">Technical Score (Educational)</div>
+    <div class="indicator-grid" style="margin-bottom:10px">
+      ${scoreRow('Trend',r.technicalScore?.trend??'—')}
+      ${scoreRow('Momentum',r.technicalScore?.momentum??'—')}
+      ${scoreRow('Strength',r.technicalScore?.strength??'—')}
+      ${scoreRow('Volatility',r.technicalScore?.volatility??'—')}
+    </div>
+    <div class="accuracy-banner" style="margin-bottom:12px"><div><span class="acc-num">${r.technicalScore?.overall??'—'}/100</span>Overall Technical Score</div></div>
+    <div class="res-block"><div class="res-block-title">Conclusion</div><div class="res-block-text">${r.conclusion||'—'}</div></div>`;
+}
+
 // ══════════════ AI ANALYSIS ══════════════
 let isAnalysing=false;
 // FIX: the Analysis page used to have its own manual "Exchange: Auto / NSE /
@@ -2907,7 +3093,7 @@ async function runAnalysis(){
     // price/stop-loss targets as regulated activity regardless of who or
     // what produced them. See aiService.js buildPrompt() note.
     const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[result.sentiment]||'Neutral';
-    const sentimentCls=(result.sentiment||'').includes('bullish')?'b-buy':(result.sentiment||'').includes('bearish')?'b-sell':'b-hold';
+    const sentimentCls=(result.sentiment||'').includes('bullish')?'b-bull':(result.sentiment||'').includes('bearish')?'b-bear':'b-neutral';
     const tech=result.technicals||{};
     const debate=result.modelDebate||null; // present on Elite plan only
 
@@ -2939,13 +3125,14 @@ async function runAnalysis(){
       ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate (Elite)</div>
       <div class="ai-debate" style="margin-bottom:10px">
         ${debate.map(m=>`<div class="debate-card">
-          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-buy':(m.sentiment||'').includes('bearish')?'signal-sell':'signal-hold'}">${sentimentLabel}</span></div>
+          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
           <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
-      <div class="res-block"><div class="res-block-title">What the data shows</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
+      <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
+      ${renderFullReportHtml(result.fullReport)}
       <div class="admin-panel" style="margin-bottom:10px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Multi-Timeframe AI View</div>
@@ -3044,7 +3231,7 @@ async function runDeepResearch(){
     }
 
     const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[result.sentiment]||'Neutral';
-    const sentimentCls=(result.sentiment||'').includes('bullish')?'b-buy':(result.sentiment||'').includes('bearish')?'b-sell':'b-hold';
+    const sentimentCls=(result.sentiment||'').includes('bullish')?'b-bull':(result.sentiment||'').includes('bearish')?'b-bear':'b-neutral';
     const tech=result.technicals||{};
     const debate=result.modelDebate||null;
 
@@ -3076,13 +3263,14 @@ async function runDeepResearch(){
       ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate (Elite)</div>
       <div class="ai-debate" style="margin-bottom:10px">
         ${debate.map(m=>`<div class="debate-card">
-          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-buy':(m.sentiment||'').includes('bearish')?'signal-sell':'signal-hold'}">${sentimentLabel}</span></div>
+          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
           <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
-      <div class="res-block"><div class="res-block-title">What the data shows</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
+      <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
+      ${renderFullReportHtml(result.fullReport)}
       <div class="admin-panel" style="margin-bottom:10px">
         <div class="sec-title"><i class="ti ti-layers-intersect"></i> Daily vs Weekly (Multi-Timeframe)</div>
         ${mtfTimeframes?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${mtfTimeframes.daily.rsi}, ${mtfTimeframes.daily.trend} · Weekly: RSI ${mtfTimeframes.weekly.rsi}, ${mtfTimeframes.weekly.trend}</div>`:''}
@@ -3634,12 +3822,10 @@ function renderDashboard(section){
         ['Fibonacci Retracement','ruler-2','indicators'],
         ['Divergence Detection (RSI/MACD)','arrows-diff','indicators'],['Volatility Analysis (ATR)','wave-square','indicators'],
       ]},
-      {title:'AI Decision Features (9)',icon:'brain',items:[
-        ['AI Buy/Sell/Hold Signals','sparkles','analysis'],['AI Confidence Score','gauge','analysis'],
-        ['AI Explainability','message-circle','analysis'],['AI Entry Price Suggestion','target-arrow','analysis'],
-        ['AI Stop Loss Suggestion','shield-x','riskmgmt'],['AI Target Price Suggestion','target','analysis'],
-        ['Risk/Reward Calculator','calculator','riskmgmt'],['Trade Probability Score','percentage','analysis'],
-        ['AI Trend Forecasting','chart-infographic','analysis'],
+      {title:'AI Technical Reading (6)',icon:'brain',items:[
+        ['AI Bullish/Bearish Bias','sparkles','analysis'],['AI Technical Score','gauge','analysis'],
+        ['AI Explainability','message-circle','analysis'],['Volatility Risk Score','shield-x','riskmgmt'],
+        ['Multi-AI Consensus & Debate','chart-infographic','analysis'],
       ]},
       {title:'Options Traders (7)',icon:'stack-2',items:[
         ['Option Chain AI Analysis','stack-2','options'],['Open Interest Analysis','chart-bar','options'],
@@ -4741,7 +4927,7 @@ function renderStrategyLegs(){
   wrap.innerHTML=strategyLegs.length?strategyLegs.map((l,i)=>`
     <div class="strat-row">
       <span style="font-weight:600;color:var(--text)">Leg ${i+1}</span>
-      <span class="badge ${l.action==='Buy'?'b-buy':'b-sell'}">${l.action}</span>
+      <span class="badge ${l.action==='Buy'?'b-bull':'b-bear'}">${l.action}</span>
       <span>${l.type}</span>
       <span>Strike ${l.strike}</span>
       <span style="color:var(--text3)">Premium ₹${l.premium}</span>
@@ -5094,7 +5280,7 @@ function closePay(){document.getElementById('pay-modal').classList.remove('open'
 // MACD, VWAP, ATR, Supertrend, 60-day support/resistance and 20-day
 // breakout/breakdown detection. No AI/LLM call happens here; this mirrors
 // the same "computed data analysis" approach already used by the Screener's
-// BUY/HOLD/SELL tag and the Market Scanner, just packaged as 11 signal cards.
+// bullish/bearish/neutral bias tag and the Market Scanner, just packaged as 11 signal cards.
 function computeTradeSignalCard(candles){
   if(!candles||candles.length<21)return null;
   const closes=candles.map(c=>c.c), vols=candles.map(c=>c.v||0);
@@ -5205,7 +5391,7 @@ function tradeSignalCardHtml(sig,sym){
       <div class="ind-card"><div class="ind-name">Breakout Detection</div><div class="ind-value">${sig.breakout}</div><div class="ind-signal ${sig.breakout==='Breakout'?'ind-bull':sig.breakout==='Breakdown'?'ind-bear':'ind-neut'}">20-day range + volume</div></div>
       <div class="ind-card"><div class="ind-name">Support / Resistance</div><div class="ind-value" style="font-size:13px">₹${fmtINR(sig.support)} / ₹${fmtINR(sig.resistance)}</div><div class="ind-signal ind-neut">60-day real range</div></div>
       <div class="ind-card"><div class="ind-name">Bullish-Lean Score</div><div class="ind-value">${sig.strengthScore}/100</div><div class="ind-signal ind-neut">Of 6 technical votes</div></div>
-      <div class="ind-card"><div class="ind-name">Trade Duration</div><div class="ind-value" style="font-size:13px">${sig.duration}</div><div class="ind-signal ind-neut">Based on volatility</div></div>
+      <div class="ind-card"><div class="ind-name">Analysis Timeframe</div><div class="ind-value" style="font-size:13px">${sig.duration}</div><div class="ind-signal ind-neut">Volatility-implied timeframe, not a holding-period suggestion</div></div>
     </div>
     <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px"><strong style="color:var(--text)">Technical reasoning:</strong> ${sig.votes.join(' · ')}.</div>
     <div style="font-size:11px;color:var(--text3);margin-top:10px">Computed from real daily candles — not AI-generated, not financial advice.</div>`;
@@ -5240,9 +5426,10 @@ async function openStockDetail(symbol,exchange,name){
   modal.classList.add('open');
 
   try{
-    const [quoteRes,candlesRes]=await Promise.all([
+    const [quoteRes,candlesRes,reportRes]=await Promise.all([
       fetchBackendQuotesBatch([symbol]).catch(()=>({})),
       apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=days&interval=1${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+      apiFetch(`/api/market/report/${encodeURIComponent(symbol)}${exchange?('?exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
     ]);
     if(stockDetailCurrent?.symbol!==symbol)return; // user opened a different stock while this was in flight
     const q=quoteRes[symbol];
@@ -5268,7 +5455,13 @@ async function openStockDetail(symbol,exchange,name){
       ? `<canvas id="sd-mini-chart" width="580" height="140" style="width:100%;height:140px;margin-bottom:8px"></canvas>`
       : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Chart data unavailable right now.</div>`;
     const signalHtml = tradeSignalCardHtml(candles?computeTradeSignalCard(candles):null,symbol);
-    bodyEl.innerHTML = priceHtml + rangeHtml + chartHtml + signalHtml;
+    // Full rule-based technical report (Trend, Price Action, RSI, MACD,
+    // Volume, Candlestick, Volatility, ADX, Bollinger, Fibonacci, Indicator
+    // Summary, Technical Score, Conclusion) — same shape as the AI Analysis
+    // page, computed server-side from /api/market/report so the numbers are
+    // guaranteed correct. See utils/indicators.js buildFullTechnicalReport().
+    const fullReportHtml = (reportRes && !reportRes.error) ? renderFullReportHtml(reportRes) : '';
+    bodyEl.innerHTML = priceHtml + rangeHtml + chartHtml + signalHtml + fullReportHtml;
     if(candles&&candles.length){
       const canvas=document.getElementById('sd-mini-chart');
       if(canvas)drawLineChart(canvas,[{data:candles.slice(-30).map(c=>c.c),color:'#7C5CFC',width:1.6}]);
@@ -5501,7 +5694,7 @@ async function runCompareAnalysis(){
     if(!r.ok)return `<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>${sym}:</strong> ${r.error}${r.showUpgrade?' <button class="btn-lg" style="margin-left:8px;padding:4px 12px;font-size:12px" onclick="show(\'pricing\')">View plans</button>':''}</div>`;
     const d=r.data, sentiment=d.sentiment||'neutral';
     const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[sentiment]||'Neutral';
-    const sentimentCls=sentiment.includes('bullish')?'b-buy':sentiment.includes('bearish')?'b-sell':'b-hold';
+    const sentimentCls=sentiment.includes('bullish')?'b-bull':sentiment.includes('bearish')?'b-bear':'b-neutral';
     return `<div class="admin-panel" style="flex:1;min-width:260px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div class="res-sym-big" style="font-size:18px">${d.stockSymbol||sym}</div>
@@ -5513,6 +5706,7 @@ async function runCompareAnalysis(){
         <div class="mc"><div class="mc-lbl">Volatility</div><div class="mc-val">${d.riskLevel??'—'}/10</div></div>
       </div>
       <div style="font-size:12px;color:var(--text2);line-height:1.6">${d.reasoning||''}</div>
+      ${d.fullReport?`<div style="font-size:11px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><strong style="color:var(--text2)">Trend:</strong> ${d.fullReport.trend?.label||'—'} · <strong style="color:var(--text2)">RSI:</strong> ${d.fullReport.rsi?.value??'—'} (${d.fullReport.rsi?.signal||'—'}) · <strong style="color:var(--text2)">ADX:</strong> ${d.fullReport.trendStrength?.adx??'—'}</div>`:''}
     </div>`;
   };
   rw.innerHTML=`<div class="res-block-title" style="padding:0 0 10px">Comparison result</div>

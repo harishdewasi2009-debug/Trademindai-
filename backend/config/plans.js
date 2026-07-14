@@ -140,7 +140,7 @@ const PLANS = {
       // built, but nothing currently gates on them. Don't wire a route to
       // these without first building the actual integration.
       'prediction_history',
-      'price_targets',
+      'technical_score',
       'portfolio_tracker',
       'screener',
       'telegram_alerts',
@@ -205,7 +205,7 @@ const PLANS = {
     },
     features: [
       'prediction_history',
-      'price_targets',
+      'technical_score',
       'portfolio_tracker',
       'screener',
       'telegram_alerts',

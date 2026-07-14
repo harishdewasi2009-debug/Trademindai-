@@ -36,9 +36,14 @@ router.post('/upstox/notifier', ctrl.upstoxNotifier);
  router.get('/quote/:symbol', marketLimiter, validateMarketSymbol, ctrl.getQuote);
  // Batch: GET /api/market/quotes?symbols=RELIANCE,TCS,INFY&exchange=BSE_EQ
 router.get('/quotes', marketLimiter, validateMarketQuotes, ctrl.getQuotes);
-// Computed (non-AI) BUY/HOLD/SELL signals for the Screener:
+// Computed (non-AI) bullish/bearish/neutral bias signals for the Screener:
 // GET /api/market/signals?symbols=RELIANCE,TCS&exchange=BSE_EQ
 router.get('/signals', marketLimiter, validateMarketQuotes, ctrl.getSignals);
+// Full rule-based technical report (Trend, Price Action, RSI, MACD, Volume,
+// Candlestick, Volatility, ADX, Bollinger, Fibonacci, Indicator Summary,
+// Technical Score, Conclusion) for the Screener's "full analysis" view:
+// GET /api/market/report/:symbol?exchange=BSE_EQ
+router.get('/report/:symbol', marketLimiter, validateMarketSymbol, ctrl.getFullReport);
 router.get('/indices', marketLimiter, ctrl.getIndices);
 router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE

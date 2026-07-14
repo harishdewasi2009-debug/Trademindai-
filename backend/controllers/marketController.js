@@ -99,9 +99,9 @@ const getQuotes = asyncHandler(async (req, res) => {
 });
 
 // ── GET /api/market/signals?symbols=RELIANCE,TCS&exchange=BSE_EQ  (any authenticated user) ──
-// Rule-based BUY/HOLD/SELL, computed purely from real technical indicators
+// Rule-based bullish/bearish/neutral bias, computed purely from real technical indicators
 // (RSI, EMA, MACD, Supertrend, VWAP, trend strength) — no AI/LLM involved.
-// Powers the Screener's Buy/Hold/Sell filter; kept as a separate endpoint
+// Powers the Screener's bullish/bearish/neutral bias filter; kept as a separate endpoint
 // from /quotes since it's cached much longer (20 min vs 3 sec) and is a
 // heavier per-symbol computation.
 const getSignals = asyncHandler(async (req, res) => {
@@ -177,6 +177,19 @@ const searchFnoSymbols = asyncHandler(async (req, res) => {
   res.json({ results });
 });
 
+// ── GET /api/market/report/:symbol  (any authenticated user) ────────────
+// Full rule-based technical report for the Screener's "full analysis" view —
+// Trend, Price Action, Support/Resistance, Moving Average, RSI, MACD, Volume,
+// Candlestick Analysis, Volatility, Trend Strength (ADX), Bollinger Bands,
+// Fibonacci Zone, Indicator Summary, Technical Score, Conclusion. No AI/LLM
+// involved and no buy/sell/hold verdict — see utils/indicators.js
+// buildFullTechnicalReport() for the compliance rationale.
+const getFullReport = asyncHandler(async (req, res) => {
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const report = await marketDataService.getFullTechnicalReport(req.params.symbol, exchange);
+  res.json(report);
+});
+
 // ── GET /api/market/candles/:symbol  (any authenticated user) ───────────
 // Query params: unit (minutes|hours|days|weeks|months), interval, from, to,
 // exchange (NSE_EQ|BSE_EQ — optional; omit to try NSE first then BSE, same
@@ -195,4 +208,4 @@ const getCandles = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles };
+module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles, getFullReport };

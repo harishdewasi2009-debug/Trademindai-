@@ -109,6 +109,26 @@ server.on('upgrade', (req, socket, head) => {
     socket.destroy();
     return;
   }
+
+  // FIX: this used to call wss.handleUpgrade() unconditionally — the cookie
+  // check the comment above describes was never actually written, so every
+  // WS upgrade request was accepted with no auth at all. Now actually reads
+  // and verifies the accessToken cookie (same cookie/verifier requireAuth
+  // uses for the REST API) before upgrading the connection.
+  const token = readCookie(req, 'accessToken');
+  if (!token) {
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+  try {
+    verifyAccessToken(token);
+  } catch (err) {
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+
   wss.handleUpgrade(req, socket, head, (ws) => {
     liveFeedService.registerBrowserClient(ws);
   });
