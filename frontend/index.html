@@ -2038,6 +2038,18 @@ function modelDisplayName(raw){
   if(r.includes('deepseek'))return 'DeepSeek';
   return raw;
 }
+// FIX (requests stuck "pending" forever in the Network tab, e.g.
+// index-candles): fetch() has no timeout of its own, so if the backend ever
+// hangs (stalled DB query, dead upstream connection, etc.) the returned
+// promise just never settles — it doesn't even reject, it sits there. Every
+// setInterval poll (loadHeroChart / renderMainChart, every REFRESH_MS) then
+// fires a fresh request on top of the still-pending one instead of ever
+// giving up, so they pile up exactly like the screenshot showed. Giving
+// apiFetch its own AbortController-based timeout guarantees every call
+// settles (resolves or rejects) within API_TIMEOUT_MS, so callers' existing
+// try/catch blocks can do their normal "data unavailable" fallback instead
+// of hanging the UI/network panel indefinitely.
+const API_TIMEOUT_MS=20000;
 async function apiFetch(path, opts={}){
   if(isPlaceholder(APP_CONFIG.API_BASE_URL)){
     throw new Error('Something went wrong loading the site. Please refresh in a moment.');
@@ -2045,7 +2057,10 @@ async function apiFetch(path, opts={}){
   const doFetch=()=>{
     const headers={'Content-Type':'application/json',...(opts.headers||{})};
     if(authToken)headers['Authorization']='Bearer '+authToken;
-    return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include'});
+    // Respect a caller-supplied AbortSignal if given, otherwise apply our
+    // own timeout so this call can never hang forever.
+    const signal=opts.signal||AbortSignal.timeout(API_TIMEOUT_MS);
+    return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include',signal});
   };
   let res=await doFetch();
   // Stay signed in: retry once via the refresh-token cookie on ANY 401 — not
@@ -2434,6 +2449,15 @@ let liveQuoteCache={};   // symbol -> {price, changePct, up}
 let marketStatus='connecting'; // connecting | live | stale | offline
 let globalMarketOpen=null; // null=unknown yet, true=open, false=closed (from backend marketStatus field)
 const REFRESH_MS=4000; // was 15000 — now polls close to the backend's 3s quote cache, so ticks feel near-live
+// FIX (Upstox "Error 1015: rate limited" -> 502s on every chart): candle
+// requests (hero chart + main chart) were polling on the same 4s cadence as
+// live quotes. Candle data is cached server-side for 60s anyway (see
+// CANDLE_CACHE_TTL_MS in marketDataService.js), so refetching every 4s did
+// nothing but multiply Upstox calls across every open symbol/index and trip
+// Cloudflare's rate limit — which is what caused the endless
+// pending/cancelled cycle. Charts now poll on a separate, much slower
+// cadence that matches the backend cache instead of fighting it.
+const CHART_REFRESH_MS=60000;
 
 // Persists NIFTY 50 / SENSEX / NIFTY BANK across page refreshes so the
 // strip never has to fall back to "Connecting…" (or a 0.00% flash) while
@@ -5849,11 +5873,27 @@ const HERO_TF_PARAMS={
 let heroTF='5D';
 let heroCandles=null;
 let heroChartFailedUntil=0; // backoff: skip re-fetching a known-broken endpoint every 4s
+// FIX v2: the previous version aborted+restarted the request on every
+// REFRESH_MS tick even for the SAME timeframe. If the backend legitimately
+// takes longer than REFRESH_MS (4s) to respond, that meant the request got
+// cancelled and re-started every 4s forever — it could never finish, which
+// is exactly what the Network tab showed (a string of ~4s "canceled"
+// entries instead of one that completes). Now: only abort an in-flight
+// request when the timeframe actually changed; a same-timeframe poll while
+// one is still in flight just skips instead of resetting the clock.
+let heroChartAbort=null;
+let heroChartInFlightTF=null;
 async function loadHeroChart(){
   if(Date.now()<heroChartFailedUntil)return;
+  if(heroChartAbort){
+    if(heroChartInFlightTF===heroTF)return; // same request already running — let it finish
+    heroChartAbort.abort(); // timeframe changed — cancel the stale one
+  }
+  heroChartAbort=new AbortController();
+  heroChartInFlightTF=heroTF;
   try{
     const {unit,interval}=HERO_TF_PARAMS[heroTF]||HERO_TF_PARAMS['5D'];
-    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit='+unit+'&interval='+interval,{cache:'no-store'});
+    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit='+unit+'&interval='+interval,{cache:'no-store',signal:heroChartAbort.signal});
 
     if(!res.ok){
       let reason='HTTP '+res.status;
@@ -5864,6 +5904,7 @@ async function loadHeroChart(){
     if(q.candles&&q.candles.length){ heroCandles=q.candles; renderHeroChart(); return; }
     throw new Error('no candle data in response');
   }catch(e){
+    if(e.name==='AbortError')return; // superseded by a real timeframe change, not a real failure
     console.warn('[heroChart] NIFTY 50 unavailable — '+e.message);
     heroChartFailedUntil=Date.now()+30000; // back off 30s instead of retrying every 4s
     const canvas=document.getElementById('heroChart');
@@ -5874,6 +5915,9 @@ async function loadHeroChart(){
     ['hc-price','hc-open','hc-high','hc-low'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
     const pillEl=document.getElementById('hc-live-pill');
     if(pillEl)pillEl.innerHTML='<span class="live-dot"></span>Data unavailable';
+  }finally{
+    heroChartAbort=null;
+    heroChartInFlightTF=null;
   }
 }
 function renderHeroChart(){
@@ -5901,7 +5945,7 @@ document.querySelectorAll('.hc-tabs .hc-tab[data-tf]').forEach(tab=>{
   });
 });
 loadHeroChart();
-setInterval(loadHeroChart,REFRESH_MS); // real refresh cadence, same as the rest of live market data — no fake ticks
+setInterval(loadHeroChart,CHART_REFRESH_MS); // candles cadence — see CHART_REFRESH_MS comment above, decoupled from live-quote REFRESH_MS
 
 window.addEventListener('resize',()=>{renderHeroChart();if(document.getElementById('page-charts')?.classList.contains('active'))renderMainChart();});
 
@@ -6073,7 +6117,7 @@ function initChartsPage(){
 }
   setInterval(()=>{
   if(document.getElementById('page-charts')?.classList.contains('active'))renderMainChart();
-}, REFRESH_MS);
+}, CHART_REFRESH_MS);
 function tfToCandles(tf){
   if(chartCustomInterval){
     // Cap how much data we draw per interval so intraday granularities
@@ -6109,11 +6153,21 @@ const REAL_CANDLE_CACHE_MS=50000;
 const CHART_INDEX_SYMBOLS=['NIFTY 50','SENSEX','NIFTY BANK'];
 function isChartIndexSymbol(symbol){ return CHART_INDEX_SYMBOLS.includes(symbol); }
 
+// FIX v2: same issue as the hero chart — aborting+restarting a same-key
+// request every REFRESH_MS poll meant a backend response slower than 4s
+// could never finish (endlessly cancelled and re-started). A genuine
+// symbol/timeframe/exchange change already produces a DIFFERENT cacheKey
+// (see requestedKey in renderMainChart), so if this cacheKey is still in
+// flight, it's just the same poll firing again — skip it and let the
+// original request finish or fail on its own instead of resetting it.
+const realCandleInFlight={}; // cacheKey -> true while a request for it is outstanding
 async function fetchRealCandles(symbol,tf,exchange){
  if(isPlaceholder(APP_CONFIG.API_BASE_URL))return null;
   const cacheKey=symbol+'|'+tf+'|'+(exchange||'')+(chartCustomInterval?('|'+chartCustomInterval.unit+chartCustomInterval.interval):'');
   const cached=realCandleCache[cacheKey];
   if(cached&&(Date.now()-cached.fetchedAt)<REAL_CANDLE_CACHE_MS)return cached.candles;
+  if(realCandleInFlight[cacheKey])return null; // already fetching this exact key — don't restart it
+  realCandleInFlight[cacheKey]=true;
   try{
     const {unit,interval}=tfToUpstoxParams(tf);
     const qs=new URLSearchParams({unit,interval:String(interval)});
@@ -6145,6 +6199,8 @@ async function fetchRealCandles(symbol,tf,exchange){
   }catch(e){
     realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()};
     return null; // network error, timeout, etc. — fall back silently
+  }finally{
+    delete realCandleInFlight[cacheKey];
   }
 }
 

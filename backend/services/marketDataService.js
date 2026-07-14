@@ -861,16 +861,27 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   }
 
   const data = await res.json();
-const rawCandles = Array.isArray(data.data?.candles) ? data.data.candles : [];
+  const rawCandles = Array.isArray(data.data?.candles) ? data.data.candles : [];
 
-const candles = rawCandles
+  // Upstox returns candles newest-first as
+  //   [timestamp, open, high, low, close, volume, openInterest]
+  // The frontend's drawCandles() expects oldest-first { o,h,l,c,v,t }.
+  // FIX (500 "Something went wrong" on /candles/:symbol): this used to
+  // assume every entry was a well-formed [timestamp,o,h,l,c,v] array and
+  // that c.t was always a string, then called c.t.startsWith(todayStr)
+  // unconditionally below. A single malformed/short row from Upstox (or a
+  // symbol with a gap in its data) threw an uncaught TypeError, which
+  // errorHandler.js reports only as the generic "Something went wrong" —
+  // giving no hint what actually broke. Now: skip any row that isn't a
+  // proper array with a string timestamp instead of crashing on it.
+  const candles = rawCandles
     .filter((row) => Array.isArray(row) && typeof row[0] === 'string')
     .map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v }))
     .reverse();
 
-const todayStr = new Date().toISOString().slice(0, 10);
-const intraday = await getIntradayCandles(instrumentKey, unit, interval);
-const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const intraday = await getIntradayCandles(instrumentKey, unit, interval);
+  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
