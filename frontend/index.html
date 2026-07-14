@@ -2038,18 +2038,6 @@ function modelDisplayName(raw){
   if(r.includes('deepseek'))return 'DeepSeek';
   return raw;
 }
-// FIX (requests stuck "pending" forever in the Network tab, e.g.
-// index-candles): fetch() has no timeout of its own, so if the backend ever
-// hangs (stalled DB query, dead upstream connection, etc.) the returned
-// promise just never settles — it doesn't even reject, it sits there. Every
-// setInterval poll (loadHeroChart / renderMainChart, every REFRESH_MS) then
-// fires a fresh request on top of the still-pending one instead of ever
-// giving up, so they pile up exactly like the screenshot showed. Giving
-// apiFetch its own AbortController-based timeout guarantees every call
-// settles (resolves or rejects) within API_TIMEOUT_MS, so callers' existing
-// try/catch blocks can do their normal "data unavailable" fallback instead
-// of hanging the UI/network panel indefinitely.
-const API_TIMEOUT_MS=20000;
 async function apiFetch(path, opts={}){
   if(isPlaceholder(APP_CONFIG.API_BASE_URL)){
     throw new Error('Something went wrong loading the site. Please refresh in a moment.');
@@ -2057,10 +2045,7 @@ async function apiFetch(path, opts={}){
   const doFetch=()=>{
     const headers={'Content-Type':'application/json',...(opts.headers||{})};
     if(authToken)headers['Authorization']='Bearer '+authToken;
-    // Respect a caller-supplied AbortSignal if given, otherwise apply our
-    // own timeout so this call can never hang forever.
-    const signal=opts.signal||AbortSignal.timeout(API_TIMEOUT_MS);
-    return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include',signal});
+    return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include'});
   };
   let res=await doFetch();
   // Stay signed in: retry once via the refresh-token cookie on ANY 401 — not
@@ -5864,18 +5849,11 @@ const HERO_TF_PARAMS={
 let heroTF='5D';
 let heroCandles=null;
 let heroChartFailedUntil=0; // backoff: skip re-fetching a known-broken endpoint every 4s
-// FIX: abort any still-in-flight hero-chart request before starting a new
-// one, so a slow/hanging request doesn't leave a stray "pending" fetch
-// sitting in the Network tab every time the REFRESH_MS interval fires again
-// before the previous call has settled.
-let heroChartAbort=null;
 async function loadHeroChart(){
   if(Date.now()<heroChartFailedUntil)return;
-  if(heroChartAbort)heroChartAbort.abort();
-  heroChartAbort=new AbortController();
   try{
     const {unit,interval}=HERO_TF_PARAMS[heroTF]||HERO_TF_PARAMS['5D'];
-    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit='+unit+'&interval='+interval,{cache:'no-store',signal:heroChartAbort.signal});
+    const res=await apiFetch('/api/market/index-candles?underlying='+encodeURIComponent('NIFTY 50')+'&unit='+unit+'&interval='+interval,{cache:'no-store'});
 
     if(!res.ok){
       let reason='HTTP '+res.status;
@@ -5886,7 +5864,6 @@ async function loadHeroChart(){
     if(q.candles&&q.candles.length){ heroCandles=q.candles; renderHeroChart(); return; }
     throw new Error('no candle data in response');
   }catch(e){
-    if(e.name==='AbortError')return; // superseded by a newer poll, not a real failure
     console.warn('[heroChart] NIFTY 50 unavailable — '+e.message);
     heroChartFailedUntil=Date.now()+30000; // back off 30s instead of retrying every 4s
     const canvas=document.getElementById('heroChart');
@@ -6132,19 +6109,11 @@ const REAL_CANDLE_CACHE_MS=50000;
 const CHART_INDEX_SYMBOLS=['NIFTY 50','SENSEX','NIFTY BANK'];
 function isChartIndexSymbol(symbol){ return CHART_INDEX_SYMBOLS.includes(symbol); }
 
-// FIX: same pending-request pile-up as the hero chart, but here it's keyed
-// per symbol/timeframe/exchange since the user can switch charts mid-poll.
-// Abort whatever was still in flight for a given cacheKey before starting
-// a new request for that same key.
-const realCandleAborts={}; // cacheKey -> AbortController
 async function fetchRealCandles(symbol,tf,exchange){
  if(isPlaceholder(APP_CONFIG.API_BASE_URL))return null;
   const cacheKey=symbol+'|'+tf+'|'+(exchange||'')+(chartCustomInterval?('|'+chartCustomInterval.unit+chartCustomInterval.interval):'');
   const cached=realCandleCache[cacheKey];
   if(cached&&(Date.now()-cached.fetchedAt)<REAL_CANDLE_CACHE_MS)return cached.candles;
-  if(realCandleAborts[cacheKey])realCandleAborts[cacheKey].abort();
-  const abortCtrl=new AbortController();
-  realCandleAborts[cacheKey]=abortCtrl;
   try{
     const {unit,interval}=tfToUpstoxParams(tf);
     const qs=new URLSearchParams({unit,interval:String(interval)});
@@ -6156,7 +6125,7 @@ async function fetchRealCandles(symbol,tf,exchange){
     const url=isIndex
       ? `/api/market/index-candles?underlying=${encodeURIComponent(symbol)}&${qs}`
       : `/api/market/candles/${encodeURIComponent(symbol)}?${qs}`;
-    const res=await apiFetch(url,{signal:abortCtrl.signal});
+    const res=await apiFetch(url);
     if(!res.ok){
       let reason='HTTP '+res.status;
       try{ const body=await res.json(); if(body?.error)reason=body.error; }catch(_){}
@@ -6174,7 +6143,6 @@ async function fetchRealCandles(symbol,tf,exchange){
     realCandleCache[cacheKey]={candles,fetchedAt:Date.now()};
     return candles;
   }catch(e){
-    if(e.name==='AbortError')return null; // superseded by a newer request for this key, not a real failure
     realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()};
     return null; // network error, timeout, etc. — fall back silently
   }

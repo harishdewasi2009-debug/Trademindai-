@@ -11,19 +11,6 @@ const pool = new Pool({
   max: 20,                     // max simultaneous connections
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 5000,
-  // FIX (index-candles requests hanging forever / stuck "pending" in the
-  // Network tab): connectionTimeoutMillis above only bounds how long we wait
-  // to ACQUIRE a connection from the pool — it does nothing once a query is
-  // actually running. If a query ever stalls server-side (locked row, dead
-  // TCP connection that hasn't been noticed yet, etc.) the request had no
-  // way to time out and just hung indefinitely, which is exactly what the
-  // Network tab showed (10+ requests sitting at "pending" past 15s+).
-  // statement_timeout tells Postgres itself to kill a query after 8s;
-  // query_timeout is the pg client's own belt-and-braces timer for the same
-  // thing. Either one firing turns a silent hang into a real error that
-  // asyncHandler/errorHandler can turn into an HTTP response.
-  statement_timeout: 8000,
-  query_timeout: 8000,
 });
 
 pool.on('error', (err) => {

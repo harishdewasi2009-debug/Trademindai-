@@ -861,16 +861,18 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   }
 
   const data = await res.json();
-const rawCandles = Array.isArray(data.data?.candles) ? data.data.candles : [];
+  const rawCandles = data.data?.candles || [];
 
+  // Upstox returns candles newest-first as
+  //   [timestamp, open, high, low, close, volume, openInterest]
+  // The frontend's drawCandles() expects oldest-first { o,h,l,c,v,t }.
 const candles = rawCandles
-    .filter((row) => Array.isArray(row) && typeof row[0] === 'string')
     .map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v }))
     .reverse();
 
-const todayStr = new Date().toISOString().slice(0, 10);
-const intraday = await getIntradayCandles(instrumentKey, unit, interval);
-const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const intraday = await getIntradayCandles(instrumentKey, unit, interval);
+  const merged = [...candles.filter((c) => !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
