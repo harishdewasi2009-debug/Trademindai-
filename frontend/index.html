@@ -6406,7 +6406,7 @@ async function fetchRealCandles(symbol,tf,exchange){
       realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()}; // cache the failure too — stops hammering Upstox every 4s
       return null;
     }
-    const data=await res.json();
+    const res=await apiFetch(url,{signal:AbortSignal.timeout(35000)});
     if(!Array.isArray(data.candles)||!data.candles.length){
       realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()};
       return null;
