@@ -1044,6 +1044,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <span class="nav-link" data-page="charts" onclick="show('charts')">Charts</span>
     <span class="nav-link" data-page="screener" onclick="show('screener')">Screener</span>
     <span class="nav-link" data-page="options" onclick="show('options')">Options</span>
+    <span class="nav-link" data-page="dashboard" onclick="show('dashboard');switchDash('overview')">Dashboard</span>
     <span class="nav-link" data-page="pricing" onclick="show('pricing')">Pricing</span>
     <span class="nav-link" id="nav-admin-link" data-page="admin" onclick="show('admin')" style="display:none">Admin</span>
   </div>
@@ -1069,6 +1070,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <span class="nav-link" data-page="charts" onclick="show('charts');toggleMobileSidebar(false)"><i class="ti ti-chart-candle" style="margin-right:8px"></i>Charts</span>
   <span class="nav-link" data-page="screener" onclick="show('screener');toggleMobileSidebar(false)"><i class="ti ti-list-search" style="margin-right:8px"></i>Screener</span>
   <span class="nav-link" data-page="options" onclick="show('options');toggleMobileSidebar(false)"><i class="ti ti-stack" style="margin-right:8px"></i>Options</span>
+  <span class="nav-link" data-page="dashboard" onclick="show('dashboard');switchDash('overview');toggleMobileSidebar(false)"><i class="ti ti-layout-dashboard" style="margin-right:8px"></i>Dashboard</span>
   <span class="nav-link" onclick="show('dashboard');switchDash('chat');toggleMobileSidebar(false)"><i class="ti ti-robot" style="margin-right:8px"></i>AI Assistant</span>
   <span class="nav-link" data-page="pricing" onclick="show('pricing');toggleMobileSidebar(false)"><i class="ti ti-tag" style="margin-right:8px"></i>Pricing</span>
   <span class="nav-link" id="mobile-nav-admin-link" data-page="admin" onclick="show('admin');toggleMobileSidebar(false)" style="display:none"><i class="ti ti-shield-lock" style="margin-right:8px"></i>Admin</span>
@@ -2291,7 +2293,7 @@ img,svg,video,canvas,iframe{max-width:100%}
 //                          the backend's .env file, never here)
 // ══════════════════════════════════════════════════════════════════════════
 const APP_CONFIG = {
-API_BASE_URL: 'https://api.trademindai.co.in',
+  API_BASE_URL: 'https://trademindai-backend-78ky.onrender.com',
   GOOGLE_CLIENT_ID:  '708129325781-cv77hsg7dovs0klevipdj885pv6clgsl.apps.googleusercontent.com',
   RAZORPAY_KEY_ID:   'rzp_live_T3BljltuYfiqmy',
 };
