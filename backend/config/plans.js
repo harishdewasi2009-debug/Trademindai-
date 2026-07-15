@@ -4,17 +4,18 @@
 //  per-request token caps, and feature gates.
 //
 //   Free  ₹0     — Gemini Flash only
-//                  50,000 tokens/month | 1,500 tokens/request | ~10–15 analyses
+//                  50,000 tokens/month | 1,500 tokens/request | 7 analyses/mo
 //   Basic ₹149   — Gemini Flash + DeepSeek
-//                  250,000 tokens/month | 2,000 tokens/request | ~150 analyses
+//                  250,000 tokens/month | 2,000 tokens/request | 77 analyses/mo
 //   Pro   ₹999   — Gemini + DeepSeek + Claude Sonnet (limited) + GPT (limited)
-//                  1,000,000 tokens/month | 5,000 tokens/request | ~300–400 analyses
+//                  1,000,000 tokens/month | 5,000 tokens/request | 777 analyses/mo
 //   Elite ₹2999  — GPT premium + Claude premium + Gemini advanced + DeepSeek Pro
-//                  3,000,000 tokens/month | 10,000 tokens/request | unlimited queries
+//                  3,000,000 tokens/month | 10,000 tokens/request | unlimited analyses
 //
 //  UPDATED: Basic lowered 300k → 250k. Pro raised 800k → 1,000,000 (×1.25
 //  per-model rescale). Elite raised 1,200,000 → 3,000,000 (×2.5 per-model
 //  rescale). See per-plan comments below for the new worst-case cost math.
+//  Monthly analysis caps set to Free 7 / Basic 77 / Pro 777 / Elite unlimited.
 // ══════════════════════════════════════════════════════════════════════════
 
 const PLANS = {
@@ -25,7 +26,7 @@ const PLANS = {
     // Token limits
     monthlyTokenQuota:   50_000,      // 50,000 tokens/month
     maxTokensPerRequest: 1_500,       // 1,500 tokens max per single request
-    monthlyAiQueries:    15,          // ~10–15 analyses/month (hard cap as backup)
+    monthlyAiQueries:    7,           // 7 analyses/month (hard cap as backup)
 
     // ── Per-model configuration ──────────────────────────────────────────
     // Models on this plan: Gemini Flash (only).
@@ -42,7 +43,12 @@ const PLANS = {
     },
     features: [
       'watchlist_5',
-      'screener',
+      // 'screener' removed — AI Stock Screener is now Basic/Pro/Elite only.
+      // AI Brief (AI Morning Market Brief) is available on every plan,
+      // including Free — insightCascadeForPlan()'s default/free case
+      // already routes this to Gemini Flash only, so this just unlocks
+      // the feature gate without changing the free-tier model cascade.
+      'ai_insight',
     ],
   },
 
@@ -53,7 +59,7 @@ const PLANS = {
     // Token limits
     monthlyTokenQuota:   250_000,     // 250,000 tokens/month
     maxTokensPerRequest: 2_000,       // 2,000 tokens max per single request
-    monthlyAiQueries:    150,         // ~150 analyses/month
+    monthlyAiQueries:    77,          // 77 analyses/month
 
     // Basic calls Gemini Flash first, falls back to DeepSeek only on failure
     // (not parallel) — so each model gets the FULL plan quota as its own
@@ -100,7 +106,7 @@ const PLANS = {
     // to ~₹361 — still comfortably under the ₹999 price.
     monthlyTokenQuota:   1_000_000,   // 1,000,000 tokens/month
     maxTokensPerRequest: 5_000,       // 5,000 tokens max per single request
-    monthlyAiQueries:    400,         // ~300–400 analyses/month
+    monthlyAiQueries:    777,         // 777 analyses/month
 
     // Pro calls Gemini Flash + Claude Sonnet + ChatGPT IN PARALLEL on every
     // request (see aiService.js), with DeepSeek as a fallback if all three

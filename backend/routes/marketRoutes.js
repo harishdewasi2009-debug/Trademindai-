@@ -51,10 +51,9 @@ router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Options-only autocomplete: GET /api/market/search-fno?q=REL
 router.get('/search-fno', marketLimiter, validateMarketSearch, ctrl.searchFnoSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
-// Available on every plan (including Free) — it's just live Upstox
-// quotes/listing, no AI token cost, so there's no reason to gate it above
-// Free. requireFeature('screener') still runs so the check exists, but
-// 'screener' is now in every plan's features array in config/plans.js.
+// Screener is a Basic/Pro/Elite feature — Free no longer includes
+// 'screener' in config/plans.js, so Free users get a 403 here with an
+// "upgrade your plan" message (handled by requireFeature below).
 router.get('/stocks', requireAuth, requireFeature('screener'), marketLimiter, ctrl.listStocks);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
 // FIX: sold as Elite-only on the pricing page/comparison table but had no

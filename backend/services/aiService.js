@@ -426,7 +426,7 @@ function safeParseJSON(text) {
 // into the result before it's ever returned to a user. This guarantees
 // currentPrice/RSI/support/resistance shown to the user are always the
 // real computed values, never whatever the model happened to output.
-function groundResult(result, indicators) {
+function groundResult(result, indicators, horizon, riskTolerance) {
   if (!result || !indicators) return result;
   result.currentPrice = indicators.currentPrice;
   result.technicals = result.technicals || {};
@@ -437,10 +437,11 @@ function groundResult(result, indicators) {
   // report the Screener's "full analysis" view uses (Trend, Price Action,
   // Support/Resistance, Moving Average, RSI, MACD, Volume, Candlestick
   // Analysis, Volatility, Trend Strength/ADX, Bollinger Bands, Fibonacci
-  // Zone, Indicator Summary, Technical Score, Conclusion). Computed here
-  // server-side (not by the LLM) so the numbers are guaranteed correct and
-  // consistent between the Screener and AI Analysis pages — the model's own
-  // "reasoning" text is kept alongside as supplementary AI commentary.
+  // Zone, Indicator Summary, Technical Score, Trading-style profile,
+  // Conclusion). Computed here server-side (not by the LLM) so the numbers
+  // are guaranteed correct and consistent between the Screener and AI
+  // Analysis pages — the model's own "reasoning" text is kept alongside as
+  // supplementary AI commentary.
   result.fullReport = buildFullTechnicalReport(indicators, { lookback: 60 });
   // COMPLIANCE: strip these even if an older client/model still sends them —
   // this endpoint must never surface a buy/sell/hold verdict or a price
@@ -448,6 +449,29 @@ function groundResult(result, indicators) {
   delete result.signal;
   delete result.priceTargets;
   delete result.expectedReturn;
+
+  // ── Investment horizon + risk-tolerance context — EDUCATIONAL ONLY ────
+  // Built server-side (not by the LLM) from the user's own stated horizon/
+  // risk inputs plus the real volatility profile above, purely to help the
+  // user relate the CURRENT data to the context they said they're
+  // interested in. This is explicitly NOT a personalised recommendation —
+  // TradeMind AI is not a SEBI-registered Investment Adviser, and this
+  // never tells the user their chosen horizon/risk level is "right" for
+  // this stock.
+  const styleProfile = result.fullReport?.tradingStyleProfile;
+  result.horizonRiskContext = {
+    horizon: horizon || 'Not specified',
+    riskTolerance: riskTolerance || 'Not specified',
+    volatilityBand: styleProfile?.volatilityBand || 'Unknown',
+    note:
+      `You indicated a "${horizon || 'unspecified'}" horizon and "${riskTolerance || 'unspecified'}" risk tolerance. ` +
+      `This stock's current volatility band is "${styleProfile?.volatilityBand || 'unknown'}" (ATR ${styleProfile?.atrPct ?? 'n/a'}% of price). ` +
+      `This is provided so you can relate the data to your own stated context — it is educational information only, ` +
+      `not a personalised recommendation on whether this stock suits your horizon or risk tolerance. ` +
+      `Please do your own research and consult a SEBI-registered investment adviser before making investment decisions.`,
+    disclaimer: 'Educational tool only — not investment advice. TradeMind AI is not SEBI registered.',
+  };
+
   return result;
 }
 
@@ -534,7 +558,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const maxTok = maxTokensFor(plan, 'gemini_flash');
     const raw = await callGemini(MODELS.GEMINI_FLASH, system, user, maxTok);
-    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators);
+    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators, horizon, riskTolerance);
     if (!result) throw new Error('AI returned unparseable JSON');
     const breakdown = [{ modelKey: 'gemini_flash', model: MODELS.GEMINI_FLASH, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(MODELS.GEMINI_FLASH, raw.tokIn, raw.tokOut) }];
     return {
@@ -569,7 +593,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
       raw = await callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3'));
     }
     if (!raw) throw new Error('NO_MODELS_AVAILABLE');
-    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators);
+    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators, horizon, riskTolerance);
     if (!result) throw new Error('AI returned unparseable JSON');
     const breakdown = [{ modelKey, model: modelLabel, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(modelLabel, raw.tokIn, raw.tokOut) }];
     return {
@@ -607,7 +631,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
         console.warn('[Pro] DeepSeek fallback failed:', err.message);
         throw new Error('NO_MODELS_AVAILABLE');
       }
-      const result = groundResult(safeParseJSON(dsRaw.text), marketContext.indicators);
+      const result = groundResult(safeParseJSON(dsRaw.text), marketContext.indicators, horizon, riskTolerance);
       if (!result) throw new Error('AI returned unparseable JSON');
       const breakdown = [{ modelKey: 'deepseek_v3', model: MODELS.DEEPSEEK_V3, tokIn: dsRaw.tokIn, tokOut: dsRaw.tokOut, cost: calcCost(MODELS.DEEPSEEK_V3, dsRaw.tokIn, dsRaw.tokOut) }];
       return {
@@ -621,7 +645,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     }
 
     const parsed = raws.map(r => safeParseJSON(r.text));
-    const consensusResult = groundResult(buildConsensus(parsed), marketContext.indicators);
+    const consensusResult = groundResult(buildConsensus(parsed), marketContext.indicators, horizon, riskTolerance);
     if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
 
     const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
@@ -661,7 +685,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
       reasoning:      parsed[i]?.reasoning       || '',
     }));
 
-    const consensusResult = groundResult(buildConsensus(parsed.filter(Boolean)), marketContext.indicators);
+    const consensusResult = groundResult(buildConsensus(parsed.filter(Boolean)), marketContext.indicators, horizon, riskTolerance);
     if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
 
     consensusResult.modelDebate = modelDebate;  // Elite-only field

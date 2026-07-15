@@ -357,6 +357,7 @@ nav{
 .plan-mo{font-size:12px;color:var(--text3);margin-bottom:8px}
 .plan-limit{font-size:12px;color:var(--text2);margin-bottom:3px}
 .plan-limit strong{color:var(--text)}
+.plan-desc{font-size:12.5px;color:var(--text2);line-height:1.5;margin:4px 0 14px}
 .plan-hr{height:1px;background:var(--border);margin:20px 0}
 .plan-list{list-style:none;margin-bottom:26px}
 .plan-li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.5}
@@ -854,6 +855,11 @@ nav{
   .admin-metrics{grid-template-columns:repeat(3,1fr)}
   .backtest-metrics{grid-template-columns:repeat(3,1fr)}
   .footer-grid{grid-template-columns:1fr 1fr}
+  .pricing-grid{grid-template-columns:repeat(2,1fr)}
+  .emp-grid{grid-template-columns:repeat(2,1fr)}
+  .opt-summary,.indicator-grid{grid-template-columns:repeat(2,1fr)}
+  .ia-levels{grid-template-columns:repeat(3,1fr)}
+  .heatmap-grid{grid-template-columns:repeat(6,1fr)}
 }
 /* ══════════════ PREMIUM MOTION SYSTEM (additive — doesn't touch existing rules above) ══════════════ */
 @media (prefers-reduced-motion: reduce){
@@ -921,17 +927,54 @@ html{scroll-behavior:smooth}
 
 @media(max-width:680px){
   nav{padding:12px 16px}.nav-links{display:none}
-  .hero-h1{font-size:36px;letter-spacing:-1.5px}
-  .hero-sub{font-size:15px}
+  .hero-h1{font-size:32px;letter-spacing:-1.2px}
+  .hero-sub{font-size:14.5px;padding:0 4px}
+  .hero{padding:56px 20px 48px}
   .stats-row{grid-template-columns:repeat(2,1fr)}
-  .feat-grid,.pricing-grid,.verdict-row,.ai-debate,.dash-metric-grid,.price-targets,.meta-row,.admin-metrics,.ads-grid,.testi-grid,.tech-indicators,.portfolio-header,.two-col,.three-col,.footer-grid,.backtest-controls,.backtest-metrics,.ref-stats,.feat-grid-4,.opt-summary,.scanner-grid,.calc-grid,.indicator-grid,.pattern-grid,.compare-grid,.alert-manager,.levels-grid,.risk-grid,.fn-grid,.heatmap-grid,.ia-levels{grid-template-columns:1fr}
-  .hero-chart-wrap{margin-left:16px;margin-right:16px}
+  .feat-grid,.pricing-grid,.verdict-row,.ai-debate,.dash-metric-grid,.price-targets,.meta-row,.admin-metrics,.ads-grid,.testi-grid,.tech-indicators,.portfolio-header,.two-col,.three-col,.footer-grid,.backtest-controls,.backtest-metrics,.ref-stats,.feat-grid-4,.opt-summary,.scanner-grid,.calc-grid,.indicator-grid,.pattern-grid,.compare-grid,.alert-manager,.levels-grid,.risk-grid,.fn-grid,.ia-levels,.founders-row,.emp-grid,.strat-row,.paper-order-row{grid-template-columns:1fr}
+  .heatmap-grid{grid-template-columns:repeat(4,1fr)}
+  .hero-chart-wrap{margin-left:12px;margin-right:12px}
   .inp-row{grid-template-columns:1fr}
   .dash-grid{grid-template-columns:1fr}
-  .section{padding:48px 20px}
-  .analysis-wrap{padding:22px 16px}
-  .admin-wrap{padding:20px}
+  .section{padding:40px 16px}
+  .sec-h2{font-size:26px}
+  .analysis-wrap{padding:18px 14px}
+  .admin-wrap{padding:16px}
+  .compare-vs{padding-top:0}
+
+  /* Modals: reclaim padding on small screens */
+  .modal-box{padding:22px 18px;width:100%;max-height:88vh;overflow-y:auto}
+  #stock-detail-modal .modal-box{padding:18px}
+
+  /* Tables: horizontal scroll instead of squeeze/overflow (see .table-responsive wrapper added via JS) */
+  .table-responsive{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-responsive table{min-width:560px}
+
+  /* Chart / analysis headers: allow wrapping instead of clipping off-screen */
+  .chart-panel-hdr,.hero-chart-hdr{flex-wrap:wrap;gap:10px}
+  .hc-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;padding-bottom:2px}
+  #chart-interval-dropdown{width:min(200px,72vw)!important;right:-8px!important}
+
+  /* Founder cards: stack avatar above bio instead of squeezing side-by-side */
+  .founder-card{flex-direction:column;text-align:center;align-items:center;padding:28px 20px}
+  .founder-socials{justify-content:center}
+
+  /* Watchlist / screener rows: allow wrapping so long symbol names don't force overflow */
+  .watchlist-item,.screener-stock{flex-wrap:wrap;gap:8px}
+
+  /* Portfolio / admin metric numbers: keep legible without forcing horizontal scroll */
+  .pf-value,.adm-val{font-size:21px}
 }
+
+@media(max-width:420px){
+  .hero-h1{font-size:27px}
+  .verdict-row,.meta-row,.price-targets,.tech-indicators{gap:8px}
+  .heatmap-grid{grid-template-columns:repeat(3,1fr)}
+  .founders-row{gap:16px}
+}
+
+/* Generic safety net: never let media or wide fixed-width elements force horizontal scroll */
+img,svg,video,canvas,iframe{max-width:100%}
 </style>
 </head>
 <body>
@@ -1010,7 +1053,7 @@ html{scroll-behavior:smooth}
       <span class="trust-pill"><i class="ti ti-broadcast"></i>Live NSE &amp; BSE Data</span>
       <span class="trust-pill"><i class="ti ti-brain"></i>AI-Powered Analysis</span>
       <span class="trust-pill"><i class="ti ti-chart-candle"></i>TradingView Professional Charts</span>
-      <span class="trust-pill"><i class="ti ti-shield-lock"></i>Secure Upstox OAuth Login</span>
+      <span class="trust-pill"><i class="ti ti-shield-lock"></i>Secure Google Sign-In</span>
       <span class="trust-pill"><i class="ti ti-refresh"></i>Real-Time Market Updates</span>
       <span class="trust-pill"><i class="ti ti-bolt"></i>Fast &amp; Reliable Performance</span>
     </div>
@@ -1077,7 +1120,7 @@ html{scroll-behavior:smooth}
         <div class="feat-icon"><i class="ti ti-filter"></i></div>
         <div class="feat-title">AI Stock Screener</div>
         <p class="feat-desc">Screen 5,000+ stocks by AI score, momentum, breakout potential, value, or growth. Custom filters updated nightly with fresh AI signal data.</p>
-        <span class="feat-tag tag-pro">Pro +</span>
+        <span class="feat-tag tag-pro">Basic +</span>
       </div>
     </div>
     <div class="feat-grid-4">
@@ -1148,7 +1191,7 @@ html{scroll-behavior:smooth}
       </div>
       <div class="testi-card">
         <div class="testi-text" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px"><i class="ti ti-rocket" style="color:var(--gold)"></i>&nbsp; Free to start</div>
-        <p class="testi-text">The Free plan runs real AI analysis with no credit card required — upgrade only if you want deeper multi-model consensus or more daily queries.</p>
+        <p class="testi-text">The Free plan runs real AI analysis with no credit card required — upgrade only if you want deeper multi-model consensus or more monthly analysis.</p>
       </div>
     </div>
   </div>
@@ -1502,15 +1545,15 @@ html{scroll-behavior:smooth}
       <div class="plan">
         <div class="plan-badge plan-badge-free">Always Free</div>
         <div class="plan-tier">Free</div>
+        <div class="plan-desc">Try real AI stock analysis with no credit card — great for exploring how TradeMind AI works.</div>
         <div class="plan-price"><sup>₹</sup>0</div>
         <div class="plan-mo">forever</div>
-        <div class="plan-limit"><strong>15</strong> queries / month · 50,000 tokens/mo</div>
+        <div class="plan-limit"><strong>7</strong> analysis / month · 50,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash analysis · 50,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Bullish / Bearish / Neutral bias signals</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Basic risk scoring</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>News sentiment analysis <span class="soon-badge">Coming Soon</span></span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (5 stocks)</span></li>
         </ul>
@@ -1521,9 +1564,10 @@ html{scroll-behavior:smooth}
       <div class="plan">
         <div class="plan-badge plan-badge-basic">Best Starter</div>
         <div class="plan-tier">Basic</div>
+        <div class="plan-desc">A dual-AI model cascade with more monthly analysis, prediction tracking, and the AI screener — built for regular use.</div>
         <div class="plan-price"><sup>₹</sup>149</div>
         <div class="plan-mo">per month</div>
-        <div class="plan-limit"><strong>150</strong> queries / month · 250,000 tokens/mo</div>
+        <div class="plan-limit"><strong>77</strong> analysis / month · 250,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Everything in Free</span></li>
@@ -1540,9 +1584,10 @@ html{scroll-behavior:smooth}
       <div class="plan featured">
         <div class="plan-badge plan-badge-pro">Most Popular · Best Value</div>
         <div class="plan-tier">Pro</div>
+        <div class="plan-desc">A 4-model AI stack, Portfolio Tracker, unlimited-feel monthly analysis, and an AI Trading Assistant — built for active traders.</div>
         <div class="plan-price"><sup>₹</sup>999</div>
         <div class="plan-mo">per month</div>
-        <div class="plan-limit"><strong>400</strong> queries / month · 1,000,000 tokens/mo</div>
+        <div class="plan-limit"><strong>777</strong> analysis / month · 1,000,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Everything in Basic</span></li>
@@ -1565,9 +1610,10 @@ html{scroll-behavior:smooth}
       <div class="plan elite-plan">
         <div class="plan-badge plan-badge-elite">🏆 Institutional Grade</div>
         <div class="plan-tier">Elite</div>
+        <div class="plan-desc">Institutional-grade 4-model consensus, backtesting, options analysis, and an AI Portfolio Advisor — built for serious traders.</div>
         <div class="plan-price"><sup>₹</sup>2,999</div>
         <div class="plan-mo">per month</div>
-        <div class="plan-limit"><strong>Unlimited</strong> queries · 3,000,000 tokens/mo fair-use cap</div>
+        <div class="plan-limit"><strong>Unlimited</strong> analysis · 3,000,000 tokens/mo fair-use cap</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Everything in Pro</span></li>
@@ -1604,10 +1650,11 @@ html{scroll-behavior:smooth}
         </thead>
         <tbody>
           <tr><td>AI Models</td><td class="comp-partial">Gemini Flash + DeepSeek</td><td class="comp-partial">Gemini + DeepSeek + Claude Sonnet</td><td class="comp-partial">Gemini + Claude Sonnet 4.6 + GPT-4o + DeepSeek</td><td class="comp-partial">Gemini 2.5 Pro + Claude Opus 4.7 + GPT-4o + DeepSeek R1</td></tr>
-          <tr><td>Monthly Queries</td><td class="comp-partial">15</td><td class="comp-partial">150</td><td class="comp-partial">400</td><td class="comp-partial">Unlimited</td></tr>
+          <tr><td>Monthly Analysis</td><td class="comp-partial">7</td><td class="comp-partial">77</td><td class="comp-partial">777</td><td class="comp-partial">Unlimited</td></tr>
+          <tr><td>AI Brief (Morning Market Brief)</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>AI Technical Score</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
-          <tr><td>AI Stock Screener</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Stock Screener</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Telegram / WhatsApp Alerts</td><td colspan="4" class="comp-soon" style="text-align:center">Coming Soon — Pro &amp; Elite</td></tr>
           <tr><td>AI Trading Assistant Chat</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>4-Model Consensus Analysis</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
@@ -1639,7 +1686,7 @@ html{scroll-behavior:smooth}
       <div class="side-nav-item" onclick="switchDash('analysis')"><i class="ti ti-chart-candle side-icon"></i> Run Analysis</div>
       <div class="side-nav-item" onclick="switchDash('watchlist')"><i class="ti ti-star side-icon"></i> Watchlist <span class="side-badge" id="side-badge-watchlist">0</span></div>
       <div class="side-nav-item" onclick="switchDash('portfolio')"><i class="ti ti-briefcase side-icon"></i> Portfolio</div>
-      <div class="side-nav-item" onclick="switchDash('alerts')"><i class="ti ti-bell side-icon"></i> Alerts <span class="side-badge" style="background:var(--bg3);color:var(--text3)">Soon</span></div>
+      <div class="side-nav-item" onclick="switchDash('alerts')"><i class="ti ti-bell side-icon"></i> Alerts</div>
       <div class="side-nav-item" onclick="switchDash('chat')"><i class="ti ti-robot side-icon"></i> AI Assistant</div>
       <div class="side-section-label">Tools</div>
       <div class="side-nav-item" onclick="show('charts')"><i class="ti ti-chart-candle side-icon"></i> Live Charts</div>
@@ -1686,7 +1733,7 @@ html{scroll-behavior:smooth}
       <div class="adm"><div class="adm-lbl">Total users</div><div class="adm-val" id="adm-total-users">—</div><div class="adm-chg up" id="adm-new-users">—</div></div>
       <div class="adm"><div class="adm-lbl">Active subscribers</div><div class="adm-val" id="adm-active-subs">—</div><div class="adm-chg up" id="adm-active-subs-note">By plan, see below</div></div>
       <div class="adm"><div class="adm-lbl">Monthly revenue</div><div class="adm-val" id="adm-revenue">—</div><div class="adm-chg up">This calendar month</div></div>
-      <div class="adm"><div class="adm-lbl">AI queries today</div><div class="adm-val" id="adm-ai-today">—</div><div class="adm-chg up">Across all plans</div></div>
+      <div class="adm"><div class="adm-lbl">AI analysis today</div><div class="adm-val" id="adm-ai-today">—</div><div class="adm-chg up">Across all plans</div></div>
       <div class="adm"><div class="adm-lbl">AI cost (30d)</div><div class="adm-val" id="adm-ai-cost">—</div><div class="adm-chg up">All providers combined</div></div>
     </div>
     <div class="two-col" style="margin-bottom:20px">
@@ -1700,9 +1747,9 @@ html{scroll-behavior:smooth}
       </div>
       <div class="admin-panel">
         <div class="sec-title">Risk flags &amp; alerts</div>
-        <div class="risk-flag rf-high"><i class="ti ti-alert-circle" style="color:var(--rose2)"></i><div><div style="font-size:12px;font-weight:600;color:var(--text)">High API usage spike</div><div style="font-size:11px;color:var(--text3)">User #1847 — 420 queries in 24h (limit 200)</div></div></div>
+        <div class="risk-flag rf-high"><i class="ti ti-alert-circle" style="color:var(--rose2)"></i><div><div style="font-size:12px;font-weight:600;color:var(--text)">High API usage spike</div><div style="font-size:11px;color:var(--text3)">User #1847 — 420 analysis runs in 24h (limit 200)</div></div></div>
         <div class="risk-flag rf-med"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><div><div style="font-size:12px;font-weight:600;color:var(--text)">Payment failure spike</div><div style="font-size:11px;color:var(--text3)">6 failed renewals today · Review required</div></div></div>
-        <div class="risk-flag rf-med"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><div><div style="font-size:12px;font-weight:600;color:var(--text)">New advertiser pending</div><div style="font-size:11px;color:var(--text3)">Example Pvt Ltd · ₹25,000 budget · Awaiting approval</div></div></div>
+        <div class="risk-flag rf-med" id="adm-advertiser-flag" style="display:none"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><div><div style="font-size:12px;font-weight:600;color:var(--text)" id="adm-advertiser-flag-title">New advertiser enquiry pending</div><div style="font-size:11px;color:var(--text3)" id="adm-advertiser-flag-sub">Loading…</div></div></div>
         <div class="sec-title" style="margin-top:20px">AI model costs</div>
         <div id="ai-usage-bars"></div>
       </div>
@@ -1718,6 +1765,39 @@ html{scroll-behavior:smooth}
           <thead><tr><th>Name</th><th>Plan</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="admin-tbody"></tbody>
         </table>
+      </div>
+    </div>
+    <div class="admin-panel" style="margin-top:20px">
+      <div class="sec-title">Advertiser enquiries</div>
+      <table class="tbl">
+        <thead><tr><th>Company</th><th>Contact</th><th>Budget</th><th>Placement</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="admin-advertisers-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="admin-panel" style="margin-top:20px;border-top-color:var(--rose2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="sec-title" style="margin-bottom:0">Prediction accuracy (internal only)</div>
+        <button class="btn-ghost" style="font-size:11px" onclick="runAiAccuracyEvaluationNow()"><i class="ti ti-refresh"></i> Evaluate now</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px"><i class="ti ti-lock" style="margin-right:4px"></i>Admin-only. Never shown to users or published — checks the AI's past sentiment reads against real price outcomes, purely for internal quality tracking.</div>
+      <div class="admin-metrics" style="margin-bottom:16px">
+        <div class="adm"><div class="adm-lbl">Overall accuracy</div><div class="adm-val" id="acc-overall-pct">—</div><div class="adm-chg up" id="acc-overall-count">—</div></div>
+        <div class="adm"><div class="adm-lbl">Correct</div><div class="adm-val" id="acc-correct">—</div><div class="adm-chg up">Evaluated calls</div></div>
+        <div class="adm"><div class="adm-lbl">Incorrect</div><div class="adm-val" id="acc-incorrect">—</div><div class="adm-chg down">Evaluated calls</div></div>
+        <div class="adm"><div class="adm-lbl">Pending evaluation</div><div class="adm-val" id="acc-pending">—</div><div class="adm-chg up">Horizon not reached yet</div></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="sec-title" style="padding-bottom:6px">Accuracy by sentiment read</div>
+          <div id="acc-by-sentiment"></div>
+        </div>
+        <div>
+          <div class="sec-title" style="padding-bottom:6px">Accuracy by symbol (min 3 evaluated)</div>
+          <table class="tbl">
+            <thead><tr><th>Symbol</th><th>Correct</th><th>Incorrect</th><th>Accuracy</th></tr></thead>
+            <tbody id="acc-by-symbol-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -1769,18 +1849,19 @@ html{scroll-behavior:smooth}
       <div class="sec-title" style="margin-bottom:6px">Register as an advertiser</div>
       <p style="font-size:13px;color:var(--text2);margin-bottom:20px">Submit your details and our team responds within 24 hours with a tailored proposal.</p>
       <div class="inp-row">
-        <div class="inp-group"><label class="inp-lbl">Company name</label><input class="tm-inp" placeholder="Zerodha, Groww, etc."/></div>
-        <div class="inp-group"><label class="inp-lbl">Contact email</label><input class="tm-inp" placeholder="ads@company.com"/></div>
+        <div class="inp-group"><label class="inp-lbl">Company name</label><input class="tm-inp" id="ads-company" placeholder="Zerodha, Groww, etc."/></div>
+        <div class="inp-group"><label class="inp-lbl">Contact email</label><input class="tm-inp" id="ads-email" type="email" placeholder="ads@company.com"/></div>
       </div>
       <div class="inp-row" style="margin-top:12px">
-        <div class="inp-group"><label class="inp-lbl">Monthly budget (₹)</label><input class="tm-inp" placeholder="e.g. 50,000"/></div>
+        <div class="inp-group"><label class="inp-lbl">Monthly budget (₹)</label><input class="tm-inp" id="ads-budget" placeholder="e.g. 50,000"/></div>
         <div class="inp-group"><label class="inp-lbl">Preferred placement</label>
-          <select class="tm-inp" style="height:44px;cursor:pointer">
+          <select class="tm-inp" id="ads-placement" style="height:44px;cursor:pointer">
             <option>Homepage banner</option><option>Dashboard sidebar</option><option>Email newsletter</option><option>All placements (bundle)</option>
           </select>
         </div>
       </div>
-      <button class="btn-analyse" style="margin-top:16px"><i class="ti ti-send"></i> Submit enquiry</button>
+      <div id="ads-form-msg" style="font-size:12px;margin-top:10px;display:none"></div>
+      <button class="btn-analyse" style="margin-top:16px" id="ads-submit-btn" onclick="submitAdvertiserEnquiry()"><i class="ti ti-send"></i> Submit enquiry</button>
     </div>
   </div>
 </div>
@@ -1818,7 +1899,7 @@ html{scroll-behavior:smooth}
       </ul>
 
       <h3>5. Broker Account Integration</h3>
-      <p>If you choose to link a broking account (e.g., via Upstox OAuth) to view your live portfolio or holdings inside TradeMind AI, you authorize us to fetch read access data such as holdings, positions, and quotes on your behalf. We do not have the ability to place trades on your behalf unless you separately and explicitly enable such a feature. You can revoke this access at any time from your broker's app or from your TradeMind AI account settings.</p>
+      <p>Real broking-account linking (e.g., via Upstox OAuth) is not currently available in the Portfolio section — the Portfolio Tracker is a manual, self-entry tool for educational tracking only. Live NSE/BSE market data shown elsewhere on the Platform (charts, quotes, option chains) is still sourced from licensed data providers and is unrelated to this section. If broker-account linking is reintroduced in the future, this section will be updated accordingly.</p>
 
       <h3>6. Acceptable Use</h3>
       <p>You agree not to: reverse-engineer or scrape the Platform; resell or redistribute AI-generated output as your own licensed research; use the Platform to violate securities law, manipulate markets, or engage in fraud; attempt to bypass plan limits, rate limits, or security controls; or use automated means to access the Platform outside of documented APIs.</p>
@@ -1861,8 +1942,8 @@ html{scroll-behavior:smooth}
       <ul>
         <li><strong>Account data:</strong> name, email address, and profile details from Google Sign-In.</li>
         <li><strong>Subscription & billing data:</strong> plan tier, subscription status, and transaction references from Razorpay. We do not receive or store your card, UPI, or bank account numbers.</li>
-        <li><strong>Broker connection data:</strong> if you link a broking account (e.g., Upstox), we store an OAuth access token to fetch your holdings/positions/quotes on your behalf, and we refresh it automatically. We do not receive your broker login password.</li>
-        <li><strong>Usage data:</strong> which features you use (analysis runs, screener queries, watchlist symbols, chart interactions), daily query counts against your plan limits, and basic device/browser information for security and debugging.</li>
+        <li><strong>Broker connection data:</strong> the Portfolio Tracker is currently a manual, self-entry tool only — we do not link to real broking accounts or store broker OAuth tokens at this time.</li>
+        <li><strong>Usage data:</strong> which features you use (analysis runs, screener searches, watchlist symbols, chart interactions), daily analysis counts against your plan limits, and basic device/browser information for security and debugging.</li>
         <li><strong>Communications:</strong> messages you send us for support, and any inputs you provide to in-app AI chat features.</li>
       </ul>
 
@@ -1875,12 +1956,12 @@ html{scroll-behavior:smooth}
         <li>To improve the Platform, including which AI models and features are most useful.</li>
       </ul>
 
-      <h3>3. AI Processing of Your Queries</h3>
-      <p>When you request analysis, your query may be sent to third-party AI providers (such as Google, Anthropic, OpenAI, or DeepSeek, depending on your plan's model cascade) to generate a response. These requests typically include stock symbols, timeframes, and technical data — not your name, email, or account credentials.</p>
+      <h3>3. AI Processing of Your Analysis Requests</h3>
+      <p>When you request analysis, your request may be sent to third-party AI providers (such as Google, Anthropic, OpenAI, or DeepSeek, depending on your plan's model cascade) to generate a response. These requests typically include stock symbols, timeframes, and technical data — not your name, email, or account credentials.</p>
 
       <h3>4. Third Parties We Share Data With</h3>
       <ul>
-        <li><strong>Upstox:</strong> market data and, if you opt in, your broker portfolio sync.</li>
+        <li><strong>Upstox:</strong> licensed source of live NSE/BSE market data (quotes, charts, option chains) used to power the Platform.</li>
         <li><strong>Razorpay:</strong> subscription payments and billing.</li>
         <li><strong>Google:</strong> Sign-In authentication.</li>
         <li><strong>AI model providers:</strong> to generate analysis content, as described above.</li>
@@ -1930,7 +2011,15 @@ html{scroll-behavior:smooth}
       </div>
       <div class="login-h2">Sign in to continue</div>
       <p class="login-sub">Access institutional-grade AI stock analysis across NSE &amp; BSE.</p>
-      <div id="google-signin-container" style="display:flex;justify-content:center;min-height:44px;margin-bottom:4px"></div>
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px;cursor:pointer;text-align:left">
+        <input type="checkbox" id="consent-checkbox" onchange="onConsentChange()" style="margin-top:2px;flex-shrink:0;cursor:pointer"/>
+        <span>I agree to the <u style="cursor:pointer" onclick="event.preventDefault();show('terms')">Terms of Service</u> and <u style="cursor:pointer" onclick="event.preventDefault();show('privacy')">Privacy Policy</u>.</span>
+      </label>
+      <div style="position:relative">
+        <div id="google-signin-container" style="display:flex;justify-content:center;min-height:44px;margin-bottom:4px"></div>
+        <div id="consent-overlay" onclick="showConsentWarning()" style="position:absolute;inset:0;cursor:not-allowed;background:transparent"></div>
+      </div>
+      <div id="consent-warning" style="display:none;font-size:11px;color:var(--rose2);text-align:center;margin:6px 0 0"></div>
       <div id="google-signin-fallback" style="display:none;font-size:12px;color:var(--text3);text-align:center;padding:10px;border:1px dashed var(--border2);border-radius:var(--radius);margin-bottom:4px">
         Google Sign-In isn't configured yet. Set <code>GOOGLE_CLIENT_ID</code> in the frontend config to enable it.
       </div>
@@ -2294,6 +2383,14 @@ function checkForPasswordResetLink(){
 
 async function handleGoogleCredential(response){
   clearLoginError();
+  // Defense in depth: the overlay over the Google button should already
+  // block this from firing without consent, but Google's button lives in
+  // a cross-origin iframe we don't fully control, so re-check here too.
+  const consentBox=document.getElementById('consent-checkbox');
+  if(consentBox && !consentBox.checked){
+    showConsentWarning();
+    return;
+  }
   try{
     const res=await apiFetch('/api/auth/google',{method:'POST',body:JSON.stringify({idToken:response.credential})});
     const data=await res.json();
@@ -2305,6 +2402,23 @@ async function handleGoogleCredential(response){
     showLoginError(e.message||'Google sign-in failed. Please try again.');
   }
 }
+
+// ── Terms/Privacy consent gate (item: users must explicitly agree before
+// signing up/in, not just see a footnote) — the overlay sits on top of the
+// Google Identity Services button (a cross-origin iframe we can't disable
+// directly) and intercepts clicks until the checkbox is ticked.
+function onConsentChange(){
+  const checked=document.getElementById('consent-checkbox')?.checked;
+  const overlay=document.getElementById('consent-overlay');
+  if(overlay)overlay.style.pointerEvents=checked?'none':'auto';
+  const warn=document.getElementById('consent-warning');
+  if(checked && warn)warn.style.display='none';
+}
+function showConsentWarning(){
+  const warn=document.getElementById('consent-warning');
+  if(warn){warn.style.display='block';warn.textContent='Please agree to the Terms of Service and Privacy Policy to continue.';}
+}
+
 
 function initGoogleSignIn(){
   const container=document.getElementById('google-signin-container');
@@ -2380,20 +2494,11 @@ function animateCount(el,target,opts={}){
   requestAnimationFrame(tick);
 }
 
-/** If the page loaded back from the Upstox broker-connect redirect
- *  (?upstox_connected=1#portfolio), jump straight to the Portfolio page's
- *  real-broker tab and refresh its status instead of landing on the
- *  default home page. */
-function checkForUpstoxConnectReturn(){
-  const params=new URLSearchParams(window.location.search);
-  if(params.get('upstox_connected')==='1' && currentUser){
-    show('dashboard');
-    switchDash('portfolio');
-    setTimeout(()=>{ if(typeof switchPortfolioTab==='function')switchPortfolioTab('broker'); },300);
-  }
-}
+// NOTE: the Upstox broker-connect redirect handler was removed along with
+// the "Real Upstox Account" portfolio feature (see the note near the old
+// broker-sync functions further down).
 
-window.addEventListener('load',async ()=>{ initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); checkForUpstoxConnectReturn(); initScrollReveal(); initRippleEffect(); });
+window.addEventListener('load',async ()=>{ initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); });
 
 // ══════════════ CORE NAVIGATION ══════════════
 function show(id){
@@ -3029,6 +3134,28 @@ function renderFullReportHtml(r){
     <div class="res-block"><div class="res-block-title">Conclusion</div><div class="res-block-text">${r.conclusion||'—'}</div></div>`;
 }
 
+// NOTE: the Intraday/Swing/Positional-Long-term "Volatility & Trading-Style
+// Profile" card used to render here (renderTradingStyleProfileHtml, fed by
+// r.tradingStyleProfile) but has been removed from both the Screener full
+// report and the AI Analysis page per request — this section is no longer
+// rendered anywhere. buildTradingStyleProfile() still runs server-side
+// (utils/indicators.js) since result.horizonRiskContext still reads its
+// volatilityBand/atrPct fields; only the visible style-relevance cards are
+// gone.
+
+
+// Renders the horizon + risk-tolerance educational context computed
+// server-side (aiService.js groundResult()) from the user's own selected
+// Investment Horizon / Risk Tolerance inputs plus real volatility data.
+// Explicitly not a suitability verdict — see the disclaimer text itself.
+function renderHorizonRiskHtml(ctx){
+  if(!ctx)return '';
+  return `<div class="disclaimer" style="margin-bottom:10px;border-color:var(--border2)">
+    <strong>Your stated context:</strong> ${ctx.horizon} horizon · ${ctx.riskTolerance} risk tolerance · current volatility band: ${ctx.volatilityBand}.<br/>
+    ${ctx.note}
+  </div>`;
+}
+
 // ══════════════ AI ANALYSIS ══════════════
 let isAnalysing=false;
 // FIX: the Analysis page used to have its own manual "Exchange: Auto / NSE /
@@ -3130,6 +3257,7 @@ async function runAnalysis(){
         </div>
       </div>
       <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
+      ${renderHorizonRiskHtml(result.horizonRiskContext)}
       <div class="res-header">
         <div>
           <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
@@ -3269,6 +3397,7 @@ async function runDeepResearch(){
         </div>
       </div>
       <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
+      ${renderHorizonRiskHtml(result.horizonRiskContext)}
       <div class="res-header">
         <div>
           <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
@@ -3331,10 +3460,19 @@ async function getMultiTimeframeView(sym){
 
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'multiTimeframe',context:{symbol:sym,timeframes}})});
     const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
+    if(!res.ok){ const err=new Error(data.error||'HTTP '+res.status); err.status=res.status; throw err; }
     el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${timeframes.daily.rsi}, ${timeframes.daily.trend} · Weekly: RSI ${timeframes.weekly.rsi}, ${timeframes.weekly.trend}</div>${data.text.replace(/\n/g,'<br/>')}<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not build multi-timeframe view right now — please try again shortly.</span>`;
+    // FIX: this used to always show a generic "please try again shortly"
+    // line, even when the real reason was permanent (e.g. plan doesn't
+    // include this feature) — retrying would never help and the message
+    // was actively misleading. Now reuses the same friendlyAiError() logic
+    // as AI Analysis/Chat: plan/quota errors (403/429) show the real,
+    // actionable reason with an upgrade button; anything else (Upstox down,
+    // model provider issue) still collapses to one safe generic line.
+    const friendly=friendlyAiError(e.status,e.message);
+    const upgradeBtn=friendly.showUpgrade?`<div style="margin-top:8px"><button class="btn-lg" style="padding:4px 12px;font-size:12px" onclick="show('pricing')">View plans</button></div>`:'';
+    el.innerHTML=`<span style="color:var(--rose2)">${friendly.message}</span>${upgradeBtn}`;
   }
 }
 
@@ -3726,15 +3864,11 @@ function renderDashboard(section){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">Portfolio</div>
       </div>
-      <div class="screener-filters" style="margin-bottom:20px">
-        <button class="filter-chip active" id="pf-tab-manual" onclick="switchPortfolioTab('manual')"><i class="ti ti-notebook"></i> My Tracker (manual)</button>
-        <button class="filter-chip" id="pf-tab-broker" onclick="switchPortfolioTab('broker')"><i class="ti ti-building-bank"></i> Real Upstox Account</button>
-      </div>
+      <div class="disclaimer" style="margin-bottom:16px">Manual tracker for educational purposes only — enter holdings yourself to see illustrative P&amp;L. This is not connected to a real broking account and is not investment advice.</div>
       <div id="portfolio-manual-view">
         ${stockSearchBarHtml('pf-search-inp','Search any NSE or BSE stock to add a holding (e.g. RELIANCE, TATASTEEL, 500325)…')}
         <div id="portfolio-content"><div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Loading your portfolio…</div></div>
-      </div>
-      <div id="portfolio-broker-view" style="display:none"></div>`;
+      </div>`;
     registerStockSearch('pf-search-inp',(sym)=>{ document.getElementById('pf-search-inp').value=''; promptAddHoldingWithSymbol(sym); });
     loadPortfolioSection();
   }
@@ -3761,11 +3895,12 @@ function renderDashboard(section){
           <div class="chat-ai-avatar">🤖</div>
           <div><div class="chat-ai-name">TradeMind AI Assistant</div><div class="chat-ai-status">● Online · Model used shown per reply</div></div>
         </div>
+        <div class="disclaimer" style="margin:0;border-radius:0;font-size:11px;padding:10px 16px"><i class="ti ti-info-circle" style="margin-right:4px"></i>Educational tool only. TradeMind AI is not SEBI-registered and does not give buy, sell, or hold recommendations — it explains concepts and data so you can make your own decision.</div>
         <div class="chat-messages" id="chat-msgs">
-          <div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">Hello Rahul! I'm your AI trading assistant powered by Claude. I can help you analyse stocks, explain market movements, check your portfolio, and answer any trading questions.<br/><br/>Try asking: <em>"Should I buy RELIANCE today?"</em> or <em>"What's the outlook for IT stocks?"</em></div><div class="msg-time">Just now</div></div>
+          <div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">Hello Rahul! I'm your AI markets learning assistant. I can explain technical indicators, describe what a chart or option chain is showing, walk through trading concepts, and help you understand your portfolio's real numbers.<br/><br/>I'm not a SEBI-registered adviser, so I won't tell you to buy, sell, or hold a stock, or give price targets — but I'm happy to explain what any indicator or data point actually means. Try asking: <em>"What does RSI below 30 usually indicate?"</em> or <em>"Explain what PCR tells us about an option chain."</em></div><div class="msg-time">Just now</div></div>
         </div>
         <div class="chat-input-wrap">
-          <textarea class="chat-inp" id="chat-inp" placeholder="Ask about any stock, sector, or trading strategy..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+          <textarea class="chat-inp" id="chat-inp" placeholder="Ask about a concept, indicator, or how something works..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
           <button class="chat-send" onclick="sendChat()"><i class="ti ti-send"></i></button>
         </div>
       </div>`;
@@ -3822,12 +3957,32 @@ function renderDashboard(section){
 
   else if(section==='alerts'){
     el.innerHTML=`
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">AI Alerts</div>
-      <div class="admin-panel" style="text-align:center;padding:60px 20px">
-        <i class="ti ti-bell-ringing" style="font-size:40px;color:var(--violet);display:block;margin-bottom:16px"></i>
-        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">Coming Soon</div>
-        <div style="font-size:13px;color:var(--text2);max-width:420px;margin:0 auto">Real-time Telegram, WhatsApp and email alerts are on the way. We'll let you know the moment they're live.</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">AI Alerts</div>
+      <div class="disclaimer" style="margin-bottom:20px">These are technical pattern signals computed from real candle data, for <strong>educational purposes only</strong>. They are not buy/sell recommendations — always do your own research or consult a SEBI-registered investment adviser before making investment decisions.</div>
+
+      <div class="alerts-panel" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-world"></i> All Stock Alerts</div>
+          <button class="btn-sm" onclick="loadAllStockAlerts()"><i class="ti ti-refresh"></i> Refresh</button>
+        </div>
+        <div id="all-stock-alerts"><div style="text-align:center;padding:20px;color:var(--text3)"><i class="ti ti-loader-2"></i> Scanning the market for alerts…</div></div>
+      </div>
+
+      <div class="alerts-panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-star"></i> Watchlist Alerts</div>
+          <button class="btn-sm" onclick="loadWatchlistAlertsPanel()"><i class="ti ti-refresh"></i> Refresh</button>
+        </div>
+        <div id="watchlist-alerts-panel"><div style="text-align:center;padding:20px;color:var(--text3)"><i class="ti ti-loader-2"></i> Scanning your watchlist for alerts…</div></div>
+      </div>
+
+      <div class="admin-panel" style="text-align:center;padding:24px 20px;margin-top:20px">
+        <i class="ti ti-brand-telegram" style="font-size:26px;color:var(--violet);display:block;margin-bottom:8px"></i>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Telegram / WhatsApp push alerts — Coming Soon</div>
+        <div style="font-size:12px;color:var(--text2)">For now, alerts refresh here on the Dashboard. Push notifications for Pro &amp; Elite are on the way.</div>
       </div>`;
+    loadAllStockAlerts();
+    loadWatchlistAlertsPanel();
   }
 
   // ══════════════ 35 TRADER FEATURES — ALL FEATURES HUB ══════════════
@@ -4120,6 +4275,8 @@ function shareReferral(channel){
 // ── Today's AI alerts — real, on-demand technical signals from
 // /api/alerts (breakout/RSI/MACD/gap arithmetic on real candles, run
 // against the user's watchlist or a small curated list if it's empty).
+// Educational, purely arithmetic technical signals — never a buy/sell
+// recommendation.
 const ALERT_ICONS={breakout:{icon:'trending-up',cls:'ai-green'},oversold:{icon:'trending-up',cls:'ai-green'},reversal:{icon:'refresh',cls:'ai-amber'},gap:{icon:'bolt',cls:'ai-amber'},risk:{icon:'alert-triangle',cls:'ai-red'}};
 function timeAgo(iso){
   if(!iso)return '';
@@ -4129,6 +4286,12 @@ function timeAgo(iso){
   const diffH=Math.round(diffMin/60);
   if(diffH<24)return diffH+'h ago';
   return new Date(iso).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+function renderAlertItems(alerts){
+  return alerts.map(a=>{
+    const meta=ALERT_ICONS[a.type]||{icon:'bell',cls:'ai-amber'};
+    return `<div class="alert-item"><div class="alert-icon ${meta.cls}"><i class="ti ti-${meta.icon}"></i></div><div class="alert-content"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.description}</div></div><div class="alert-time">${timeAgo(a.detectedAt)}</div></div>`;
+  }).join('');
 }
 async function loadTodayAiAlerts(){
   const el=document.getElementById('today-ai-alerts');
@@ -4142,10 +4305,50 @@ async function loadTodayAiAlerts(){
       el.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:13px">No real alerts triggered right now${data.usingWatchlist?' across your watchlist':' across a curated stock sample'} — check back later, or <span style="color:var(--teal-light);cursor:pointer" onclick="switchDash('watchlist')">add stocks to your watchlist</span> to focus alerts on what you actually hold.</div>`;
       return;
     }
-    el.innerHTML=alerts.map(a=>{
-      const meta=ALERT_ICONS[a.type]||{icon:'bell',cls:'ai-amber'};
-      return `<div class="alert-item"><div class="alert-icon ${meta.cls}"><i class="ti ti-${meta.icon}"></i></div><div class="alert-content"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.description}</div></div><div class="alert-time">${timeAgo(a.detectedAt)}</div></div>`;
-    }).join('') + `<div style="font-size:11px;color:var(--text3);margin-top:6px">${data.usingWatchlist?'Scanned your watchlist':'Your watchlist is empty — scanned a small curated sample'} (${data.symbolsScanned} stock${data.symbolsScanned===1?'':'s'}) using real daily candles. Purely arithmetic technical rules, not an AI model.</div>`;
+    el.innerHTML=renderAlertItems(alerts) + `<div style="font-size:11px;color:var(--text3);margin-top:6px">${data.usingWatchlist?'Scanned your watchlist':'Your watchlist is empty — scanned a small curated sample'} (${data.symbolsScanned} stock${data.symbolsScanned===1?'':'s'}) using real daily candles. Purely arithmetic technical rules, not an AI model. Educational only — not a recommendation.</div>`;
+  }catch(e){
+    el.innerHTML=`<div style="padding:16px;color:var(--rose2);font-size:13px">Could not load alerts right now — please try again shortly.</div>`;
+  }
+}
+
+// ── Dashboard "AI Alerts" page — two independent panels: a market-wide
+// scan (scope=all) and a watchlist-only scan (scope=watchlist). Both are
+// purely arithmetic technical signals for educational purposes, never a
+// recommendation to buy or sell.
+async function loadAllStockAlerts(){
+  const el=document.getElementById('all-stock-alerts');
+  if(!el)return;
+  try{
+    const res=await apiFetch('/api/alerts?scope=all',{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const alerts=data.alerts||[];
+    if(!alerts.length){
+      el.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:13px">No alerts triggered right now across today's scanned sample — check back later.</div>`;
+      return;
+    }
+    el.innerHTML=renderAlertItems(alerts) + `<div style="font-size:11px;color:var(--text3);margin-top:6px">Scanned ${data.symbolsScanned} liquid NSE stock${data.symbolsScanned===1?'':'s'} using real daily candles. Purely arithmetic technical rules, not an AI model. Educational only — not a recommendation.</div>`;
+  }catch(e){
+    el.innerHTML=`<div style="padding:16px;color:var(--rose2);font-size:13px">Could not load alerts right now — please try again shortly.</div>`;
+  }
+}
+async function loadWatchlistAlertsPanel(){
+  const el=document.getElementById('watchlist-alerts-panel');
+  if(!el)return;
+  try{
+    const res=await apiFetch('/api/alerts?scope=watchlist',{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.empty){
+      el.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:13px">Your watchlist is empty — <span style="color:var(--teal-light);cursor:pointer" onclick="switchDash('watchlist')">add stocks to your watchlist</span> to see alerts scoped to what you actually hold.</div>`;
+      return;
+    }
+    const alerts=data.alerts||[];
+    if(!alerts.length){
+      el.innerHTML=`<div style="padding:16px;color:var(--text3);font-size:13px">No alerts triggered right now across your watchlist — check back later.</div>`;
+      return;
+    }
+    el.innerHTML=renderAlertItems(alerts) + `<div style="font-size:11px;color:var(--text3);margin-top:6px">Scanned ${data.symbolsScanned} watchlist stock${data.symbolsScanned===1?'':'s'} using real daily candles. Purely arithmetic technical rules, not an AI model. Educational only — not a recommendation.</div>`;
   }catch(e){
     el.innerHTML=`<div style="padding:16px;color:var(--rose2);font-size:13px">Could not load alerts right now — please try again shortly.</div>`;
   }
@@ -4202,122 +4405,11 @@ async function loadOverviewPnl(){
     if(pctEl)pctEl.textContent='Add holdings to track P&L';
   }
 }
-// ══════════════ REAL UPSTOX BROKER SYNC (per-user) ══════════════
-async function connectUpstoxBroker(){
-  try{
-    const res=await apiFetch('/api/portfolio/broker/connect');
-    const data=await res.json();
-    if(!res.ok||!data.url)throw new Error(data.error||'Could not start broker connection right now. Please try again shortly.');
-    window.location.href=data.url;
-  }catch(e){
-    alert('Could not connect your broker account right now. Please try again shortly.');
-  }
-}
-function switchPortfolioTab(tab){
-  document.getElementById('pf-tab-manual').classList.toggle('active',tab==='manual');
-  document.getElementById('pf-tab-broker').classList.toggle('active',tab==='broker');
-  document.getElementById('portfolio-manual-view').style.display=tab==='manual'?'block':'none';
-  document.getElementById('portfolio-broker-view').style.display=tab==='broker'?'block':'none';
-  if(tab==='broker')loadBrokerPortfolio();
-}
-
-async function loadBrokerPortfolio(){
-  const el=document.getElementById('portfolio-broker-view');
-  if(!el)return;
-  el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-loader-2"></i> Checking your broker connection…</div>`;
-  try{
-    const res=await apiFetch('/api/portfolio/broker/status');
-    const status=await res.json();
-    if(!res.ok)throw new Error(status.error||'HTTP '+res.status);
-
-    if(!status.connected){
-      el.innerHTML=`
-        <div class="admin-panel" style="text-align:center;padding:40px">
-          <i class="ti ti-building-bank" style="font-size:32px;color:var(--text3);margin-bottom:12px;display:block"></i>
-          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Connect your Upstox account</div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:18px;max-width:420px;margin-left:auto;margin-right:auto">See your REAL holdings, positions, and orders — synced directly from your own Upstox DEMAT account. This is separate from the manual tracker and requires your own Upstox login (not the site admin's).</div>
-          <button class="btn-lg" onclick="connectUpstoxBroker()"><i class="ti ti-link"></i> Connect Upstox</button>
-        </div>`;
-      return;
-    }
-
-    el.innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--green2)"><i class="ti ti-circle-check"></i> Connected — expires ${new Date(status.expiresAt).toLocaleString('en-IN')}</div>
-        <button class="btn-sm" onclick="disconnectBrokerAccount()"><i class="ti ti-unlink"></i> Disconnect</button>
-      </div>
-      <div class="admin-panel" style="margin-bottom:16px">
-        <div class="sec-title">Real Holdings</div>
-        <div id="broker-holdings"><div style="color:var(--text3);font-size:12px">Loading real holdings…</div></div>
-      </div>
-      <div class="admin-panel" style="margin-bottom:16px">
-        <div class="sec-title">Real Positions</div>
-        <div id="broker-positions"><div style="color:var(--text3);font-size:12px">Loading real positions…</div></div>
-      </div>
-      <div class="admin-panel">
-        <div class="sec-title">Real Order Book</div>
-        <div id="broker-orders"><div style="color:var(--text3);font-size:12px">Loading real orders…</div></div>
-      </div>`;
-    loadBrokerHoldings(); loadBrokerPositions(); loadBrokerOrders();
-  }catch(e){
-    el.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not check your broker connection right now. Please try again shortly.</div>`;
-  }
-}
-
-async function loadBrokerHoldings(){
-  const el=document.getElementById('broker-holdings');
-  if(!el)return;
-  try{
-    const res=await apiFetch('/api/portfolio/broker/holdings');
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    if(!data.holdings.length){el.innerHTML=`<div style="color:var(--text3);font-size:12px">No holdings in your DEMAT account.</div>`;return;}
-    el.innerHTML=`<table class="deliv-table"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg Price</th><th>LTP</th><th>P&amp;L</th></tr></thead><tbody>
-      ${data.holdings.map(h=>`<tr><td style="font-weight:600">${h.symbol}</td><td>${h.quantity}</td><td>₹${(h.avgPrice||0).toFixed(2)}</td><td>₹${(h.lastPrice||0).toFixed(2)}</td><td style="color:${(h.pnl||0)>=0?'var(--green2)':'var(--rose2)'}">₹${(h.pnl||0).toFixed(2)}</td></tr>`).join('')}
-    </tbody></table>`;
-  }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
-  }
-}
-async function loadBrokerPositions(){
-  const el=document.getElementById('broker-positions');
-  if(!el)return;
-  try{
-    const res=await apiFetch('/api/portfolio/broker/positions');
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    if(!data.positions.length){el.innerHTML=`<div style="color:var(--text3);font-size:12px">No open positions today.</div>`;return;}
-    el.innerHTML=`<table class="deliv-table"><thead><tr><th>Symbol</th><th>Product</th><th>Qty</th><th>Avg Price</th><th>LTP</th><th>P&amp;L</th></tr></thead><tbody>
-      ${data.positions.map(p=>`<tr><td style="font-weight:600">${p.symbol}</td><td>${p.product}</td><td>${p.quantity}</td><td>₹${(p.avgPrice||0).toFixed(2)}</td><td>₹${(p.lastPrice||0).toFixed(2)}</td><td style="color:${(p.pnl||0)>=0?'var(--green2)':'var(--rose2)'}">₹${(p.pnl||0).toFixed(2)}</td></tr>`).join('')}
-    </tbody></table>`;
-  }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
-  }
-}
-async function loadBrokerOrders(){
-  const el=document.getElementById('broker-orders');
-  if(!el)return;
-  try{
-    const res=await apiFetch('/api/portfolio/broker/orders');
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    if(!data.orders.length){el.innerHTML=`<div style="color:var(--text3);font-size:12px">No orders placed today.</div>`;return;}
-    el.innerHTML=`<table class="deliv-table"><thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Price</th><th>Status</th></tr></thead><tbody>
-      ${data.orders.map(o=>`<tr><td style="font-weight:600">${o.symbol}</td><td style="color:${o.transactionType==='BUY'?'var(--green2)':'var(--rose2)'}">${o.transactionType}</td><td>${o.quantity}</td><td>₹${(o.price||0).toFixed(2)}</td><td>${o.status}</td></tr>`).join('')}
-    </tbody></table>`;
-  }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
-  }
-}
-async function disconnectBrokerAccount(){
-  if(!confirm('Disconnect your Upstox account? You can reconnect anytime.'))return;
-  try{
-    await apiFetch('/api/portfolio/broker',{method:'DELETE'});
-    loadBrokerPortfolio();
-  }catch(e){
-    alert('Could not disconnect right now. Please try again shortly.');
-  }
-}
+// NOTE: The "Real Upstox Account" broker-linking feature (connect/sync a
+// real DEMAT account's holdings, positions, and orders) has been removed
+// from the Portfolio page. The Portfolio Tracker is now manual-entry only,
+// for educational tracking purposes. The backend broker endpoints are left
+// in place but are no longer called from this UI.
 
 async function loadPortfolioSection(){
   const wrap=document.getElementById('portfolio-content');
@@ -4871,10 +4963,22 @@ async function fetchToolkitChain(){
   const qs=new URLSearchParams({underlying:'NIFTY',expiry:defaultExpiryFor('NIFTY')});
   const res=await apiFetch('/api/market/options-chain?'+qs.toString(),{cache:'no-store'});
   const data=await res.json();
-  if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
+  if(!res.ok){
+    const err=new Error(data.error||'HTTP '+res.status);
+    err.isPlanGate=res.status===403;
+    throw err;
+  }
   if(!data.chain||!data.chain.length)throw new Error('No option chain data returned for NIFTY.');
   toolkitChainCache=data.chain;
   return toolkitChainCache;
+}
+// Shared upgrade-prompt markup for any options-toolkit panel that hits the
+// same 403 plan gate as the main chain fetch above — keeps free/basic/pro
+// users from seeing a vague "something went wrong" for an Elite-only tool.
+function planGateHtml(e,compact){
+  return e.isPlanGate
+    ? `<div style="padding:${compact?12:20}px;text-align:center;color:var(--text2);grid-column:1/-1"><i class="ti ti-lock" style="font-size:18px;color:var(--text3);display:block;margin-bottom:8px"></i><strong style="font-size:12px">${e.message}</strong><div style="margin-top:10px"><button class="btn-lg-ghost" style="font-size:11px;padding:6px 14px" onclick="show('pricing')">View plans</button></div></div>`
+    : `<div style="padding:${compact?12:20}px;color:var(--rose2);grid-column:1/-1">Something went wrong. Please try again shortly.</div>`;
 }
 async function renderGreeksPanel(){
   const el=document.getElementById('greeks-panel');
@@ -4891,7 +4995,7 @@ async function renderGreeksPanel(){
       <div class="ind-card"><div class="ind-name">Theta</div><div class="ind-value">${(g.theta??0).toFixed(2)}</div><div class="ind-signal ind-bear">Daily decay ₹${Math.abs(g.theta??0).toFixed(2)}</div></div>
       <div class="ind-card"><div class="ind-name">Vega</div><div class="ind-value">${(g.vega??0).toFixed(2)}</div><div class="ind-signal ind-neut">Per 1% IV move</div></div>`;
   }catch(e){
-    el.innerHTML=`<div style="padding:20px;color:var(--rose2);grid-column:1/-1">Something went wrong. Please try again shortly.</div>`;
+    el.innerHTML=planGateHtml(e,false);
   }
 }
 async function renderIVPanel(){
@@ -4910,7 +5014,7 @@ async function renderIVPanel(){
       </div>
       <div style="font-size:11px;color:var(--text3)">This is today's real implied volatility from Upstox, not a percentile rank — computing a true "IV Rank" needs 1 year of historical IV we aren't storing yet.</div>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
+    el.innerHTML=planGateHtml(e,true);
   }
 }
 async function renderUnusualOI(){
@@ -4937,7 +5041,7 @@ async function renderUnusualOI(){
       <div class="diverg-row"><span class="diverg-type ${m.chgPct>0?'diverg-bull':'diverg-bear'}">${m.strike} ${m.side}</span><span style="font-size:12px;color:var(--text2);flex:1">OI ${m.chgPct>=0?'+':''}${m.chgPct.toFixed(0)}% vs prev session — now ${(m.oi/1000).toFixed(0)}K contracts</span></div>`).join('')
       : `<div style="font-size:12px;color:var(--text3)">No strikes with >50% real OI change right now.</div>`;
   }catch(e){
-    el.innerHTML=`<div style="color:var(--rose2);font-size:12px">Something went wrong. Please try again shortly.</div>`;
+    el.innerHTML=planGateHtml(e,true);
   }
 }
 let strategyLegs=[];
@@ -5190,12 +5294,16 @@ async function loadAdminPanel(){
     return;
   }
   try{
-    const [statsRes, usersRes] = await Promise.all([
+    const [statsRes, usersRes, adsRes, accRes] = await Promise.all([
       apiFetch('/api/admin/stats'),
       apiFetch('/api/admin/users'),
+      apiFetch('/api/admin/advertisers'),
+      apiFetch('/api/admin/ai-accuracy'),
     ]);
     const stats = await statsRes.json();
     const usersData = await usersRes.json();
+    const adsData = await adsRes.json().catch(()=>({enquiries:[],pendingCount:0}));
+    const accData = await accRes.json().catch(()=>null);
     if(!statsRes.ok) throw new Error(stats.error||'Failed to load admin stats.');
 
     setText('adm-total-users', (stats.totalUsers ?? 0).toLocaleString('en-IN'));
@@ -5204,8 +5312,10 @@ async function loadAdminPanel(){
     setText('adm-active-subs', activeTotal.toLocaleString('en-IN'));
     setText('adm-revenue', '₹'+Number(stats.monthlyRevenue||0).toLocaleString('en-IN'));
     setText('adm-ai-today', (stats.aiQueriesToday ?? 0).toLocaleString('en-IN'));
-    const totalAiCost = (stats.aiUsageLast30Days||[]).reduce((s,m)=>s+Number(m.cost||0),0);
-    setText('adm-ai-cost', '$'+totalAiCost.toFixed(2));
+    // Real AI provider cost, converted to INR server-side (aiCostLast30DaysInr)
+    // since providers bill in USD but the rest of this dashboard is INR.
+    const totalAiCostInr = stats.aiCostLast30DaysInr ?? (stats.aiUsageLast30Days||[]).reduce((s,m)=>s+Number(m.costInr||0),0);
+    setText('adm-ai-cost', '₹'+Number(totalAiCostInr).toLocaleString('en-IN',{maximumFractionDigits:2}));
 
     if(rh){
       rh.innerHTML = `<div class="revenue-row"><span class="rev-month">This month</span><div class="rev-bar-wrap"><div class="rev-bar-fill" style="width:100%"></div></div><span class="rev-amount">₹${Number(stats.monthlyRevenue||0).toLocaleString('en-IN')}</span></div>
@@ -5230,7 +5340,7 @@ async function loadAdminPanel(){
       ab.innerHTML = usage.length
         ? usage.map(u=>{
             const pct = Math.round((Number(u.calls||0)/maxCalls)*100);
-            return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600">${u.model_used}</span><span style="color:var(--text2)">${u.calls} calls · $${Number(u.cost||0).toFixed(2)}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--blue)"></div></div></div>`;
+            return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600">${u.model_used}</span><span style="color:var(--text2)">${u.calls} calls · ₹${Number(u.costInr??(Number(u.cost||0)*(stats.usdToInrRate||95.7))).toLocaleString('en-IN',{maximumFractionDigits:2})}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--blue)"></div></div></div>`;
           }).join('')
         : '<div style="font-size:12px;color:var(--text3)">No AI usage in the last 30 days.</div>';
     }
@@ -5241,9 +5351,74 @@ async function loadAdminPanel(){
         ? users.slice(0,10).map(u=>`<tr><td style="color:var(--text);font-weight:600">${u.name}</td><td><span class="badge b-plan" style="text-transform:capitalize">${u.plan}</span></td><td><span class="badge ${u.subscription_status==='active'?'b-active':'b-pending'}" style="text-transform:capitalize">${u.subscription_status}</span></td><td><button class="btn-ghost" style="font-size:11px;padding:4px 10px" onclick="promptUpdateUserPlan('${u.id}','${u.name.replace(/'/g,"\\'")}')">Manage</button></td></tr>`).join('')
         : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">No users yet.</td></tr>';
     }
+
+    // Advertiser enquiries — real rows submitted via the public "Advertise"
+    // form (POST /api/advertisers), shown here instead of the old hardcoded
+    // "Example Pvt Ltd" placeholder.
+    const advTbody = document.getElementById('admin-advertisers-tbody');
+    const enquiries = adsData.enquiries || [];
+    if(advTbody){
+      advTbody.innerHTML = enquiries.length
+        ? enquiries.map(a=>`<tr>
+            <td style="color:var(--text);font-weight:600">${(a.company_name||'').replace(/</g,'&lt;')}</td>
+            <td>${(a.contact_email||'').replace(/</g,'&lt;')}</td>
+            <td>${a.monthly_budget!=null?'₹'+Number(a.monthly_budget).toLocaleString('en-IN'):'—'}</td>
+            <td>${a.placement||'—'}</td>
+            <td><span class="badge ${a.status==='active'?'b-active':'b-pending'}" style="text-transform:capitalize">${a.status}</span></td>
+            <td><select class="tm-inp" style="height:32px;font-size:11px;padding:2px 6px" onchange="updateAdvertiserStatus('${a.id}',this.value)">
+              ${['pending','active','paused','ended'].map(s=>`<option value="${s}" ${s===a.status?'selected':''}>${s}</option>`).join('')}
+            </select></td>
+          </tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">No advertiser enquiries yet.</td></tr>';
+    }
+    const advFlag = document.getElementById('adm-advertiser-flag');
+    if(advFlag){
+      const pending = adsData.pendingCount || 0;
+      advFlag.style.display = pending>0 ? 'flex' : 'none';
+      setText('adm-advertiser-flag-sub', pending===1 ? '1 enquiry awaiting review' : `${pending} enquiries awaiting review`);
+    }
+
+    // Prediction accuracy — internal-only quality check (real price outcomes
+    // vs the AI's past sentiment reads). Admin-only endpoint, never surfaced
+    // to regular users or published anywhere on the public site.
+    if(accData){
+      const ov = accData.overall || {};
+      setText('acc-overall-pct', ov.accuracyPct!=null ? ov.accuracyPct+'%' : '—');
+      setText('acc-overall-count', ov.totalEvaluated!=null ? `${ov.totalEvaluated} evaluated calls` : '—');
+      setText('acc-correct', ov.correct ?? '—');
+      setText('acc-incorrect', ov.incorrect ?? '—');
+      setText('acc-pending', accData.pendingCount ?? '—');
+
+      const bySent = document.getElementById('acc-by-sentiment');
+      if(bySent){
+        const rows = accData.bySentiment || [];
+        bySent.innerHTML = rows.length
+          ? rows.map(s=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600;text-transform:capitalize">${(s.sentiment||'—').replace(/_/g,' ')}</span><span style="color:var(--text2)">${s.correct}/${s.total} · ${s.accuracyPct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${s.accuracyPct}%;background:var(--teal)"></div></div></div>`).join('')
+          : '<div style="font-size:12px;color:var(--text3)">Not enough evaluated calls yet.</div>';
+      }
+
+      const bySymTbody = document.getElementById('acc-by-symbol-tbody');
+      if(bySymTbody){
+        const rows = accData.bySymbol || [];
+        bySymTbody.innerHTML = rows.length
+          ? rows.map(s=>`<tr><td style="color:var(--text);font-weight:600">${s.symbol}</td><td>${s.correct}</td><td>${s.incorrect}</td><td>${s.accuracyPct}%</td></tr>`).join('')
+          : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Not enough evaluated calls yet.</td></tr>';
+      }
+    }
   }catch(e){
     if(rh)rh.innerHTML=`<div style="font-size:12px;color:var(--rose2)">Could not load admin data right now. Please try again shortly.</div>`;
   }
+}
+
+// Manually kicks off the same daily 18:00 IST evaluation job on demand,
+// for when an admin wants fresh accuracy numbers without waiting for cron.
+async function runAiAccuracyEvaluationNow(){
+  try{
+    const res=await apiFetch('/api/admin/ai-accuracy/evaluate-now',{method:'POST'});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Evaluation failed.');
+    await loadAdminPanel();
+  }catch(e){alert('Could not run evaluation right now. Please try again shortly.');}
 }
 
 async function promptUpdateUserPlan(userId,userName){
@@ -5258,6 +5433,15 @@ async function promptUpdateUserPlan(userId,userName){
     alert(`${userName}'s plan updated to ${clean}.`);
     loadAdminPanel();
   }catch(e){alert('Something went wrong. Please try again shortly.');}
+}
+
+async function updateAdvertiserStatus(id,status){
+  try{
+    const res=await apiFetch(`/api/admin/advertisers/${id}/status`,{method:'PATCH',body:JSON.stringify({status})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Could not update status.');
+    loadAdminPanel();
+  }catch(e){alert('Something went wrong updating that enquiry. Please try again shortly.');}
 }
 
 // ══════════════ ADS ══════════════
@@ -5283,6 +5467,41 @@ async function promptUpdateUserPlan(userId,userName){
       <div class="ad-pct">${a.pct}% of budget used</div>
     </div>`).join('');
 })();
+
+// Submits the "Register as an advertiser" form to the real backend
+// (POST /api/advertisers, public route) so it lands as a row in the
+// `advertisers` table and shows up in the admin panel's Advertiser
+// Enquiries list — no auth required, this can be submitted by anyone.
+async function submitAdvertiserEnquiry(){
+  const msgEl=document.getElementById('ads-form-msg');
+  const btn=document.getElementById('ads-submit-btn');
+  const showMsg=(text,ok)=>{
+    if(!msgEl)return;
+    msgEl.style.display='block';
+    msgEl.style.color=ok?'var(--green2)':'var(--rose2)';
+    msgEl.textContent=text;
+  };
+  const companyName=document.getElementById('ads-company')?.value.trim();
+  const contactEmail=document.getElementById('ads-email')?.value.trim();
+  const monthlyBudget=document.getElementById('ads-budget')?.value.trim();
+  const placement=document.getElementById('ads-placement')?.value;
+
+  if(!companyName){showMsg('Please enter your company name.',false);return;}
+  if(!contactEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)){showMsg('Please enter a valid contact email.',false);return;}
+
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Submitting…';}
+  try{
+    const res=await apiFetch('/api/advertisers',{method:'POST',body:JSON.stringify({companyName,contactEmail,monthlyBudget,placement})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Could not submit your enquiry.');
+    showMsg(data.message||'Thanks — your enquiry has been received. Our team will follow up within 24 hours.',true);
+    ['ads-company','ads-email','ads-budget'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }catch(e){
+    showMsg(e.message||'Something went wrong. Please try again or email us directly.',false);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Submit enquiry';}
+  }
+}
 
 // ══════════════ PAYMENT ══════════════
 let pendingPlan=null;
@@ -6640,11 +6859,20 @@ async function renderOptionsChain(){
     const qs=new URLSearchParams({underlying,expiry});
     const res=await apiFetch('/api/market/options-chain?'+qs.toString(),{cache:'no-store'});
     const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
+    if(!res.ok){
+      // Surface the real backend reason (e.g. "requires a higher plan"),
+      // same pattern the Screener uses, instead of a generic failure.
+      const err=new Error(data.error||('HTTP '+res.status));
+      err.isPlanGate=res.status===403;
+      throw err;
+    }
     chain=data.chain||[];
     if(!chain.length)throw new Error(`No contracts found for ${underlying} expiring ${expiry} — check the expiry date is a valid trading date for this underlying.`);
   }catch(e){
-    summaryEl.innerHTML=`<div style="padding:24px;color:var(--rose2);grid-column:1/-1">Could not load option chain right now — please try again shortly.</div>`;
+    summaryEl.innerHTML=e.isPlanGate
+      ? `<div style="padding:40px;text-align:center;color:var(--text2);grid-column:1/-1"><i class="ti ti-lock" style="font-size:22px;color:var(--text3);display:block;margin-bottom:10px"></i><strong>${e.message}</strong><div style="margin-top:14px"><button class="btn-lg" onclick="show('pricing')">View plans</button></div></div>`
+      : `<div style="padding:24px;color:var(--rose2);grid-column:1/-1">Could not load option chain right now — please try again shortly.</div>`;
+    tbodyEl.innerHTML='';verdictEl.innerHTML='';
     return;
   }
 
@@ -6816,6 +7044,26 @@ async function getBacktestAdvice(symbol,strategy,totalReturn,buyHoldReturn,winRa
     el.innerHTML=`<span style="color:var(--rose2)">Could not get AI critique right now — please try again shortly.</span>`;
   }
 }
+
+// ══════════════ MOBILE: TABLE SCROLL WRAP ══════════════
+// Any <table> not already inside a horizontally-scrollable wrapper gets one.
+// This keeps wide tables (portfolio, options chain, admin, referrals, etc.)
+// usable on phones via a swipe instead of squeezing columns or breaking layout.
+function wrapTablesForMobile(){
+  document.querySelectorAll('table').forEach(t=>{
+    if(t.closest('.table-responsive,.portfolio-table-wrap,.price-comparison'))return;
+    const wrap=document.createElement('div');
+    wrap.className='table-responsive';
+    t.parentNode.insertBefore(wrap,t);
+    wrap.appendChild(t);
+  });
+}
+wrapTablesForMobile();
+// Re-run whenever new tables are injected into the DOM (e.g. AI analysis results,
+// backtest summaries) so they inherit the same mobile-safe horizontal scroll.
+new MutationObserver(muts=>{
+  for(const m of muts){ if(m.addedNodes && m.addedNodes.length){ wrapTablesForMobile(); return; } }
+}).observe(document.body,{childList:true,subtree:true});
 
 // ══════════════ INIT ══════════════
 renderDashboard('overview');

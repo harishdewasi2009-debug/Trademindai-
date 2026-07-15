@@ -103,6 +103,14 @@ const config = {
   // by services/tokenScheduler.js if the phone push/WhatsApp approval
   // wasn't tapped in time, so the admin isn't relying on a single channel.
   adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || null,
+
+  // USD→INR conversion used ONLY for displaying real AI provider cost in
+  // the admin panel (ai_requests.cost_usd is stored in USD since every
+  // model provider bills in USD). Not used anywhere user-facing — pricing
+  // plans are already quoted directly in INR. Override via env var when the
+  // rate moves meaningfully so admin cost figures stay realistic; there's
+  // no live FX API wired in, so this is a manually-updated approximation.
+  usdToInr: parseFloat(process.env.USD_TO_INR_RATE) || 95.7,
 };
 
 module.exports = { config, assertRequiredEnv };

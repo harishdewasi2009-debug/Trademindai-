@@ -63,7 +63,7 @@ const enforceAiQueryLimit = asyncHandler(async (req, res, next) => {
 
   if (used >= plan.monthlyAiQueries) {
     throw new AppError(
-      `You've used all ${plan.monthlyAiQueries} AI queries included in your ${plan.name} plan this month. Upgrade for more.`,
+      `You've used all ${plan.monthlyAiQueries} AI analysis included in your ${plan.name} plan this month. Upgrade for more.`,
       429
     );
   }

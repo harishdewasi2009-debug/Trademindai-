@@ -60,4 +60,14 @@ const adminLimiter = rateLimit({
   message: { error: 'Too many admin requests.' },
 });
 
-module.exports = { apiLimiter, authLimiter, paymentLimiter, aiLimiter, marketLimiter, adminLimiter };
+// Public advertiser-enquiry form — no auth required, so this is the only
+// thing standing between the endpoint and spam/bot submissions.
+const advertiserLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many enquiries submitted. Please try again later or email us directly.' },
+});
+
+module.exports = { apiLimiter, authLimiter, paymentLimiter, aiLimiter, marketLimiter, adminLimiter, advertiserLimiter };

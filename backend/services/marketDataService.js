@@ -880,7 +880,12 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
     .reverse();
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const intraday = await getIntradayCandles(instrumentKey, unit, interval);
+  // Upstox's intraday endpoint only returns meaningful data for day/minute/
+  // hour granularity — today's single session doesn't map onto a "weeks" or
+  // "months" candle, so skip the call entirely for those units instead of
+  // firing a request that can only ever come back empty (or error). This is
+  // the weekly leg the Multi-Timeframe / "Check daily vs weekly" view uses.
+  const intraday = ['weeks', 'months'].includes(unit) ? [] : await getIntradayCandles(instrumentKey, unit, interval);
   const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };

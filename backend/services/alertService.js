@@ -21,9 +21,21 @@ const DEFAULT_ALERT_SYMBOLS = [
   'TATAMOTORS', 'SBIN', 'ADANIENT', 'BAJFINANCE', 'ITC',
 ];
 
+// Broader curated list of liquid NSE large/mid-caps used for the "All
+// Stock Alerts" market-wide scan (scope='all') — deliberately wider than
+// DEFAULT_ALERT_SYMBOLS (which is just a watchlist-empty fallback) so the
+// "all stocks" view actually feels like a market scan, not a repeat of the
+// same 10 names. Still bounded by MAX_SYMBOLS_PER_RUN to cap Upstox calls.
+const ALL_MARKET_ALERT_SYMBOLS = [
+  'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK',
+  'TATAMOTORS', 'SBIN', 'ADANIENT', 'BAJFINANCE', 'ITC',
+  'HINDUNILVR', 'KOTAKBANK', 'LT', 'AXISBANK', 'MARUTI',
+  'SUNPHARMA', 'WIPRO', 'ONGC', 'TATASTEEL', 'ASIANPAINT',
+];
+
 const MAX_SYMBOLS_PER_RUN = 15; // bounds Upstox calls per alert refresh
 const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
-const alertCache = new Map(); // userId -> { alerts, fetchedAt }
+const alertCache = new Map(); // `${userId}:${scope}` -> { alerts, fetchedAt }
 
 function sma(values, period, endIdx) {
   const slice = values.slice(endIdx - period, endIdx);
@@ -111,18 +123,47 @@ function detectAlertsForCandles(symbol, exchange, candles) {
   return out.map((a) => ({ ...a, stockSymbol: symbol, exchange, detectedAt }));
 }
 
-/** Returns real, on-demand alerts for a user's watchlist (falling back to
- *  a small curated list if the watchlist is empty), cached briefly. */
-async function generateAlertsForUser(userId) {
-  const cached = alertCache.get(userId);
+/** Returns real, on-demand alerts for a user.
+ *  scope='all'       — always scans the broad curated market list, ignoring
+ *                       the user's own watchlist (the Dashboard's "All Stock
+ *                       Alerts" panel).
+ *  scope='watchlist' — always scans the user's own watchlist only; returns
+ *                       an empty result (with empty:true) if they have no
+ *                       watchlist stocks yet (the Dashboard's "Watchlist
+ *                       Alerts" panel).
+ *  scope=undefined    — original behaviour: watchlist if non-empty, else
+ *                       the small default fallback list (used by the
+ *                       Overview page's "Today's AI alerts" widget). */
+async function generateAlertsForUser(userId, scope) {
+  const cacheKey = `${userId}:${scope || 'auto'}`;
+  const cached = alertCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.alerts;
 
-  const { rows } = await query(
-    'SELECT stock_symbol FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
-    [userId, MAX_SYMBOLS_PER_RUN]
-  );
-  const usingWatchlist = rows.length > 0;
-  const symbols = usingWatchlist ? rows.map((r) => r.stock_symbol) : DEFAULT_ALERT_SYMBOLS;
+  let symbols, usingWatchlist;
+
+  if (scope === 'all') {
+    symbols = ALL_MARKET_ALERT_SYMBOLS.slice(0, MAX_SYMBOLS_PER_RUN);
+    usingWatchlist = false;
+  } else if (scope === 'watchlist') {
+    const { rows } = await query(
+      'SELECT stock_symbol FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+      [userId, MAX_SYMBOLS_PER_RUN]
+    );
+    if (rows.length === 0) {
+      const result = { alerts: [], usingWatchlist: true, symbolsScanned: 0, empty: true };
+      alertCache.set(cacheKey, { alerts: result, fetchedAt: Date.now() });
+      return result;
+    }
+    symbols = rows.map((r) => r.stock_symbol);
+    usingWatchlist = true;
+  } else {
+    const { rows } = await query(
+      'SELECT stock_symbol FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+      [userId, MAX_SYMBOLS_PER_RUN]
+    );
+    usingWatchlist = rows.length > 0;
+    symbols = usingWatchlist ? rows.map((r) => r.stock_symbol) : DEFAULT_ALERT_SYMBOLS;
+  }
 
   const perSymbol = await Promise.all(symbols.map(async (symbol) => {
     try {
@@ -138,7 +179,7 @@ async function generateAlertsForUser(userId) {
     .slice(0, 10);
 
   const result = { alerts, usingWatchlist, symbolsScanned: symbols.length };
-  alertCache.set(userId, { alerts: result, fetchedAt: Date.now() });
+  alertCache.set(cacheKey, { alerts: result, fetchedAt: Date.now() });
   return result;
 }
 

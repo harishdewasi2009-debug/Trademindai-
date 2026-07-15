@@ -22,6 +22,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const marketRoutes = require('./routes/marketRoutes');
 const referralRoutes = require('./routes/referralRoutes');
+const advertiserRoutes = require('./routes/advertiserRoutes');
 const { handleWebhook } = require('./controllers/paymentController');
 const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
 const marketDataService = require('./services/marketDataService');
@@ -84,6 +85,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/alerts', require('./routes/alertRoutes'));
 app.use('/api/referral', referralRoutes);
+app.use('/api/advertisers', advertiserRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -389,7 +389,61 @@ function buildFullTechnicalReport(ind, meta = {}) {
     fibonacci: ind.fibonacci ? { ...ind.fibonacci, text: `Price is in the ${ind.fibonacci.zone}.` } : null,
     indicatorSummary,
     technicalScore: { trend: trendScore, momentum: momentumScore, strength: strengthScore, volatility: volatilityScore, overall: overallScore },
+    tradingStyleProfile: buildTradingStyleProfile(ind, adxStrengthDesc),
     conclusion,
+  };
+}
+
+// ── Trading-style profile — purely descriptive, rule-based classification ──
+// of how this stock's CURRENT volatility (ATR%) and trend strength (ADX)
+// compare to the price-movement patterns commonly associated with
+// intraday, swing, and positional/long-term trading. This is an
+// EDUCATIONAL characterisation of the data only — it does not weigh the
+// individual user's capital, experience, or goals, so it must never be
+// phrased as "you should do X trading" or as a personalised suitability
+// recommendation. Powers both the Screener and the AI Analysis page (see
+// groundResult() in aiService.js, which merges this into every response).
+function buildTradingStyleProfile(ind, adxStrengthDesc) {
+  const atrPct = ind.atrPct ?? 0;
+  const adx = ind.adx ?? 0;
+
+  let volatilityBand;
+  if (atrPct >= 3.5) volatilityBand = 'High';
+  else if (atrPct >= 1.5) volatilityBand = 'Moderate';
+  else volatilityBand = 'Low';
+
+  const styles = [
+    {
+      style: 'Intraday',
+      relevance: atrPct >= 3 ? 'Notable' : atrPct >= 1.5 ? 'Some' : 'Limited',
+      text: atrPct >= 3
+        ? `ATR of ${atrPct}% of price indicates larger single-day price swings, the kind of movement intraday strategies typically look for.`
+        : atrPct >= 1.5
+          ? `ATR of ${atrPct}% of price is a moderate daily range — intraday strategies would see average-sized moves to work with.`
+          : `ATR of ${atrPct}% of price is a relatively narrow daily range, offering less single-day movement for intraday-style strategies.`,
+    },
+    {
+      style: 'Swing',
+      relevance: adx >= 20 && atrPct >= 1.2 ? 'Notable' : adx >= 12 ? 'Some' : 'Limited',
+      text: adx >= 20
+        ? `ADX of ${adx} (${adxStrengthDesc.toLowerCase()}) shows a directional move already underway, the kind of multi-day trend swing strategies typically track.`
+        : `ADX of ${adx} (${adxStrengthDesc.toLowerCase()}) shows limited directional persistence over the recent period for a multi-day trend to lean on.`,
+    },
+    {
+      style: 'Positional / Long-term',
+      relevance: volatilityBand === 'Low' || adx >= 25 ? 'Notable' : 'Some',
+      text: volatilityBand === 'Low'
+        ? `Lower day-to-day volatility (ATR ${atrPct}% of price) is more typical of the steadier price behaviour longer-holding-period approaches tend to look at.`
+        : `Day-to-day volatility (ATR ${atrPct}% of price) is on the higher side; positional approaches would usually look past short-term noise like this toward the broader trend.`,
+    },
+  ];
+
+  return {
+    volatilityBand,
+    atrPct,
+    adx,
+    styles,
+    disclaimer: 'Educational characterisation of current volatility and trend data only — not a recommendation to trade any particular style, and not personalised to your capital, experience, or goals. TradeMind AI is not a SEBI-registered adviser.',
   };
 }
 
