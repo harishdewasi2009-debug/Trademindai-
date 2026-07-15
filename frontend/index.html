@@ -6398,7 +6398,7 @@ async function fetchRealCandles(symbol,tf,exchange){
     const url=isIndex
       ? `/api/market/index-candles?underlying=${encodeURIComponent(symbol)}&${qs}`
       : `/api/market/candles/${encodeURIComponent(symbol)}?${qs}`;
-    const res=await apiFetch(url);
+    const res=await apiFetch(url,{signal:AbortSignal.timeout(35000)});
     if(!res.ok){
       let reason='HTTP '+res.status;
       try{ const body=await res.json(); if(body?.error)reason=body.error; }catch(_){}
@@ -6406,7 +6406,7 @@ async function fetchRealCandles(symbol,tf,exchange){
       realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()}; // cache the failure too — stops hammering Upstox every 4s
       return null;
     }
-    const res=await apiFetch(url,{signal:AbortSignal.timeout(35000)});
+    const data=await res.json();
     if(!Array.isArray(data.candles)||!data.candles.length){
       realCandleCache[cacheKey]={candles:null,fetchedAt:Date.now()};
       return null;
