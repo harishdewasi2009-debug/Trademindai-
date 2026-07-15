@@ -158,4 +158,72 @@ async function getAccuracyStats() {
   };
 }
 
-module.exports = { evaluateDuePredictions, getAccuracyStats, judgeOutcome };
+/** Full, paginated log of EVERY prediction ever logged — pending, correct,
+ *  and incorrect — across every user and every date. This is the "raw data"
+ *  view for the admin panel: every sentiment read the AI ever gave a user,
+ *  with the date it was made, the date (if any) it was evaluated, and the
+ *  real-price outcome. Unlike getAccuracyStats() (which only aggregates
+ *  already-evaluated rows), this never drops pending rows, so nothing that
+ *  was ever shown to a user goes missing from the admin view.
+ *
+ *  Supports optional filters so the admin can narrow a long history down:
+ *   - outcome: 'pending' | 'correct' | 'incorrect'
+ *   - symbol:  exact stock symbol (case-insensitive)
+ *   - from/to: created_at date range (ISO date strings, inclusive)
+ */
+async function listAllPredictions({ page = 1, limit = 50, outcome, symbol, from, to } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
+  const safePage = Math.max(Number(page) || 1, 1);
+  const offset = (safePage - 1) * safeLimit;
+
+  const conditions = [];
+  const params = [];
+
+  if (outcome && ['pending', 'correct', 'incorrect'].includes(outcome)) {
+    params.push(outcome);
+    conditions.push(`outcome = $${params.length}`);
+  }
+  if (symbol) {
+    params.push(symbol.toUpperCase());
+    conditions.push(`stock_symbol = $${params.length}`);
+  }
+  if (from) {
+    params.push(from);
+    conditions.push(`created_at >= $${params.length}::date`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`created_at < ($${params.length}::date + interval '1 day')`);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const dataParams = [...params, safeLimit, offset];
+  const { rows } = await query(
+    `SELECT ph.id, ph.user_id, u.email AS user_email, ph.stock_symbol,
+            ph.recommendation AS sentiment, ph.entry_price, ph.target_price,
+            ph.horizon_days, ph.confidence_score, ph.actual_price_at_horizon,
+            ph.outcome, ph.created_at, ph.evaluated_at
+     FROM prediction_history ph
+     LEFT JOIN users u ON u.id = ph.user_id
+     ${where}
+     ORDER BY ph.created_at DESC
+     LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
+    dataParams
+  );
+
+  const { rows: countRows } = await query(
+    `SELECT COUNT(*)::int AS count FROM prediction_history ph ${where}`,
+    params
+  );
+
+  return {
+    predictions: rows,
+    page: safePage,
+    limit: safeLimit,
+    total: countRows[0].count,
+    totalPages: Math.max(Math.ceil(countRows[0].count / safeLimit), 1),
+  };
+}
+
+module.exports = { evaluateDuePredictions, getAccuracyStats, listAllPredictions, judgeOutcome };

@@ -186,6 +186,7 @@ nav{
 .atab{flex:1;padding:9px;font-size:12px;font-weight:600;border-radius:6px;border:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
 .atab.active{background:var(--bg);color:var(--text);border:1px solid var(--border2);box-shadow:var(--card-shadow)}
 .inp-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.inp-row-3{grid-template-columns:1fr 1fr 1fr}
 .inp-group{display:flex;flex-direction:column;gap:7px}
 .inp-lbl{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
 .tm-inp{padding:11px 14px;font-size:14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg3);color:var(--text);width:100%;transition:all .15s}
@@ -294,7 +295,8 @@ nav{
 .pf-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .pf-value{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--text);letter-spacing:-1px}
 .pf-change{font-size:12px;font-weight:600;margin-top:4px}
-.portfolio-table-wrap{overflow-x:auto}
+.portfolio-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.portfolio-table-wrap table{min-width:640px}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{text-align:left;padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);border-bottom:1px solid var(--border);font-weight:700}
 .tbl td{padding:14px;border-bottom:1px solid var(--border);color:var(--text2);font-size:13px;vertical-align:middle}
@@ -327,6 +329,16 @@ nav{
 
 /* ── SCREENER ── */
 .screener-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px;padding:16px;background:var(--bg3);border-radius:var(--radius-lg);border:1px solid var(--border)}
+.screener-layout{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start}
+.screener-sidebar{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;position:sticky;top:16px}
+.sb-filter-group{margin-bottom:18px}
+.sb-filter-group:last-child{margin-bottom:0}
+.sb-filter-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:8px;font-weight:600}
+.sb-filter-group .filter-chip{width:100%;justify-content:flex-start;margin-bottom:6px}
+.sb-filter-group .filter-chip:last-child{margin-bottom:0}
+.sb-tf-subhead{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);opacity:.7;margin:10px 0 6px;padding-top:8px;border-top:1px solid var(--border)}
+.sb-tf-subhead:first-of-type{margin-top:0;padding-top:0;border-top:none}
+@media (max-width:860px){.screener-layout{grid-template-columns:1fr}.screener-sidebar{position:static}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .filter-chip{padding:7px 16px;font-size:12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg4);color:var(--text2);cursor:pointer;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:6px}
 .filter-chip.active{background:rgba(0,194,168,.15);color:#2EECD4;border-color:rgba(0,194,168,.5)}
@@ -934,7 +946,7 @@ html{scroll-behavior:smooth}
   .feat-grid,.pricing-grid,.verdict-row,.ai-debate,.dash-metric-grid,.price-targets,.meta-row,.admin-metrics,.ads-grid,.testi-grid,.tech-indicators,.portfolio-header,.two-col,.three-col,.footer-grid,.backtest-controls,.backtest-metrics,.ref-stats,.feat-grid-4,.opt-summary,.scanner-grid,.calc-grid,.indicator-grid,.pattern-grid,.compare-grid,.alert-manager,.levels-grid,.risk-grid,.fn-grid,.ia-levels,.founders-row,.emp-grid,.strat-row,.paper-order-row{grid-template-columns:1fr}
   .heatmap-grid{grid-template-columns:repeat(4,1fr)}
   .hero-chart-wrap{margin-left:12px;margin-right:12px}
-  .inp-row{grid-template-columns:1fr}
+  .inp-row,.inp-row-3{grid-template-columns:1fr}
   .dash-grid{grid-template-columns:1fr}
   .section{padding:40px 16px}
   .sec-h2{font-size:26px}
@@ -964,6 +976,27 @@ html{scroll-behavior:smooth}
 
   /* Portfolio / admin metric numbers: keep legible without forcing horizontal scroll */
   .pf-value,.adm-val{font-size:21px}
+
+  /* Dashboard quick actions: even 2-up grid with real 44px+ touch targets
+     instead of flex-wrap, which left the last row's buttons oddly sized
+     and made tapping the small ones (New Analysis, Charts, etc.) fiddly. */
+  .quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .qa-btn{width:100%;justify-content:center;padding:13px 10px;font-size:12.5px;min-height:46px}
+
+  /* Portfolio summary cards: tighter padding + 2-up instead of 1-up so the
+     4 metrics don't turn into a long vertical scroll on small phones. */
+  .portfolio-header{grid-template-columns:1fr 1fr!important;gap:10px}
+  .pf-metric{padding:14px}
+  .pf-value{font-size:19px;word-break:break-word}
+
+  /* Sidebar / nav rows and dashboard side-menu items: bigger tap area */
+  .side-nav-item{padding:12px 12px;font-size:14px;min-height:44px}
+  /* Analysis page tab strip: 4 flex:1 tabs with icon+2-word labels had no
+     room on a phone (~360-390px) and wrapped/overflowed mid-word ("Portfolio"
+     / "Scan" splitting onto separate lines, bleeding past the card edge).
+     2x2 grid gives each tab real width instead. */
+  .analysis-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .atab{padding:11px 6px;font-size:11.5px;text-align:center;white-space:normal;line-height:1.25}
 }
 
 @media(max-width:420px){
@@ -1258,9 +1291,9 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="inp-group" style="margin-bottom:16px">
           <label class="inp-lbl">Or analyse an index</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <span class="ind-chip" onclick="setAnalysisIndex('NIFTY 50')"><i class="ti ti-chart-candle" style="margin-right:4px"></i>NIFTY 50</span>
-            <span class="ind-chip" onclick="setAnalysisIndex('SENSEX')"><i class="ti ti-chart-candle" style="margin-right:4px"></i>SENSEX</span>
-            <span class="ind-chip" onclick="setAnalysisIndex('NIFTY BANK')"><i class="ti ti-chart-candle" style="margin-right:4px"></i>NIFTY BANK</span>
+            <span class="ind-chip" id="analysis-idx-nifty50" onclick="setAnalysisIndex('NIFTY 50',this)"><i class="ti ti-chart-candle" style="margin-right:4px"></i>NIFTY 50</span>
+            <span class="ind-chip" id="analysis-idx-sensex" onclick="setAnalysisIndex('SENSEX',this)"><i class="ti ti-chart-candle" style="margin-right:4px"></i>SENSEX</span>
+            <span class="ind-chip" id="analysis-idx-niftybank" onclick="setAnalysisIndex('NIFTY BANK',this)"><i class="ti ti-chart-candle" style="margin-right:4px"></i>NIFTY BANK</span>
           </div>
         </div>
         <div class="inp-group" style="margin-bottom:16px">
@@ -1292,17 +1325,17 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="inp-group" style="margin-bottom:16px">
           <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
           <div class="ai-chips" id="ai-model-chips">
-            <button class="ai-chip sel" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
-            <button class="ai-chip" data-plan="basic" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip" data-plan="pro" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6 <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip" data-plan="pro" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip locked" data-plan="elite" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip locked" data-plan="elite" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
-            <button class="ai-chip locked" data-plan="elite" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
+            <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="pro" data-model="claude-sonnet-4.6" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="pro" data-model="gpt-4o" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" data-model="gemini-2.5-pro" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" data-model="claude-opus-4.7" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" data-model="deepseek-r1" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
           </div>
-          <span style="font-size:11px;color:var(--text3)">Claude Sonnet 4.6 &amp; GPT-4o available on Pro and Elite plans · Gemini 2.5 Pro, Claude Opus 4.7 &amp; DeepSeek R1 run automatically on Elite — the models that actually ran are highlighted after each analysis.</span>
+          <span style="font-size:11px;color:var(--text3)">Tap a model to include it in your next analysis (at least one stays selected) · Claude Sonnet 4.6 &amp; GPT-4o available on Pro and Elite plans · Gemini 2.5 Pro, Claude Opus 4.7 &amp; DeepSeek R1 on Elite — analysing 2+ models shows a side-by-side debate, analysing 1 shows a single focused report.</span>
         </div>
-        <div class="inp-row">
+        <div class="inp-row inp-row-3">
           <div class="inp-group">
             <label class="inp-lbl">Investment horizon</label>
             <select class="tm-inp" id="inp-horizon">
@@ -1317,6 +1350,31 @@ img,svg,video,canvas,iframe{max-width:100%}
               <option value="low">Conservative (Low risk)</option>
               <option value="medium" selected>Balanced (Medium risk)</option>
               <option value="high">Aggressive (High risk)</option>
+            </select>
+          </div>
+          <div class="inp-group">
+            <label class="inp-lbl">Analysis timeframe</label>
+            <select class="tm-inp" id="inp-timeframe">
+              <optgroup label="Intraday">
+                <option value="1m">1 Minute</option>
+                <option value="5m">5 Minute</option>
+                <option value="15m">15 Minute</option>
+                <option value="30m">30 Minute</option>
+                <option value="1h">1 Hour</option>
+                <option value="4h">4 Hour</option>
+              </optgroup>
+              <optgroup label="Swing / Positional">
+                <option value="1d" selected>1 Day</option>
+                <option value="1w">1 Week</option>
+                <option value="1mo">1 Month</option>
+                <option value="3mo">3 Month</option>
+                <option value="6mo">6 Month</option>
+              </optgroup>
+              <optgroup label="Long term">
+                <option value="1y">1 Year</option>
+                <option value="3y">3 Year</option>
+                <option value="5y">5 Year</option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -1349,29 +1407,62 @@ img,svg,video,canvas,iframe{max-width:100%}
       <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
       <div id="screener-search-dropdown" style="display:none;position:absolute;top:48px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:20;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
     </div>
-    <div class="screener-filters">
-    <span class="filter-group-exchange" style="display:contents">
-        <button class="filter-chip active" onclick="toggleExchangeFilter(this,'all')">All</button>
-        <button class="filter-chip" onclick="toggleExchangeFilter(this,'nse')">NSE only</button>
-        <button class="filter-chip" onclick="toggleExchangeFilter(this,'bse')">BSE only</button>
-    </span>
-    <span style="width:1px;align-self:stretch;background:rgba(255,255,255,.1)"></span>
-    <span class="filter-group-direction" style="display:contents">
-        <button class="filter-chip active" id="scr-dir-all" onclick="setScreenerDirection('all',this)">All</button>
-<button class="filter-chip" id="scr-dir-up" onclick="setScreenerDirection('up',this)">Up</button>
-<button class="filter-chip" id="scr-dir-down" onclick="setScreenerDirection('down',this)">Down</button>
- </span>
-    <span style="width:1px;align-self:stretch;background:rgba(255,255,255,.1)"></span>
-    <span class="filter-group-signal" style="display:contents">
-        <button class="filter-chip active" id="scr-sig-all" onclick="setScreenerSignal('all',this)">All</button>
-        <button class="filter-chip" id="scr-sig-buy" onclick="setScreenerSignal('Strong Bullish Bias',this)">Bullish</button>
-        <button class="filter-chip" id="scr-sig-hold" onclick="setScreenerSignal('Mixed / Neutral',this)">Mixed</button>
-        <button class="filter-chip" id="scr-sig-sell" onclick="setScreenerSignal('Strong Bearish Bias',this)">Bearish</button>
-    </span>
-</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Bullish/Bearish/Mixed bias is computed from real technical indicators (RSI, EMA, MACD, Supertrend, VWAP) — not an AI model, and not a trading recommendation.</div>
-    <div id="screener-market-note" style="font-size:12px;color:var(--text3);margin-bottom:12px"></div>
-    <div id="screener-results"></div>
+    <div class="screener-layout">
+      <div class="screener-sidebar">
+        <div class="sb-filter-group">
+          <div class="sb-filter-lbl">Exchange</div>
+          <span class="filter-group-exchange" style="display:contents">
+            <button class="filter-chip active" onclick="toggleExchangeFilter(this,'all')">All</button>
+            <button class="filter-chip" onclick="toggleExchangeFilter(this,'nse')">NSE only</button>
+            <button class="filter-chip" onclick="toggleExchangeFilter(this,'bse')">BSE only</button>
+          </span>
+        </div>
+        <div class="sb-filter-group">
+          <div class="sb-filter-lbl">Direction</div>
+          <span class="filter-group-direction" style="display:contents">
+            <button class="filter-chip active" id="scr-dir-all" onclick="setScreenerDirection('all',this)">All</button>
+            <button class="filter-chip" id="scr-dir-up" onclick="setScreenerDirection('up',this)">Up</button>
+            <button class="filter-chip" id="scr-dir-down" onclick="setScreenerDirection('down',this)">Down</button>
+          </span>
+        </div>
+        <div class="sb-filter-group">
+          <div class="sb-filter-lbl">Signal</div>
+          <span class="filter-group-signal" style="display:contents">
+            <button class="filter-chip active" id="scr-sig-all" onclick="setScreenerSignal('all',this)">All</button>
+            <button class="filter-chip" id="scr-sig-buy" onclick="setScreenerSignal('Strong Bullish Bias',this)">Bullish</button>
+            <button class="filter-chip" id="scr-sig-hold" onclick="setScreenerSignal('Mixed / Neutral',this)">Mixed</button>
+            <button class="filter-chip" id="scr-sig-sell" onclick="setScreenerSignal('Strong Bearish Bias',this)">Bearish</button>
+          </span>
+        </div>
+        <div class="sb-filter-group">
+          <div class="sb-filter-lbl">Timeframe</div>
+          <span class="filter-group-timeframe" style="display:contents">
+            <div class="sb-tf-subhead">Intraday</div>
+            <button class="filter-chip" id="scr-tf-1m" onclick="setScreenerTimeframe('1m',this)">1 Minute</button>
+            <button class="filter-chip" id="scr-tf-5m" onclick="setScreenerTimeframe('5m',this)">5 Minute</button>
+            <button class="filter-chip" id="scr-tf-15m" onclick="setScreenerTimeframe('15m',this)">15 Minute</button>
+            <button class="filter-chip" id="scr-tf-30m" onclick="setScreenerTimeframe('30m',this)">30 Minute</button>
+            <button class="filter-chip" id="scr-tf-1h" onclick="setScreenerTimeframe('1h',this)">1 Hour</button>
+            <button class="filter-chip" id="scr-tf-4h" onclick="setScreenerTimeframe('4h',this)">4 Hour</button>
+            <div class="sb-tf-subhead">Swing / Positional</div>
+            <button class="filter-chip active" id="scr-tf-1d" onclick="setScreenerTimeframe('1d',this)">1 Day</button>
+            <button class="filter-chip" id="scr-tf-1w" onclick="setScreenerTimeframe('1w',this)">1 Week</button>
+            <button class="filter-chip" id="scr-tf-1mo" onclick="setScreenerTimeframe('1mo',this)">1 Month</button>
+            <button class="filter-chip" id="scr-tf-3mo" onclick="setScreenerTimeframe('3mo',this)">3 Month</button>
+            <button class="filter-chip" id="scr-tf-6mo" onclick="setScreenerTimeframe('6mo',this)">6 Month</button>
+            <div class="sb-tf-subhead">Long term</div>
+            <button class="filter-chip" id="scr-tf-1y" onclick="setScreenerTimeframe('1y',this)">1 Year</button>
+            <button class="filter-chip" id="scr-tf-3y" onclick="setScreenerTimeframe('3y',this)">3 Year</button>
+            <button class="filter-chip" id="scr-tf-5y" onclick="setScreenerTimeframe('5y',this)">5 Year</button>
+          </span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-calculator" style="margin-right:4px"></i>Bullish/Bearish/Mixed bias is computed from real technical indicators (RSI, EMA, MACD, Supertrend, VWAP) over the selected timeframe — not an AI model, and not a trading recommendation.</div>
+        <div id="screener-market-note" style="font-size:12px;color:var(--text3);margin-bottom:12px"></div>
+        <div id="screener-results"></div>
+      </div>
+    </div>
   </div>
 </div>
 <!-- ══════════════ CHARTS ══════════════ -->
@@ -1481,10 +1572,21 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div id="opt-verdict" style="font-size:13px;color:var(--text2);line-height:1.8"></div>
     </div>
     <div class="admin-panel" style="margin-top:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Option Strategy Advisor</div>
-        <button class="btn-analyse" style="padding:8px 18px;font-size:12px" onclick="getOptionStrategyAdvice()"><i class="ti ti-bulb"></i> Suggest a strategy</button>
+      <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Option Strategy Advisor</div>
+      <div class="inp-group" style="margin:14px 0 16px">
+        <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
+        <div class="ai-chips" id="ai-model-chips-fno">
+          <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
+          <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
+          <button class="ai-chip" data-plan="pro" data-model="claude-sonnet-4.6" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6 <i class="ti ti-lock" style="font-size:11px"></i></button>
+          <button class="ai-chip" data-plan="pro" data-model="gpt-4o" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o <i class="ti ti-lock" style="font-size:11px"></i></button>
+          <button class="ai-chip locked" data-plan="elite" data-model="gemini-2.5-pro" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
+          <button class="ai-chip locked" data-plan="elite" data-model="claude-opus-4.7" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
+          <button class="ai-chip locked" data-plan="elite" data-model="deepseek-r1" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
+        </div>
+        <span style="font-size:11px;color:var(--text3)">Tap a model to include it (at least one stays selected) · Selecting 2+ models asks each one for a strategy suggestion; selecting 1 asks just that model.</span>
       </div>
+      <button class="btn-analyse" style="padding:8px 18px;font-size:12px;margin-bottom:12px" onclick="getOptionStrategyAdvice()"><i class="ti ti-bulb"></i> Suggest a strategy</button>
       <div id="option-strategy-advice" style="font-size:13px;color:var(--text2);line-height:1.7">Load the option chain above, then click for an AI strategy suggestion grounded in the real PCR/Max Pain/OI shown.</div>
     </div>
     <div style="text-align:center;margin-top:24px"></div>
@@ -1567,7 +1669,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="plan-desc">A dual-AI model cascade with more monthly analysis, prediction tracking, and the AI screener — built for regular use.</div>
         <div class="plan-price"><sup>₹</sup>149</div>
         <div class="plan-mo">per month</div>
-        <div class="plan-limit"><strong>77</strong> analysis / month · 250,000 tokens/mo</div>
+        <div class="plan-limit"><strong>49</strong> analysis / month · 250,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Everything in Free</span></li>
@@ -1587,7 +1689,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="plan-desc">A 4-model AI stack, Portfolio Tracker, unlimited-feel monthly analysis, and an AI Trading Assistant — built for active traders.</div>
         <div class="plan-price"><sup>₹</sup>999</div>
         <div class="plan-mo">per month</div>
-        <div class="plan-limit"><strong>777</strong> analysis / month · 1,000,000 tokens/mo</div>
+        <div class="plan-limit"><strong>499</strong> analysis / month · 1,000,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Everything in Basic</span></li>
@@ -1611,16 +1713,16 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="plan-badge plan-badge-elite">🏆 Institutional Grade</div>
         <div class="plan-tier">Elite</div>
         <div class="plan-desc">Institutional-grade 4-model consensus, backtesting, options analysis, and an AI Portfolio Advisor — built for serious traders.</div>
-        <div class="plan-price"><sup>₹</sup>2,999</div>
+        <div class="plan-price"><sup>₹</sup>3,199</div>
         <div class="plan-mo">per month</div>
-        <div class="plan-limit"><strong>Unlimited</strong> analysis · 3,000,000 tokens/mo fair-use cap</div>
+        <div class="plan-limit"><strong>1,499</strong> analysis / month · 2,015,000 tokens/mo fair-use cap</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Everything in Pro</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Gemini 2.5 Pro (premium) · 1,000,000 tokens/mo</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Claude Opus 4.7 (flagship) · 375,000 tokens/mo</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>GPT-4o (high token allocation) · 750,000 tokens/mo</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>DeepSeek R1 (consensus engine) · 875,000 tokens/mo</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Gemini 2.5 Pro (premium) · 675,000 tokens/mo</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Claude Opus 4.7 (flagship) · 250,000 tokens/mo</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>GPT-4o (high token allocation) · 500,000 tokens/mo</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>DeepSeek R1 (consensus engine) · 590,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>4-model consensus analysis</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Backtesting Engine (5yr history)</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Options Analysis (CE/PE + Max Pain)</span></li>
@@ -1629,7 +1731,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Priority processing + support</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>2FA + Device management</span></li>
         </ul>
-        <button class="btn-plan elite" onclick="openPay('Elite','2,999')">Get Elite</button>
+        <button class="btn-plan elite" onclick="openPay('Elite','3,199')">Get Elite</button>
       </div>
     </div>
     <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:28px">Payments by <strong style="color:var(--text2)">Razorpay</strong> · UPI · Netbanking · Credit &amp; Debit Cards · Auto-debit · All payments in INR</p>
@@ -1645,12 +1747,12 @@ img,svg,video,canvas,iframe{max-width:100%}
             <th>Free<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)">₹0</span></th>
             <th>Basic<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)">₹149</span></th>
             <th>Pro<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)">₹999</span></th>
-            <th>Elite<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--amber)">₹2,999</span></th>
+            <th>Elite<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--amber)">₹3,199</span></th>
           </tr>
         </thead>
         <tbody>
           <tr><td>AI Models</td><td class="comp-partial">Gemini Flash + DeepSeek</td><td class="comp-partial">Gemini + DeepSeek + Claude Sonnet</td><td class="comp-partial">Gemini + Claude Sonnet 4.6 + GPT-4o + DeepSeek</td><td class="comp-partial">Gemini 2.5 Pro + Claude Opus 4.7 + GPT-4o + DeepSeek R1</td></tr>
-          <tr><td>Monthly Analysis</td><td class="comp-partial">7</td><td class="comp-partial">77</td><td class="comp-partial">777</td><td class="comp-partial">Unlimited</td></tr>
+          <tr><td>Monthly Analysis</td><td class="comp-partial">7</td><td class="comp-partial">49</td><td class="comp-partial">499</td><td class="comp-partial">1,499</td></tr>
           <tr><td>AI Brief (Morning Market Brief)</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>AI Technical Score</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
@@ -1799,10 +1901,36 @@ img,svg,video,canvas,iframe{max-width:100%}
           </table>
         </div>
       </div>
+      <div style="margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:6px">
+          <div class="sec-title" style="margin-bottom:0;padding-bottom:0">All predictions (every date, every user)</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select class="tm-inp" id="pred-log-outcome" style="height:34px;font-size:12px;cursor:pointer" onchange="loadPredictionLog(1)">
+              <option value="">All outcomes</option>
+              <option value="pending">Pending</option>
+              <option value="correct">Correct</option>
+              <option value="incorrect">Incorrect</option>
+            </select>
+            <input class="tm-inp" id="pred-log-symbol" placeholder="Filter symbol…" style="height:34px;font-size:12px;width:130px" onkeydown="if(event.key==='Enter')loadPredictionLog(1)">
+            <button class="btn-ghost" style="font-size:11px" onclick="loadPredictionLog(1)"><i class="ti ti-search"></i> Filter</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Every prediction ever logged for every user, on every date — including ones still pending evaluation. This is the full underlying data behind the accuracy numbers above.</div>
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>User</th><th>Symbol</th><th>Sentiment</th><th>Entry price</th><th>Actual price</th><th>Outcome</th><th>Evaluated</th></tr></thead>
+          <tbody id="pred-log-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+        </table>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text2)">
+          <span id="pred-log-summary">—</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" style="font-size:11px" id="pred-log-prev" onclick="loadPredictionLog(predLogState.page-1)"><i class="ti ti-chevron-left"></i> Prev</button>
+            <button class="btn-ghost" style="font-size:11px" id="pred-log-next" onclick="loadPredictionLog(predLogState.page+1)">Next <i class="ti ti-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-
 <!-- ══════════════ ADS ══════════════ -->
 <div id="page-ads" class="page">
   <div class="section">
@@ -2046,7 +2174,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     </div>
     <div class="modal-plan-box">
       <div class="modal-plan-nm" id="m-plan">Pro Plan</div>
-      <div class="modal-plan-pr" id="m-price">₹2,999</div>
+      <div class="modal-plan-pr" id="m-price">₹3,199</div>
       <div class="modal-plan-mo">per month · auto-renews</div>
     </div>
     <ul class="pay-features">
@@ -2214,13 +2342,23 @@ function updateAuthUI(){
     setText('dash-name',currentUser.name);
     setText('dash-ava',(currentUser.name||'U').split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase());
     setText('dash-plan-tag',`${(currentUser.plan||'free').charAt(0).toUpperCase()+(currentUser.plan||'free').slice(1)} Plan ${currentUser.subscription_status==='active'?'Active':'· Free tier'}`);
-    if(typeof refreshModelChipLocks==='function')refreshModelChipLocks();
   }else{
     if(navArea)navArea.innerHTML=`
       <button class="btn-ghost" onclick="show('login')">Sign in</button>
       <button class="btn-primary" onclick="show('pricing')">Get started</button>`;
     if(adminLink)adminLink.style.display='none';
   }
+  // FIX: this used to live only inside the `if(currentUser)` branch above,
+  // so it never ran at all for a logged-out visitor (or in the brief
+  // window before tryRestoreSession() resolves on page load) — every
+  // plan-gated chip (DeepSeek V3, Claude Sonnet 4.6, GPT-4o) sat in its
+  // raw HTML state with no `.locked` class, fully clickable, with no
+  // upgrade prompt. Free-tier users should only ever be able to select
+  // Gemini 2.5 Flash. Calling it unconditionally here re-evaluates every
+  // chip against whatever currentUser is right now — including "no user
+  // at all", which the function already treats as the free plan.
+  if(typeof refreshModelChipLocks==='function')refreshModelChipLocks();
+
 }
 
 async function logout(){
@@ -2498,7 +2636,7 @@ function animateCount(el,target,opts={}){
 // the "Real Upstox Account" portfolio feature (see the note near the old
 // broker-sync functions further down).
 
-window.addEventListener('load',async ()=>{ initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); });
+window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); });
 
 // ══════════════ CORE NAVIGATION ══════════════
 function show(id){
@@ -2513,7 +2651,7 @@ function show(id){
   if(id==='dashboard')renderDashboard('overview');
   if(id==='screener'){ renderScreener(); startScreenerAutoRefresh(); }
   if(id==='charts')initChartsPage();
-  if(id==='options')renderOptionsChain();
+  if(id==='options'){renderOptionsChain();refreshModelChipLocks();}
   if(id==='analysis')refreshModelChipLocks();
   if(id==='admin')loadAdminPanel();
   if(id==='login'){clearLoginError();setAuthMode(pendingResetToken?'reset':'login');setTimeout(initGoogleSignIn,0);}
@@ -2654,11 +2792,13 @@ async function fetchBackendQuotesBatch(symbols){
 // technical indicators (RSI, EMA, MACD, Supertrend, VWAP, trend strength) run
 // through backend/utils/indicators.js. No LLM call happens here; this is
 // deliberately kept on a separate, longer-cached endpoint from live quotes.
-async function fetchSignalsBatch(symbols){
+async function fetchSignalsBatch(symbols,period){
   const clean=(symbols||[]).filter(Boolean);
   if(!clean.length)return {};
   try{
-    const res=await apiFetch('/api/market/signals?symbols='+encodeURIComponent(clean.join(',')),{cache:'no-store'});
+    let qs='/api/market/signals?symbols='+encodeURIComponent(clean.join(','));
+    if(period)qs+='&period='+encodeURIComponent(period);
+    const res=await apiFetch(qs,{cache:'no-store'});
     if(!res.ok)return {};
     const data=await res.json();
     const out={};
@@ -2790,6 +2930,16 @@ function connectLiveFeed(){
 liveSocket.onopen=()=>{
     liveSocketRetryMs=1000;
     if(chartCurrentSymbol)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
+    // FIX: screenerWatchedSymbols is a client-side dedupe Set keyed by
+    // symbol, not by socket connection — it used to survive a reconnect,
+    // so subscribeScreenerLiveTicks() would see every screener symbol as
+    // "already watched" (from the now-dead connection) and skip re-sending
+    // the watch message to the brand-new socket. That silently killed live
+    // per-tick screener updates for the rest of the session after the
+    // first reconnect (which happens routinely — network blips, or the
+    // backend waking back up from idle). Clearing it here means every new
+    // connection always re-subscribes for real.
+    screenerWatchedSymbols.clear();
     if(typeof subscribeScreenerLiveTicks==='function' && lastScreenerItems.length)subscribeScreenerLiveTicks(lastScreenerItems);
   };
 
@@ -2914,6 +3064,21 @@ function renderIndices(){
 }
 
 function updateMarketStatusUI(){
+  // Keep the Dashboard → Overview pill (a separate element, re-rendered
+  // fresh each time switchDash('overview') runs) in sync too. It used to
+  // be a hardcoded "Market Open" string regardless of the real backend
+  // status — now it reflects globalMarketOpen just like the header pill.
+  const dashPill=document.getElementById('dash-market-pill');
+  if(dashPill){
+    if(globalMarketOpen===false){
+      dashPill.innerHTML='<span class="live-dot" style="background:var(--amber)"></span>Market Closed';
+    }else if(globalMarketOpen===true){
+      dashPill.innerHTML='<span class="live-dot"></span>Market Open';
+    }else{
+      dashPill.innerHTML='<span class="live-dot" style="background:var(--text3)"></span>Checking…';
+    }
+  }
+
   const pill=document.getElementById('live-status-pill');
   if(!pill)return;
   // Once the backend has told us plainly that the market is shut, say so —
@@ -2942,19 +3107,26 @@ if(Object.keys(liveQuoteCache).length){ marketStatus='stale'; renderIndices(); u
 
 // kick off the live feed — no demo-data fallback beyond the cache above;
 // the UI now only shows "Connecting…" for an index it has truly never
-// seen. Stock prices arrive instantly over the WebSocket (connectLiveFeed);
-// refreshLiveMarket() only runs once for the first paint, then repeats
-// slowly (30s) as a safety net for indices + in case the socket drops.
+// seen. Stock prices arrive instantly over the WebSocket (connectLiveFeed).
+// FIX: NIFTY 50 / SENSEX / NIFTY BANK do NOT arrive over the WebSocket —
+// only individual stock ticks do (see the WS onmessage handler + the
+// comment above refreshIndices()). This poll was previously gated behind
+// "only run if the socket is NOT connected", so the instant connectLiveFeed()
+// succeeded (which it normally does — that's why the stock ticker kept
+// moving), readyState stayed 1 forever and refreshIndices() never fired
+// again after its first call. That's what made the index prices freeze at
+// their first-load value while the rest of the page kept updating.
+// refreshIndices() must run on its own unconditional timer.
 refreshLiveMarket();
 connectLiveFeed();
-setInterval(()=>{ if(!liveSocket||liveSocket.readyState!==1) refreshIndices(); },REFRESH_MS);
+setInterval(refreshIndices,REFRESH_MS);
 setInterval(()=>{ if(!liveSocket||liveSocket.readyState!==1) refreshLiveMarket(); },30000);
 
 // ══════════════ FAQ ══════════════
 const faqs=[
   {q:'Is TradeMind AI SEBI registered?',a:'No. TradeMind AI provides AI-generated market analysis for informational and educational purposes only — not SEBI-regulated financial advice. Always consult a registered advisor before making investment decisions.'},
   {q:'How accurate are the AI signals?',a:'We just launched, so there is no public track record yet. Every signal is logged the moment it is generated and scored against actual outcomes after the recommended holding period — as real usage builds up, the full accuracy report (wins and misses both) will be visible right in the platform.'},
-  {q:'Which AI models are included in each plan?',a:'Free uses Gemini 2.5 Flash only — completely free, no credit card needed. Basic adds DeepSeek V3 alongside Gemini Flash for higher daily limits (₹149/mo). Pro brings a balanced multi-model stack: Gemini 2.5 Flash for speed, Claude Sonnet 4.6 for reasoning, GPT-4o for deep analysis, and DeepSeek V3 as fallback (₹999/mo). Elite runs all four flagship models — Gemini 2.5 Pro, Claude Opus 4.7, GPT-4o (high token), and DeepSeek R1 — simultaneously in consensus mode for the highest-confidence signals (₹2,999/mo). All plans are subject to a monthly token quota; see the Pricing page for current limits.'},
+  {q:'Which AI models are included in each plan?',a:'Free uses Gemini 2.5 Flash only — completely free, no credit card needed. Basic adds DeepSeek V3 alongside Gemini Flash for higher daily limits (₹149/mo). Pro brings a balanced multi-model stack: Gemini 2.5 Flash for speed, Claude Sonnet 4.6 for reasoning, GPT-4o for deep analysis, and DeepSeek V3 as fallback (₹999/mo). Elite runs all four flagship models — Gemini 2.5 Pro, Claude Opus 4.7, GPT-4o (high token), and DeepSeek R1 — simultaneously in consensus mode for the highest-confidence signals (₹3,199/mo). All plans are subject to a monthly token quota; see the Pricing page for current limits.'},
   {q:'How does payment work?',a:'Payments are processed securely by Razorpay — supports UPI, cards, netbanking, and wallets. Monthly rolling subscriptions. GST invoice provided for all payments.'},
   {q:'Can I cancel my subscription?',a:'No, subscriptions can\'t be self-cancelled at this time. Please contact support to cancel or change your plan.'},
   {q:'Is there a referral programme?',a:'Yes. Pro and Elite plan members earn ₹500 credit for every user they refer who subscribes to a paid plan. Credits auto-apply to your next billing cycle with no limit on earnings.'},
@@ -2988,12 +3160,18 @@ function toggleFaq(i){
 function getAnalysisHorizonRisk(){
   const h=document.getElementById('inp-horizon')?.value||'medium';
   const r=document.getElementById('inp-risk')?.value||'medium';
+  const t=document.getElementById('inp-timeframe')?.value||'1d';
   // Must match backend/middleware/validate.js's allowed values exactly:
   // horizon in ['1 week','1 month','3 months',...], riskTolerance in
   // ['low','moderate','high'] — anything else gets rejected as 400.
   const horizon={short:'1 week',medium:'1 month',long:'3 months'}[h]||'1 month';
   const riskTolerance={low:'low',medium:'moderate',high:'high'}[r]||'moderate';
-  return {horizon,riskTolerance};
+  // Analysis timeframe (1 Minute → 5 Year) — the technical-indicator
+  // lookback the AI's read should be computed over, independent of the
+  // horizon/risk framing above. Sent as-is; backend needs to accept a
+  // matching `timeframe` field on /api/ai/analyze for this to actually
+  // change the indicator window used.
+  return {horizon,riskTolerance,timeframe:t};
 }
 // FIX: AI analyze/chat errors used to be shown to the user verbatim
 // (e.fromApi ? e.message : ...), which meant real backend/infra details —
@@ -3023,7 +3201,30 @@ function toggleChip(el){
     alert(`This model runs automatically for ${needLabel} plan subscribers and above. Upgrade on the Pricing page to include it in every analysis.`);
     return;
   }
+  // FIX: chip selection used to be purely cosmetic — it was never sent to
+  // the backend, so ticking one model vs. all of them had zero effect on
+  // what actually ran. Selection now drives the request (see
+  // getSelectedModelIds/buildModelsPayload below), so it must always leave
+  // at least one model selected — an empty selection has nothing to send.
+  const group=el.closest('.ai-chips');
+  const selectedInGroup=group?group.querySelectorAll('.ai-chip.sel:not(.locked)').length:0;
+  if(el.classList.contains('sel') && selectedInGroup<=1){
+    return; // can't deselect the last remaining model
+  }
   el.classList.toggle('sel');
+}
+// Reads the model ids (data-model) the user has actually ticked in a given
+// "Select AI models" strip — only unlocked+selected chips count. Falls back
+// to the first unlocked chip if, somehow, nothing is selected.
+function getSelectedModelIds(containerId){
+  const group=document.getElementById(containerId);
+  if(!group)return [];
+  let ids=[...group.querySelectorAll('.ai-chip.sel:not(.locked)')].map(c=>c.dataset.model).filter(Boolean);
+  if(!ids.length){
+    const first=group.querySelector('.ai-chip:not(.locked)');
+    if(first)ids=[first.dataset.model].filter(Boolean);
+  }
+  return ids;
 }
 // Unlocks/locks EVERY plan-gated model chip (not just the Elite-only ones)
 // based on the signed-in user's actual plan, matching backend/config/plans.js
@@ -3031,28 +3232,38 @@ function toggleChip(el){
 // GPT-4o as locked too, not just the three flagship Elite models. Also
 // clears any stale "ran this time" highlighting from a previous analysis.
 // Called on load and whenever the Analysis page is shown.
+// FIX: this used to only look inside #ai-model-chips, which was the single
+// chip strip on the Analysis page. Now that the same "Select AI models"
+// strip is reused on Screener (via stock detail → Analysis), F&O (Option
+// Strategy Advisor) and Portfolio (Health Check + Portfolio Scan), this
+// refreshes every ".ai-chips" group on the page — whichever ones exist —
+// so plan-based locking stays correct everywhere at once.
 function refreshModelChipLocks(){
   const plan=(currentUser?.plan||'free').toLowerCase();
   const rank=PLAN_RANK[plan]??0;
-  document.querySelectorAll('#ai-model-chips .ai-chip[data-plan]').forEach(chip=>{
+  document.querySelectorAll('.ai-chips .ai-chip[data-plan]').forEach(chip=>{
     const needRank=PLAN_RANK[chip.dataset.plan]??3;
     const locked=rank<needRank;
     chip.classList.toggle('locked',locked);
     if(locked)chip.classList.remove('sel'); // never show a locked model as "selected"
   });
 }
-// After a real analysis result comes back, reflect which models actually
-// ran (from result.modelDebate on Elite, or the single result.model on
-// lower plans) instead of leaving the pre-request selection state, which
-// was never actually sent to the backend — model choice is plan-driven.
-function syncModelChipsWithResult(result){
+// After a real AI result comes back, reflect which model(s) actually ran
+// (from result.modelDebate on Elite, or the single result.model on lower
+// plans) instead of leaving the pre-request selection state, which was
+// never actually sent to the backend — model choice is plan-driven.
+// containerId lets every "Select AI models" strip (Analysis, F&O, Portfolio)
+// sync independently after its own AI call finishes.
+function syncModelChipsWithResult(result,containerId){
   const ran=new Set();
   if(Array.isArray(result?.modelDebate)){
     result.modelDebate.forEach(m=>ran.add(modelDisplayName(m.model)));
   }else if(result?.model){
     ran.add(modelDisplayName(result.model));
   }
-  document.querySelectorAll('#ai-model-chips .ai-chip').forEach(chip=>{
+  const scope=containerId?document.getElementById(containerId):document.getElementById('ai-model-chips');
+  if(!scope)return;
+  scope.querySelectorAll('.ai-chip').forEach(chip=>{
     const label=chip.textContent.trim().replace(/\s*$/,'');
     const matched=[...ran].some(name=>label.includes(name));
     chip.classList.toggle('sel',matched);
@@ -3081,6 +3292,18 @@ function setScreenerSignal(sig,el){
   ['scr-sig-all','scr-sig-buy','scr-sig-hold','scr-sig-sell'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
   el.classList.add('active');
   screenerSignal=sig==='all'?undefined:sig;
+  const resEl=document.getElementById('screener-results'); if(resEl)resEl.dataset.loaded='false';
+  renderScreener();
+}
+// Timeframe filter (1 Minute → 5 Year) — controls the lookback the
+// backend's computed Bullish/Bearish/Mixed signal is derived over. Purely
+// a technical-indicator setting (RSI/EMA/MACD/Supertrend/VWAP window),
+// independent of the AI Analysis page's own "Investment horizon" field.
+function setScreenerTimeframe(period,el){
+  ['1m','5m','15m','30m','1h','4h','1d','1w','1mo','3mo','6mo','1y','3y','5y']
+    .forEach(id=>document.getElementById('scr-tf-'+id)?.classList.remove('active'));
+  el.classList.add('active');
+  screenerPeriod=period;
   const resEl=document.getElementById('screener-results'); if(resEl)resEl.dataset.loaded='false';
   renderScreener();
 }
@@ -3144,14 +3367,16 @@ function renderFullReportHtml(r){
 // gone.
 
 
+const TIMEFRAME_LABELS={'1m':'1 Minute','5m':'5 Minute','15m':'15 Minute','30m':'30 Minute','1h':'1 Hour','4h':'4 Hour','1d':'1 Day','1w':'1 Week','1mo':'1 Month','3mo':'3 Month','6mo':'6 Month','1y':'1 Year','3y':'3 Year','5y':'5 Year'};
 // Renders the horizon + risk-tolerance educational context computed
 // server-side (aiService.js groundResult()) from the user's own selected
 // Investment Horizon / Risk Tolerance inputs plus real volatility data.
 // Explicitly not a suitability verdict — see the disclaimer text itself.
-function renderHorizonRiskHtml(ctx){
+function renderHorizonRiskHtml(ctx,timeframeValue){
   if(!ctx)return '';
+  const tfLabel=timeframeValue?TIMEFRAME_LABELS[timeframeValue]||timeframeValue:null;
   return `<div class="disclaimer" style="margin-bottom:10px;border-color:var(--border2)">
-    <strong>Your stated context:</strong> ${ctx.horizon} horizon · ${ctx.riskTolerance} risk tolerance · current volatility band: ${ctx.volatilityBand}.<br/>
+    <strong>Your stated context:</strong> ${ctx.horizon} horizon · ${ctx.riskTolerance} risk tolerance${tfLabel?` · ${tfLabel} analysis timeframe`:''} · current volatility band: ${ctx.volatilityBand}.<br/>
     ${ctx.note}
   </div>`;
 }
@@ -3169,19 +3394,28 @@ let analysisExchange; // undefined='Auto' (NSE then BSE), or 'NSE_EQ'/'BSE_EQ'
 function setAnalysisExchange(ex){
   analysisExchange=ex;
 }
-function setAnalysisIndex(label){
+function setAnalysisIndex(label,chipEl){
   document.getElementById('inp-sym').value=label;
   document.getElementById('inp-name').value=label;
   // Indices aren't NSE_EQ/BSE_EQ equities — always use Auto so the backend
   // routes them to the dedicated index quote/candle endpoints.
   setAnalysisExchange(undefined);
-  runAnalysis();
+  // FIX: this used to call runAnalysis() immediately on click, which fired
+  // the AI analysis before the user had a chance to pick AI models /
+  // horizon / risk tolerance, and skipped the "Analyse with AI" button
+  // entirely — inconsistent with searching a stock (which only fills the
+  // field). Now picking an index just selects it and fills the field, same
+  // as a stock search result; the button starts the analysis.
+  document.querySelectorAll('#analysis-idx-nifty50,#analysis-idx-sensex,#analysis-idx-niftybank').forEach(c=>c.classList.remove('sel'));
+  if(chipEl)chipEl.classList.add('sel');
+  document.getElementById('result-wrap').style.display='none';
 }
 async function runAnalysis(){
   if(isAnalysing)return;
   const name=document.getElementById('inp-name').value.trim();
  const sym=document.getElementById('inp-sym').value.trim().toUpperCase().replace(/[^A-Z0-9&_ -]/g,'');
   if(!name&&!sym){alert('Please enter a stock name or symbol.');return;}
+  const tfValue=document.getElementById('inp-timeframe')?.value||'1d';
 
   if(!currentUser){
     alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
@@ -3206,11 +3440,12 @@ async function runAnalysis(){
 
  const stockSym=(sym||name.toUpperCase()).replace(/[^A-Z0-9&_ -]/g,'').trim();
   let result=null, errorMsg=null, quota=null, isQuotaError=false;
+  const selectedModels=getSelectedModelIds('ai-model-chips');
 
   try{
     const res=await apiFetch('/api/ai/analyze',{
       method:'POST',
-      body:JSON.stringify({stockSymbol:stockSym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
+      body:JSON.stringify({stockSymbol:stockSym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{}),models:selectedModels,model:selectedModels[0]}),
     });
     const data=await res.json();
     if(!res.ok){
@@ -3220,7 +3455,7 @@ async function runAnalysis(){
     }
     result=data;
     quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
-    syncModelChipsWithResult(result);
+    syncModelChipsWithResult(result,'ai-model-chips');
   }catch(e){
     const friendly=friendlyAiError(e.status,e.message);
     errorMsg=friendly.message;
@@ -3246,7 +3481,18 @@ async function runAnalysis(){
     const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[result.sentiment]||'Neutral';
     const sentimentCls=(result.sentiment||'').includes('bullish')?'b-bull':(result.sentiment||'').includes('bearish')?'b-bear':'b-neutral';
     const tech=result.technicals||{};
-    const debate=result.modelDebate||null; // present on Elite plan only
+    // FIX: this used to always show the full modelDebate the backend
+    // returned (Elite-only, every flagship model) regardless of which
+    // chips the user actually had ticked — "select one model" and "select
+    // all models" produced the exact same debate view. Now the debate is
+    // only shown when the user ticked 2+ models AND the backend actually
+    // ran more than one; ticking a single model always collapses to the
+    // single-model report, even on plans/accounts where the backend
+    // would otherwise default to a multi-model debate.
+    const rawDebate=result.modelDebate||null; // present on Elite plan only
+    const wantsDebate=selectedModels.length>1;
+    const debate=(wantsDebate&&Array.isArray(rawDebate)&&rawDebate.length>1)?rawDebate:null;
+    const debateShortfall=wantsDebate&&!debate; // user asked for 2+ models but only one ran
 
     rw.innerHTML=`
       <div class="accuracy-banner">
@@ -3257,7 +3503,7 @@ async function runAnalysis(){
         </div>
       </div>
       <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
-      ${renderHorizonRiskHtml(result.horizonRiskContext)}
+      ${renderHorizonRiskHtml(result.horizonRiskContext,tfValue)}
       <div class="res-header">
         <div>
           <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
@@ -3274,13 +3520,14 @@ async function runAnalysis(){
         <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`(${tech.rsiSignal})`:''}</div></div>
         <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
       </div>
-      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate (Elite)</div>
+      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate</div>
       <div class="ai-debate" style="margin-bottom:10px">
         ${debate.map(m=>`<div class="debate-card">
           <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
           <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
+      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but your plan currently returns one model per analysis (<strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time). Upgrade to Elite for a full multi-model debate.</div>`:''}
       <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
@@ -3309,6 +3556,7 @@ async function runDeepResearch(){
   const name=document.getElementById('inp-name').value.trim();
   const sym=document.getElementById('inp-sym').value.trim().toUpperCase().replace(/[^A-Z0-9&_ -]/g,'');
   if(!name&&!sym){alert('Please enter a stock name or symbol.');return;}
+  const tfValue=document.getElementById('inp-timeframe')?.value||'1d';
   if(!currentUser){
     alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
     show('login');
@@ -3324,11 +3572,12 @@ async function runDeepResearch(){
 
   const stockSym=(sym||name.toUpperCase()).replace(/[^A-Z0-9&_ -]/g,'').trim();
   let result=null, mtfText=null, mtfModel=null, mtfTimeframes=null, errorMsg=null, quota=null, isQuotaError=false;
+  const selectedModels=getSelectedModelIds('ai-model-chips');
 
   try{
     const res=await apiFetch('/api/ai/analyze',{
       method:'POST',
-      body:JSON.stringify({stockSymbol:stockSym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
+      body:JSON.stringify({stockSymbol:stockSym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{}),models:selectedModels,model:selectedModels[0]}),
     });
     const data=await res.json();
     if(!res.ok){
@@ -3338,7 +3587,7 @@ async function runDeepResearch(){
     }
     result=data;
     quota={remaining:data.queriesRemainingThisMonth,tokenQuota:data.tokenQuota};
-    syncModelChipsWithResult(result);
+    syncModelChipsWithResult(result,'ai-model-chips');
 
     // Real daily + weekly candles → real RSI/EMA trend read → AI commentary
     // on whether the two timeframes agree. Same data path as the
@@ -3385,7 +3634,10 @@ async function runDeepResearch(){
     const sentimentLabel={strong_bullish:'Strong Bullish',moderate_bullish:'Moderate Bullish',neutral:'Neutral',moderate_bearish:'Moderate Bearish',strong_bearish:'Strong Bearish'}[result.sentiment]||'Neutral';
     const sentimentCls=(result.sentiment||'').includes('bullish')?'b-bull':(result.sentiment||'').includes('bearish')?'b-bear':'b-neutral';
     const tech=result.technicals||{};
-    const debate=result.modelDebate||null;
+    const rawDebate=result.modelDebate||null;
+    const wantsDebate=selectedModels.length>1;
+    const debate=(wantsDebate&&Array.isArray(rawDebate)&&rawDebate.length>1)?rawDebate:null;
+    const debateShortfall=wantsDebate&&!debate;
 
     rw.innerHTML=`
       <div class="disclaimer" style="margin-bottom:10px"><i class="ti ti-telescope" style="margin-right:4px"></i><strong>Deep Research Report</strong> — core AI signal + real daily-vs-weekly technical read, combined.</div>
@@ -3397,7 +3649,7 @@ async function runDeepResearch(){
         </div>
       </div>
       <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
-      ${renderHorizonRiskHtml(result.horizonRiskContext)}
+      ${renderHorizonRiskHtml(result.horizonRiskContext,tfValue)}
       <div class="res-header">
         <div>
           <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
@@ -3413,13 +3665,14 @@ async function runDeepResearch(){
         <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`(${tech.rsiSignal})`:''}</div></div>
         <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
       </div>
-      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate (Elite)</div>
+      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate</div>
       <div class="ai-debate" style="margin-bottom:10px">
         ${debate.map(m=>`<div class="debate-card">
           <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
           <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
+      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but your plan currently returns one model per analysis (<strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time). Upgrade to Elite for a full multi-model debate.</div>`:''}
       <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
@@ -3491,7 +3744,7 @@ async function quickAddToWatchlist(sym){
 // exchange needs a backend job that isn't built yet (see chat notes), so
 // rather than fake it, this now shows real symbol/name/price/change% only,
 // paginated across the full NSE+BSE instrument list via /api/market/stocks.
-let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined, screenerSignal=undefined;
+let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined, screenerSignal=undefined, screenerPeriod='1d';
 
 async function renderScreener(){
   const el=document.getElementById('screener-results');
@@ -3548,7 +3801,7 @@ async function renderScreener(){
     // views. Skipped entirely if the Buy/Hold/Sell filter isn't relevant
     // to the current view — but we still show badges even with "All"
     // selected, so fetch on every render.
-    const signals=await fetchSignalsBatch(items.map(it=>it.symbol)).catch(()=>({}));
+    const signals=await fetchSignalsBatch(items.map(it=>it.symbol),screenerPeriod).catch(()=>({}));
 
     // Apply the Up/Down and Buy/Hold/Sell filters against real computed
     // data (never guessed). Stocks with no quote/signal yet are excluded
@@ -3821,7 +4074,7 @@ function renderDashboard(section){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <div><div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text)">Welcome back, ${firstName} 👋</div>
         <div style="font-size:13px;color:var(--text2);margin-top:3px">Your AI trading intelligence for today · ${planLabel} Plan</div></div>
-        <div class="live-pill"><span class="live-dot"></span>Market Open</div>
+        <div class="live-pill" id="dash-market-pill"><span class="live-dot"></span>${globalMarketOpen===false?'Market Closed':(globalMarketOpen===true?'Market Open':'Checking…')}</div>
       </div>
       <div class="admin-panel" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -4460,12 +4713,24 @@ async function loadPortfolioSection(){
         </table>
       </div>
       ${holdings.length?`<div class="admin-panel" style="margin-top:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Portfolio Health Check</div>
-          <button class="btn-analyse" style="padding:8px 18px;font-size:12px" onclick="runPortfolioHealthCheck()"><i class="ti ti-heart-rate-monitor"></i> Run check</button>
+        <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Portfolio Health Check</div>
+        <div class="inp-group" style="margin:14px 0 16px">
+          <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
+          <div class="ai-chips" id="ai-model-chips-portfolio">
+            <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
+            <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="pro" data-model="claude-sonnet-4.6" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip" data-plan="pro" data-model="gpt-4o" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" data-model="gemini-2.5-pro" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" data-model="claude-opus-4.7" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
+            <button class="ai-chip locked" data-plan="elite" data-model="deepseek-r1" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
+          </div>
+          <span style="font-size:11px;color:var(--text3)">Tap a model to include it (at least one stays selected) · Selecting 2+ models asks each one for a health check; selecting 1 asks just that model.</span>
         </div>
+        <button class="btn-analyse" style="padding:8px 18px;font-size:12px;margin-bottom:12px" onclick="runPortfolioHealthCheck()"><i class="ti ti-heart-rate-monitor"></i> Run check</button>
         <div id="portfolio-health" style="font-size:13px;color:var(--text2);line-height:1.7">Click "Run check" for AI commentary on concentration risk and diversification, based on your real holdings above.</div>
       </div>`:''}`;
+    refreshModelChipLocks();
   }catch(e){
     wrap.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)">Could not load portfolio right now. Please try again shortly.</div>`;
   }
@@ -4480,10 +4745,11 @@ async function runPortfolioHealthCheck(){
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Could not load portfolio.');
     const holdings=(data.holdings||[]).map(h=>({symbol:h.stock_symbol,sector:h.sector||'Unknown',qty:h.quantity,value:h.value,pnlPct:h.pnlPct}));
-    const res2=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'portfolioHealth',context:{holdings}})});
-    const data2=await res2.json();
-    if(!res2.ok)throw new Error(data2.error||'HTTP '+res2.status);
-    el.innerHTML=data2.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data2.model)||'AI'}</div>`;
+    await runMultiModelInsight(
+      'portfolio-health','portfolioHealth',{holdings},'ai-model-chips-portfolio',
+      'Analysing your real holdings…',
+      'Could not run health check right now — please try again shortly.'
+    );
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not run health check right now — please try again shortly.</span>`;
   }
@@ -5305,6 +5571,7 @@ async function loadAdminPanel(){
     const adsData = await adsRes.json().catch(()=>({enquiries:[],pendingCount:0}));
     const accData = await accRes.json().catch(()=>null);
     if(!statsRes.ok) throw new Error(stats.error||'Failed to load admin stats.');
+    loadPredictionLog(1); // full raw prediction log (every date, every user) — loaded separately since it paginates on its own
 
     setText('adm-total-users', (stats.totalUsers ?? 0).toLocaleString('en-IN'));
     setText('adm-new-users', `↑ +${stats.newUsersThisWeek ?? 0} this week`);
@@ -5410,6 +5677,62 @@ async function loadAdminPanel(){
   }
 }
 
+// Full raw prediction log — every prediction ever logged for every user, on
+// every date, including ones still pending. Backs the "All predictions"
+// table under the accuracy panel; paginates server-side via /api/admin/predictions
+// so this stays fast no matter how much history has piled up.
+let predLogState = { page: 1, totalPages: 1, total: 0 };
+async function loadPredictionLog(page){
+  const tbody = document.getElementById('pred-log-tbody');
+  if(!tbody || !currentUser || !currentUser.is_admin) return;
+  page = Math.max(page || 1, 1);
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr>';
+  try{
+    const outcome = document.getElementById('pred-log-outcome')?.value || '';
+    const symbol = (document.getElementById('pred-log-symbol')?.value || '').trim();
+    const params = new URLSearchParams({ page, limit: 25 });
+    if(outcome) params.set('outcome', outcome);
+    if(symbol) params.set('symbol', symbol);
+
+    const res = await apiFetch('/api/admin/predictions?'+params.toString());
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed to load prediction log.');
+
+    predLogState = { page: data.page, totalPages: data.totalPages, total: data.total };
+
+    const rows = data.predictions || [];
+    tbody.innerHTML = rows.length
+      ? rows.map(p=>{
+          const outcomeColor = p.outcome==='correct' ? 'var(--teal)' : p.outcome==='incorrect' ? 'var(--rose2)' : 'var(--text3)';
+          const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          const evalStr = p.evaluated_at ? new Date(p.evaluated_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          return `<tr>
+            <td>${dateStr}</td>
+            <td style="color:var(--text2);font-size:11px">${p.user_email||'—'}</td>
+            <td style="color:var(--text);font-weight:600">${p.stock_symbol}</td>
+            <td style="text-transform:capitalize">${(p.sentiment||'—').replace(/_/g,' ')}</td>
+            <td>₹${Number(p.entry_price||0).toLocaleString('en-IN')}</td>
+            <td>${p.actual_price_at_horizon!=null ? '₹'+Number(p.actual_price_at_horizon).toLocaleString('en-IN') : '—'}</td>
+            <td style="color:${outcomeColor};font-weight:600;text-transform:capitalize">${p.outcome||'pending'}</td>
+            <td style="font-size:11px;color:var(--text3)">${evalStr}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">No predictions logged yet.</td></tr>';
+
+    const summary = document.getElementById('pred-log-summary');
+    if(summary) summary.textContent = data.total
+      ? `Page ${data.page} of ${data.totalPages} · ${data.total.toLocaleString('en-IN')} predictions total`
+      : 'No predictions logged yet.';
+
+    const prevBtn = document.getElementById('pred-log-prev');
+    const nextBtn = document.getElementById('pred-log-next');
+    if(prevBtn) prevBtn.disabled = data.page <= 1;
+    if(nextBtn) nextBtn.disabled = data.page >= data.totalPages;
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--rose2);padding:16px">Could not load prediction log right now.</td></tr>';
+  }
+}
+
 // Manually kicks off the same daily 18:00 IST evaluation job on demand,
 // for when an admin wants fresh accuracy numbers without waiting for cron.
 async function runAiAccuracyEvaluationNow(){
@@ -5418,6 +5741,7 @@ async function runAiAccuracyEvaluationNow(){
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Evaluation failed.');
     await loadAdminPanel();
+    await loadPredictionLog(1);
   }catch(e){alert('Could not run evaluation right now. Please try again shortly.');}
 }
 
@@ -5812,6 +6136,7 @@ registerStockSearch('analysis-search-inp',(sym,name,exchange)=>{
   document.getElementById('inp-sym').value=sym;
   document.getElementById('inp-name').value=name||'';
   if(exchange)setAnalysisExchange(exchange);
+  document.querySelectorAll('#analysis-idx-nifty50,#analysis-idx-sensex,#analysis-idx-niftybank').forEach(c=>c.classList.remove('sel'));
 });
 registerStockSearch('analysis-search-inp2',(sym,name)=>{
   document.getElementById('inp-sym2').value=sym;
@@ -5882,14 +6207,16 @@ async function runPortfolioScan(){
     if(!holdings.length){
       rw.innerHTML=`<div class="disclaimer">You don't have any holdings yet — <a href="#" onclick="event.preventDefault();switchDash('portfolio')">add some to your portfolio</a> first, then run a scan.</div>`;
     }else{
-      const res2=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'portfolioHealth',context:{holdings}})});
-      const data2=await res2.json();
-      if(!res2.ok)throw new Error(data2.error||'AI portfolio scan failed.');
       rw.innerHTML=`<div class="res-block-title" style="padding:0 0 10px">Portfolio scan result</div>
         <div class="admin-panel">
-          <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Based on your ${holdings.length} real holding${holdings.length===1?'':'s'} · ${modelDisplayName(data2.model)||'AI'}</div>
-          <div style="font-size:13px;color:var(--text2);line-height:1.7">${data2.text.replace(/\n/g,'<br/>')}</div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Based on your ${holdings.length} real holding${holdings.length===1?'':'s'}</div>
+          <div id="portfolio-scan-result" style="font-size:13px;color:var(--text2);line-height:1.7"></div>
         </div>`;
+      await runMultiModelInsight(
+        'portfolio-scan-result','portfolioHealth',{holdings},'ai-model-chips',
+        'Analysing your real holdings…',
+        'Could not run portfolio scan right now — please try again shortly.'
+      );
     }
   }catch(e){
     rw.innerHTML=`<div class="disclaimer" style="border-color:var(--rose2);color:var(--rose2)"><strong>Couldn't run portfolio scan.</strong> Please try again shortly.</div>`;
@@ -5903,6 +6230,7 @@ async function runCompareAnalysis(){
   const symA=(document.getElementById('inp-sym').value.trim()||document.getElementById('inp-name').value.trim()).toUpperCase();
   const symB=(document.getElementById('inp-sym2').value.trim()||document.getElementById('inp-name2').value.trim()).toUpperCase();
   if(!symA||!symB){alert('Enter both stock symbols to compare.');return;}
+  const tfValue=document.getElementById('inp-timeframe')?.value||'1d';
   if(!currentUser){
     alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
     show('login');
@@ -5915,11 +6243,12 @@ async function runCompareAnalysis(){
   btn.disabled=true;isAnalysing=true;
   ['ls1','ls2','ls3','ls4'].forEach(id=>document.getElementById(id).classList.add('active'));
 
+  const selectedModels=getSelectedModelIds('ai-model-chips');
   const runOne=async(sym)=>{
     try{
       const res=await apiFetch('/api/ai/analyze',{
         method:'POST',
-        body:JSON.stringify({stockSymbol:sym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{})}),
+        body:JSON.stringify({stockSymbol:sym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{}),models:selectedModels,model:selectedModels[0]}),
       });
       const data=await res.json();
       if(!res.ok){ const err=new Error(data.error||'AI analysis failed.'); err.status=res.status; throw err; }
@@ -5930,6 +6259,8 @@ async function runCompareAnalysis(){
     }
   };
   const [a,b]=await Promise.all([runOne(symA),runOne(symB)]);
+  if(a.ok)syncModelChipsWithResult(a.data,'ai-model-chips');
+  if(b.ok&&!a.ok)syncModelChipsWithResult(b.data,'ai-model-chips');
 
   lw.style.display='none'; btn.disabled=false; isAnalysing=false;
   rw.style.display='block';
@@ -5953,6 +6284,7 @@ async function runCompareAnalysis(){
     </div>`;
   };
   rw.innerHTML=`<div class="res-block-title" style="padding:0 0 10px">Comparison result</div>
+    ${renderHorizonRiskHtml((a.ok&&a.data.horizonRiskContext)||(b.ok&&b.data.horizonRiskContext),tfValue)}
     <div style="display:flex;gap:14px;flex-wrap:wrap">${card(symA,a)}${card(symB,b)}</div>`;
   rw.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -6930,6 +7262,49 @@ async function renderOptionsChain(){
     <br/><br/><span style="font-size:11px;color:var(--text3)">PCR and Max Pain are computed directly from real Upstox open interest data — this is arithmetic, not an AI model. Not financial advice.</span>`;
 }
 
+// Shared by AI Option Strategy Advisor & AI Portfolio Health Check: with one
+// model selected it behaves exactly as before (single call, single answer).
+// With 2+ models selected it asks each one separately (one /api/ai/insight
+// call per model — this endpoint isn't part of the metered "analyses/month"
+// quota, unlike /api/ai/analyze) and renders each model's own answer as its
+// own card, same visual language as the Analysis page's model debate.
+async function runMultiModelInsight(elId,kind,context,chipsContainerId,loadingText,errorText){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  const selectedModels=getSelectedModelIds(chipsContainerId);
+  el.innerHTML=`<span style="color:var(--text3)">${loadingText}</span>`;
+  try{
+    if(selectedModels.length<=1){
+      const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind,context,model:selectedModels[0]})});
+      const data=await res.json();
+      if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
+      el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
+      syncModelChipsWithResult(data,chipsContainerId);
+    }else{
+      const results=await Promise.all(selectedModels.map(async(m)=>{
+        try{
+          const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind,context,model:m})});
+          const data=await res.json();
+          if(!res.ok){ const err=new Error(data.error||'HTTP '+res.status); err.status=res.status; throw err; }
+          return {ok:true,requested:m,data};
+        }catch(e){
+          return {ok:false,requested:m,error:e.message};
+        }
+      }));
+      const ok=results.filter(r=>r.ok);
+      if(!ok.length)throw new Error(results[0]?.error||'All models failed');
+      el.innerHTML=`<div class="ai-debate">${ok.map(r=>`<div class="debate-card">
+          <div class="debate-header"><div class="debate-ai">${modelDisplayName(r.data.model||r.requested)}</div></div>
+          <div class="debate-text">${(r.data.text||'').replace(/\n/g,'<br/>')}</div>
+        </div>`).join('')}</div>
+        ${results.some(r=>!r.ok)?`<div style="font-size:11px;color:var(--text3);margin-top:8px">Some selected models couldn't respond this time — showing the ${ok.length} that did.</div>`:''}`;
+      const ranModels=ok.map(r=>r.data.model).filter(Boolean);
+      syncModelChipsWithResult({modelDebate:ranModels.map(m=>({model:m}))},chipsContainerId);
+    }
+  }catch(e){
+    el.innerHTML=`<span style="color:var(--rose2)">${errorText}</span>`;
+  }
+}
 async function getOptionStrategyAdvice(){
   const el=document.getElementById('option-strategy-advice');
   if(!el)return;
@@ -6937,15 +7312,13 @@ async function getOptionStrategyAdvice(){
     el.innerHTML=`<span style="color:var(--text3)">Load the option chain first — no real data to base a suggestion on yet.</span>`;
     return;
   }
-  el.innerHTML=`<span style="color:var(--text3)">Asking AI for a strategy suggestion…</span>`;
-  try{
-    const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'optionStrategy',context:{underlying:lastOptionChainSummary.underlying,expiry:lastOptionChainSummary.expiry,chainSummary:lastOptionChainSummary}})});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
-  }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI suggestion right now — please try again shortly.</span>`;
-  }
+  await runMultiModelInsight(
+    'option-strategy-advice','optionStrategy',
+    {underlying:lastOptionChainSummary.underlying,expiry:lastOptionChainSummary.expiry,chainSummary:lastOptionChainSummary},
+    'ai-model-chips-fno',
+    'Asking AI for a strategy suggestion…',
+    'Could not get AI suggestion right now — please try again shortly.'
+  );
 }
 
 // ── BACKTESTING ENGINE (real historical data via Upstox) ──

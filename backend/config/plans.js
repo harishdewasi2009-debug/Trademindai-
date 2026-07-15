@@ -6,16 +6,16 @@
 //   Free  ₹0     — Gemini Flash only
 //                  50,000 tokens/month | 1,500 tokens/request | 7 analyses/mo
 //   Basic ₹149   — Gemini Flash + DeepSeek
-//                  250,000 tokens/month | 2,000 tokens/request | 77 analyses/mo
+//                  250,000 tokens/month | 2,000 tokens/request | 49 analyses/mo
 //   Pro   ₹999   — Gemini + DeepSeek + Claude Sonnet (limited) + GPT (limited)
-//                  1,000,000 tokens/month | 5,000 tokens/request | 777 analyses/mo
-//   Elite ₹2999  — GPT premium + Claude premium + Gemini advanced + DeepSeek Pro
-//                  3,000,000 tokens/month | 10,000 tokens/request | unlimited analyses
+//                  1,000,000 tokens/month | 5,000 tokens/request | 499 analyses/mo
+//   Elite ₹3199  — GPT premium + Claude premium + Gemini advanced + DeepSeek Pro
+//                  2,015,000 tokens/month | 10,000 tokens/request | 1499 analyses/mo
 //
 //  UPDATED: Basic lowered 300k → 250k. Pro raised 800k → 1,000,000 (×1.25
 //  per-model rescale). Elite raised 1,200,000 → 3,000,000 (×2.5 per-model
 //  rescale). See per-plan comments below for the new worst-case cost math.
-//  Monthly analysis caps set to Free 7 / Basic 77 / Pro 777 / Elite unlimited.
+//  Monthly analysis caps set to Free 7 / Basic 49 / Pro 499 / Elite 1499.
 // ══════════════════════════════════════════════════════════════════════════
 
 const PLANS = {
@@ -59,7 +59,7 @@ const PLANS = {
     // Token limits
     monthlyTokenQuota:   250_000,     // 250,000 tokens/month
     maxTokensPerRequest: 2_000,       // 2,000 tokens max per single request
-    monthlyAiQueries:    77,          // 77 analyses/month
+    monthlyAiQueries:    49,          // 49 analyses/month
 
     // Basic calls Gemini Flash first, falls back to DeepSeek only on failure
     // (not parallel) — so each model gets the FULL plan quota as its own
@@ -106,7 +106,7 @@ const PLANS = {
     // to ~₹361 — still comfortably under the ₹999 price.
     monthlyTokenQuota:   1_000_000,   // 1,000,000 tokens/month
     maxTokensPerRequest: 5_000,       // 5,000 tokens max per single request
-    monthlyAiQueries:    777,         // 777 analyses/month
+    monthlyAiQueries:    499,         // 499 analyses/month
 
     // Pro calls Gemini Flash + Claude Sonnet + ChatGPT IN PARALLEL on every
     // request (see aiService.js), with DeepSeek as a fallback if all three
@@ -160,19 +160,24 @@ const PLANS = {
 
   elite: {
     name: 'Elite',
-    amountInPaise: 299900,            // ₹2,999
+    amountInPaise: 319900,            // ₹3,199 (raised from ₹2,999 — see quota note below)
 
     // Token limits
-    // UPDATED: quota raised from 1,200,000 → 3,000,000 (×2.5). Per-model
-    // splits below are scaled by the same 2.5 factor to preserve the
-    // original cost-weighted ratios (Claude Opus, the priciest model, still
-    // gets the smallest individual slice). Combined worst-case (every model
-    // maxing its own quota the same month) scales from ~₹758 to ~₹1,895 —
-    // still under the ₹2,999 price, but with a noticeably thinner margin
-    // than before, so keep an eye on real usage after rollout.
-    monthlyTokenQuota:   3_000_000,   // 3,000,000 tokens/month
+    // UPDATED (margin fix): price raised ₹2,999 → ₹3,199 and per-model quotas
+    // cut ~32% from the previous 3,000,000-token total. At the old
+    // 3,000,000-token quota, a heavy user maxing every model with a mostly-
+    // output token mix could cost ~₹4,909/mo in real AI spend — a ₹1,910
+    // LOSS against the ₹2,999 price. These new quotas total 2,015,000
+    // tokens/month:
+    //   - Typical usage (70% input / 30% output): ~₹1,481 AI cost/mo →
+    //     ~₹1,718 margin (comfortably past the ₹1,500 target).
+    //   - Worst case (every model maxed, 100% output tokens): ~₹3,282
+    //     AI cost/mo → only a ~₹83 loss, down from ~₹1,910 — nearly
+    //     eliminates the tail-risk loss instead of just improving the
+    //     average case.
+    monthlyTokenQuota:   2_015_000,   // 2,015,000 tokens/month
     maxTokensPerRequest: 10_000,      // 10,000 tokens max per single request
-    monthlyAiQueries:    -1,          // unlimited requests (token quota is the real gate)
+    monthlyAiQueries:    1499,        // 1499 analyses/month
 
     // Elite calls ALL FOUR flagship models IN PARALLEL on every request
     // (see aiService.js consensus + debate logic). Claude Opus is by far
@@ -181,32 +186,33 @@ const PLANS = {
     // proportionally more room since they're cheaper per token.
     // Models on this plan: Gemini Pro, Claude Opus 4, ChatGPT (high),
     // DeepSeek R1 — all four called on every request.
-    // Combined worst-case ~₹1,895/mo against the ₹2,999 price. Only Opus's
-    // share is independently verifiable from a known per-token rate
-    // (~₹267 at its 375,000-token quota); Gemini Pro / ChatGPT-high /
-    // DeepSeek R1 don't have documented per-token rates in this codebase,
-    // so their individual shares of the ~₹1,895 total are estimates, not
-    // a precise breakdown.
+    // Per-model worst-case (100% output) / realistic (70% input, 30% output)
+    // AI cost, computed from the real COST_PER_1K rates in aiService.js:
+    //   gemini_pro:   ~₹646 worst / ~₹250 realistic
+    //   claude_opus4: ~₹1,794 worst / ~₹790 realistic
+    //   gpt4o_high:   ~₹718 worst / ~₹383 realistic
+    //   deepseek_r1:  ~₹124 worst / ~₹59 realistic
+    // Combined: ~₹3,282 worst-case / ~₹1,481 realistic against the ₹3,199 price.
     aiModels: {
       gemini_pro: {
         modelId:           'gemini-2.5-pro',
         maxOutputTokens:   10_000,
-        monthlyTokenQuota: 1_000_000,
+        monthlyTokenQuota: 675_000,        // ~₹646 worst-case / ~₹250 realistic AI cost/mo
       },
       claude_opus4: {
         modelId:           'claude-opus-4-7',
         maxOutputTokens:   10_000,
-        monthlyTokenQuota: 375_000,        // ~₹267 worst-case AI cost/mo
+        monthlyTokenQuota: 250_000,        // ~₹1,794 worst-case / ~₹790 realistic AI cost/mo
       },
       gpt4o_high: {
         modelId:           'gpt-4o',
         maxOutputTokens:   10_000,
-        monthlyTokenQuota: 750_000,
+        monthlyTokenQuota: 500_000,        // ~₹718 worst-case / ~₹383 realistic AI cost/mo
       },
       deepseek_r1: {
         modelId:           'deepseek-reasoner',
         maxOutputTokens:   10_000,
-        monthlyTokenQuota: 875_000,
+        monthlyTokenQuota: 590_000,        // ~₹124 worst-case / ~₹59 realistic AI cost/mo
       },
     },
     features: [

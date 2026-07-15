@@ -15,6 +15,7 @@ router.patch('/users/:id/plan', validateUpdateUserPlan, ctrl.updateUserPlan);
 router.get('/api-usage', ctrl.getApiUsage);
 router.get('/ai-accuracy', ctrl.getAiAccuracy);
 router.post('/ai-accuracy/evaluate-now', ctrl.runAiAccuracyEvaluationNow);
+router.get('/predictions', ctrl.getAllPredictions);
 router.get('/advertisers', ctrl.listAdvertiserEnquiries);
 router.patch('/advertisers/:id/status', ctrl.updateAdvertiserStatus);
 

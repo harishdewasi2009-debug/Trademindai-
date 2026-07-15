@@ -2,7 +2,7 @@
 const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
-const { getAccuracyStats, evaluateDuePredictions } = require('../services/predictionAccuracyService');
+const { getAccuracyStats, evaluateDuePredictions, listAllPredictions } = require('../services/predictionAccuracyService');
 const { config } = require('../config');
 
 // AI provider bills come back from ai_requests.cost_usd in USD (that's what
@@ -109,6 +109,18 @@ const runAiAccuracyEvaluationNow = asyncHandler(async (req, res) => {
   res.json({ message: 'Evaluation run complete.', ...result });
 });
 
+// ── GET /api/admin/predictions ── (full raw log of EVERY prediction ever
+// logged — pending, correct, and incorrect — across every user and every
+// date. This is the underlying data behind /ai-accuracy's aggregated
+// numbers; nothing shown to a user via /api/ai/analyze ever falls out of
+// this list, so the admin can always see exactly what was predicted, for
+// whom, on what date, and (once evaluated) what really happened.)
+const getAllPredictions = asyncHandler(async (req, res) => {
+  const { page, limit, outcome, symbol, from, to } = req.query;
+  const result = await listAllPredictions({ page, limit, outcome, symbol, from, to });
+  res.json(result);
+});
+
 // ── GET /api/admin/advertisers ── (real enquiries submitted via the public
 // "Advertise with us" form — controllers/advertiserController.js)
 const listAdvertiserEnquiries = asyncHandler(async (req, res) => {
@@ -148,5 +160,5 @@ const updateAdvertiserStatus = asyncHandler(async (req, res) => {
 
 module.exports = {
   getStats, listUsers, updateUserPlan, getApiUsage, getAiAccuracy, runAiAccuracyEvaluationNow,
-  listAdvertiserEnquiries, updateAdvertiserStatus,
+  getAllPredictions, listAdvertiserEnquiries, updateAdvertiserStatus,
 };
