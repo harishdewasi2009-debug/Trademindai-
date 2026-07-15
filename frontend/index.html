@@ -2605,7 +2605,7 @@ async function fetchYahooChart(symbol){
   let lastErr;
   for(const proxy of CORS_PROXIES){
     try{
-      const res=await fetch(proxy(target),{cache:'no-store',signal:AbortSignal.timeout(API_TIMEOUT_MS)});
+      const res=await fetch(proxy(target),{cache:'no-store'});
       if(!res.ok)throw new Error('HTTP '+res.status);
       const data=await res.json();
       const result=data?.chart?.result?.[0];
@@ -6398,7 +6398,7 @@ async function fetchRealCandles(symbol,tf,exchange){
     const url=isIndex
       ? `/api/market/index-candles?underlying=${encodeURIComponent(symbol)}&${qs}`
       : `/api/market/candles/${encodeURIComponent(symbol)}?${qs}`;
-    const res=await apiFetch(url,{signal:AbortSignal.timeout(35000)});
+    const res=await apiFetch(url);
     if(!res.ok){
       let reason='HTTP '+res.status;
       try{ const body=await res.json(); if(body?.error)reason=body.error; }catch(_){}
