@@ -28,12 +28,26 @@ const marketDataService = require('./marketDataService');
 const { computeAllIndicators, buildFullTechnicalReport } = require('../utils/indicators');
 const AppError = require('../utils/AppError');
 
+// Mirrors the frontend's TIMEFRAME_LABELS (index.html) and the Screener's
+// Time Interval chip values — used to describe the selected analysis
+// timeframe back to the model in buildPrompt().
+const TIMEFRAME_LABELS = {
+  '1m': '1 Minute', '5m': '5 Minute', '15m': '15 Minute', '30m': '30 Minute', '1h': '1 Hour', '4h': '4 Hour',
+  '1d': '1 Day', '1w': '1 Week', '1mo': '1 Month', '3mo': '3 Month', '6mo': '6 Month', '1y': '1 Year', '3y': '3 Year', '5y': '5 Year',
+};
+
 // ── Model identifiers ────────────────────────────────────────────────────
 const MODELS = {
   GEMINI_FLASH:   'gemini-2.5-flash',
   GEMINI_PRO:     'gemini-2.5-pro',
-  CLAUDE_SONNET:  'claude-sonnet-4-6',
-  CLAUDE_OPUS:    'claude-opus-4-7',
+  // FIX: these were pinned to model IDs that no longer exist
+  // ('claude-sonnet-4-6' / 'claude-opus-4-7'). Every Claude call was
+  // returning 404 model_not_found, so callClaude()/callClaudePlain() threw
+  // on every request, and Pro/Elite/basic cascades silently fell through
+  // to whatever came next — which for most users meant landing on Gemini
+  // Flash every time regardless of plan. Updated to the current model IDs.
+  CLAUDE_SONNET:  'claude-sonnet-5',
+  CLAUDE_OPUS:    'claude-opus-4-8',
   GPT4O:          'gpt-4o',
   GPT4O_HIGH:     'gpt-4o',              // same model, higher token cap for Elite
   DEEPSEEK_V3:    'deepseek-chat',       // DeepSeek V3
@@ -98,21 +112,41 @@ function normalizeIndexLabel(stockSymbol) {
   return null;
 }
 
-async function fetchRealMarketContext(stockSymbol, exchange) {
+// FIX: the Analysis page's "Analysis timeframe" dropdown (1 Minute … 5
+// Year, same values as the Screener's Time Interval chips) was collected
+// client-side as `timeframe` and sent on every /api/ai/analyze request, but
+// nothing on the backend ever read it — this endpoint always pulled
+// hardcoded daily candles over a fixed 1-year window no matter what the
+// user picked. Reuses marketDataService's candleParamsForPeriod (same
+// mapping that now drives the Screener) so both pages are consistent; the
+// '1d'/default case keeps the original 1-year lookback since that's what
+// the indicator set here (including the 120-candle Fibonacci swing) was
+// tuned against — a shorter default window would leave it thin on history.
+function candleParamsForAnalysisTimeframe(timeframe) {
+  const mapped = marketDataService.candleParamsForPeriod(timeframe);
+  if (mapped.from) return mapped; // 3mo/6mo/1y/3y/5y chips already carry an explicit lookback
+  if (mapped.unit === 'days') {
+    const from = new Date();
+    from.setFullYear(from.getFullYear() - 1);
+    return { ...mapped, from: from.toISOString().slice(0, 10) };
+  }
+  return mapped; // minutes/hours/weeks/months chips — let getHistoricalCandles size the window itself
+}
+
+async function fetchRealMarketContext(stockSymbol, exchange, timeframe) {
   const indexLabel = normalizeIndexLabel(stockSymbol);
   if (indexLabel) return fetchRealIndexContext(indexLabel);
 
-  const to = new Date();
-  const from = new Date();
-  from.setFullYear(from.getFullYear() - 1);
+  const { unit, interval, from } = candleParamsForAnalysisTimeframe(timeframe);
+  const to = new Date().toISOString().slice(0, 10);
 
   const [quote, candleData] = await Promise.all([
     marketDataService.getLtp(stockSymbol, exchange),
     marketDataService.getHistoricalCandles(stockSymbol, {
-      unit: 'days',
-      interval: 1,
-      from: from.toISOString().slice(0, 10),
-      to: to.toISOString().slice(0, 10),
+      unit,
+      interval,
+      from,
+      to,
       exchange,
     }),
   ]);
@@ -184,8 +218,9 @@ async function fetchRealIndexContext(indexLabel) {
 // produced them. This app is not SEBI-registered, so it must describe what
 // the real indicator data shows (a "technical score") without instructing
 // the user to buy, sell, or hold, and without predicting a future price.
-function buildPrompt(stockSymbol, horizon, riskTolerance, marketContext) {
+function buildPrompt(stockSymbol, horizon, riskTolerance, marketContext, timeframe) {
   const { quote, indicators } = marketContext;
+  const timeframeLabel = TIMEFRAME_LABELS[timeframe] || '1 Day';
 
   const system = `You are TradeMind AI, an expert Indian stock market data analyst.
 You will be given REAL, live market data (price, volume, and computed technical indicators) for one NSE/BSE stock, fetched moments ago from Upstox. Base your entire analysis strictly on the numbers provided below — never invent, estimate, or recall a price or indicator value from your own training data or general knowledge, even if you believe you know this stock. If the provided data seems insufficient for some part of the analysis, say so in "reasoning" rather than guessing.
@@ -195,6 +230,7 @@ Return ONLY a JSON object — no prose, no markdown fences, no preamble. Prices 
   const user = `Describe the current technical picture for: ${stockSymbol.toUpperCase()}
 Horizon of interest: ${horizon || '1 month'}
 Stated risk tolerance: ${riskTolerance || 'moderate'}
+Indicators below are computed on ${timeframeLabel} candles (the user's selected analysis timeframe) — frame your reading in terms of this granularity.
 
 REAL LIVE MARKET DATA (fetched from Upstox just now — use these numbers, do not invent your own):
 - Current price (LTP): ${quote?.lastPrice ?? indicators.currentPrice}
@@ -532,13 +568,13 @@ function isAvailable(availableModelKeys, modelKey) {
   return availableModelKeys.includes(modelKey);
 }
 
-async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, userPlan, availableModelKeys }) {
+async function analyzeStock({ stockSymbol, horizon, riskTolerance, timeframe, exchange, userPlan, availableModelKeys }) {
   // Real data first — if this fails (Upstox not connected, symbol not
   // found, no historical candles), we throw here and never reach an AI
   // call at all. There is no fallback that lets the AI guess instead.
   let marketContext;
   try {
-    marketContext = await fetchRealMarketContext(stockSymbol, exchange);
+    marketContext = await fetchRealMarketContext(stockSymbol, exchange, timeframe);
   } catch (err) {
     console.error(`[aiService] Real market data fetch failed for ${stockSymbol}:`, err.message);
     throw new AppError(
@@ -547,7 +583,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     );
   }
 
-  const { system, user } = buildPrompt(stockSymbol, horizon, riskTolerance, marketContext);
+  const { system, user } = buildPrompt(stockSymbol, horizon, riskTolerance, marketContext, timeframe);
   const plan = (userPlan || 'free').toLowerCase();
 
   // ── FREE: Gemini Flash only ───────────────────────────────────────────
@@ -648,6 +684,25 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
     const consensusResult = groundResult(buildConsensus(parsed), marketContext.indicators, horizon, riskTolerance);
     if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
 
+    // FIX: Pro calls 2-3 models in parallel (whichever the user selected /
+    // are available) exactly like Elite does below, but this used to only
+    // ever return the merged consensus — no per-model breakdown. The
+    // frontend's "AI Model Debate" view only renders when
+    // result.modelDebate is a real array, and previously that field was
+    // only ever set in the Elite branch, so Pro users who ticked 2, 3, or 4
+    // model chips always collapsed to a single merged answer (plus a
+    // misleading "upgrade to Elite" note) even though every selected model
+    // actually ran. Build the same per-model debate array here whenever
+    // more than one model responded, regardless of plan.
+    if (raws.length > 1) {
+      consensusResult.modelDebate = raws.map((r, i) => ({
+        model:          r.model,
+        technicalScore: parsed[i]?.technicalScore || 50,
+        sentiment:      parsed[i]?.sentiment       || 'neutral',
+        reasoning:      parsed[i]?.reasoning       || '',
+      }));
+    }
+
     const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
     const totalTokIn  = breakdown.reduce((s, b) => s + b.tokIn,  0);
     const totalTokOut = breakdown.reduce((s, b) => s + b.tokOut, 0);
@@ -707,7 +762,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, exchange, use
   }
 
   // Fallback — unknown plan treated as free
-  return analyzeStock({ stockSymbol, horizon, riskTolerance, userPlan: 'free', availableModelKeys });
+  return analyzeStock({ stockSymbol, horizon, riskTolerance, timeframe, userPlan: 'free', availableModelKeys });
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -798,6 +853,43 @@ async function callDeepSeekPlain(model, prompt, systemText = INSIGHT_SYSTEM) {
   return { text, model };
 }
 
+// FIX ("select AI models" applies to every AI feature, not just Stock
+// Analysis): the insight-type features (Trade Ideas, Portfolio Health,
+// Market Brief, Option Strategy, Backtest Advisor, Multi-Timeframe) never
+// had a plain-text ChatGPT caller at all — only Gemini/Claude/DeepSeek did.
+// A user selecting the "GPT-4o" chip on Portfolio Health or Option Strategy
+// therefore got silently skipped even though the chip appeared selectable.
+async function callGPTPlain(model, prompt, systemText = INSIGHT_SYSTEM) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({ model, messages: [{ role: 'system', content: systemText }, { role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`ChatGPT ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  const text = (data.choices?.[0]?.message?.content || '').trim();
+  if (!text) throw new Error('ChatGPT returned no text');
+  return { text, model };
+}
+
+// Maps a plans.js aiModels key directly to the plain-text caller + real
+// model id to use for it. Single source of truth for "which function do I
+// call for model X" so a specific user-selected model (not just the
+// cascade default) can be honored — see getAIInsight() below.
+const INSIGHT_MODEL_STEPS = {
+  gemini_flash:  { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH  },
+  gemini_pro:    { fn: callGeminiPlain,   model: MODELS.GEMINI_PRO    },
+  claude_sonnet: { fn: callClaudePlain,   model: MODELS.CLAUDE_SONNET },
+  claude_opus4:  { fn: callClaudePlain,   model: MODELS.CLAUDE_OPUS   },
+  gpt4o:         { fn: callGPTPlain,      model: MODELS.GPT4O         },
+  gpt4o_high:    { fn: callGPTPlain,      model: MODELS.GPT4O_HIGH    },
+  deepseek_v3:   { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3   },
+  deepseek_r1:   { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_R1   },
+};
+
 // FIX: previously every plan got the exact same Gemini Flash commentary on
 // Trade Ideas / Portfolio Health / Market Brief / Option Strategy /
 // Backtest Advisor / Multi-Timeframe — the model selector on the Analysis
@@ -811,12 +903,19 @@ function insightCascadeForPlan(plan) {
       return [
         { fn: callClaudePlain,   model: MODELS.CLAUDE_OPUS  },
         { fn: callGeminiPlain,   model: MODELS.GEMINI_PRO   },
+        { fn: callGPTPlain,      model: MODELS.GPT4O_HIGH   },
         { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_R1  },
         { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
       ];
     case 'pro':
+      // FIX: ChatGPT is one of the three models Pro actually pays for
+      // (see analyzeStock's PRO branch + plans.js pro.aiModels.gpt4o) but
+      // was missing from this cascade entirely, so /api/ai/insight could
+      // never return a ChatGPT answer on Pro even though the "GPT-4o" chip
+      // was shown as selectable on Portfolio Health / Option Strategy.
       return [
         { fn: callClaudePlain,   model: MODELS.CLAUDE_SONNET },
+        { fn: callGPTPlain,      model: MODELS.GPT4O         },
         { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3   },
         { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH  },
       ];
@@ -830,10 +929,32 @@ function insightCascadeForPlan(plan) {
   }
 }
 
-async function getAIInsight(kind, context, plan = 'free') {
+// FIX (core bug behind "AI model selection has no effect"): this used to
+// always walk the plan cascade top-to-bottom regardless of which model(s)
+// the user actually ticked in the "Select AI models" chip UI — the `model`
+// field the frontend sent on every /api/ai/insight call was silently
+// dropped by the route handler and never reached this function. Now takes
+// an optional `modelKey` (a plans.js aiModels key, e.g. 'claude_sonnet')
+// and, when given, calls exactly that model instead of the cascade — so
+// picking one specific model actually asks that specific model, and
+// picking 2+ (the frontend fires one request per selected model) gets
+// independent answers from each, not N copies of whatever the cascade
+// would have picked anyway.
+async function getAIInsight(kind, context, plan = 'free', modelKey = null) {
   const promptFn = INSIGHT_PROMPTS[kind];
   if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
   const prompt = promptFn(context);
+
+  if (modelKey) {
+    const allowedOnPlan = getModelConfig(plan, modelKey);
+    const step = INSIGHT_MODEL_STEPS[modelKey];
+    if (!allowedOnPlan || !step) {
+      const err = new AppError(`That AI model isn't available on the ${plan} plan.`, 403);
+      throw err;
+    }
+    const { text, model } = await step.fn(step.model, prompt);
+    return { text, modelUsed: model || step.model, modelKey };
+  }
 
   const cascade = insightCascadeForPlan(plan);
   let lastErr;
@@ -856,5 +977,5 @@ module.exports = {
   // its own separate hardcoded deepseek→claude-only logic (see FIX note in
   // aiRoutes.js's chat handler for the item this resolves — "AI Assistant
   // wasn't using DeepSeek according to plan").
-  insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain,
+  insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain, callGPTPlain,
 };

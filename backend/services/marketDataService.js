@@ -781,6 +781,18 @@ async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5
   const encodedKey = encodeURIComponent(instrumentKey);
   const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
 
+  // FIX: unlike getHistoricalCandles() (used for stocks), this never pulled
+  // in today's candles. Upstox's historical-candle endpoint only ever
+  // covers *completed* sessions — it never includes the current day — so
+  // the NIFTY 50 / SENSEX / NIFTY BANK hero chart was always missing
+  // today's candle during market hours and looked frozen a day behind,
+  // even though every candle it did show was real. Now mirrors the stock
+  // path: fetch today's candles from the separate intraday endpoint in
+  // parallel and merge them in.
+  const intradayPromise = ['weeks', 'months'].includes(unit)
+    ? Promise.resolve([])
+    : getIntradayCandles(instrumentKey, unit, interval);
+
   const res = await fetchUpstoxWithRetry(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(15_000),
@@ -795,7 +807,12 @@ async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5
   const data = await res.json();
   const rawCandles = data.data?.candles || [];
   const candles = rawCandles.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
-  const result = { label, instrumentKey, unit, interval, candles };
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const intraday = await intradayPromise;
+  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
+
+  const result = { label, instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
   return result;
 }
@@ -935,6 +952,44 @@ function defaultFromDate(unit) {
   return d.toISOString().slice(0, 10);
 }
 
+// ── Screener "Time Interval" chip -> candle params ───────────────────────
+// FIX: the Screener sidebar's Time Interval chips (1 Minute ... 5 Year)
+// were purely cosmetic — they set screenerPeriod client-side and even sent
+// it to the backend as ?period=, but nothing on the backend ever read that
+// query param, so every signal and every "full analysis" report was always
+// computed off hardcoded daily candles no matter which interval was
+// selected. This mapping is what actually drives the computation now. The
+// short intraday/1D/1W/1M chips map to a real Upstox candle granularity;
+// Upstox has no such thing as a single "3 month" candle, so the longer
+// chips (3mo-5y) stay on daily candles but widen how much history the
+// indicators are computed over instead — same idea as the Analysis page's
+// 6M/1Y hero-chart range presets.
+const PERIOD_CANDLE_PARAMS = {
+  '1m': { unit: 'minutes', interval: 1 },
+  '5m': { unit: 'minutes', interval: 5 },
+  '15m': { unit: 'minutes', interval: 15 },
+  '30m': { unit: 'minutes', interval: 30 },
+  '1h': { unit: 'hours', interval: 1 },
+  '4h': { unit: 'hours', interval: 4 },
+  '1d': { unit: 'days', interval: 1 },
+  '1w': { unit: 'weeks', interval: 1 },
+  '1mo': { unit: 'months', interval: 1 },
+  '3mo': { unit: 'days', interval: 1, lookbackDays: 90 },
+  '6mo': { unit: 'days', interval: 1, lookbackDays: 182 },
+  '1y': { unit: 'days', interval: 1, lookbackDays: 365 },
+  '3y': { unit: 'days', interval: 1, lookbackDays: 365 * 3 },
+  '5y': { unit: 'days', interval: 1, lookbackDays: 365 * 5 },
+};
+function candleParamsForPeriod(period) {
+  const entry = PERIOD_CANDLE_PARAMS[period];
+  if (!entry) return { unit: 'days', interval: 1 }; // unknown/absent period: same default as before
+  const { unit, interval, lookbackDays } = entry;
+  if (!lookbackDays) return { unit, interval };
+  const from = new Date();
+  from.setDate(from.getDate() - lookbackDays);
+  return { unit, interval, from: from.toISOString().slice(0, 10) };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 //  SCREENER BULLISH / BEARISH / NEUTRAL BIAS — computed technical analysis, not AI
 // ─────────────────────────────────────────────────────────────────────────
@@ -957,17 +1012,23 @@ const reportCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
 // Bands, Fibonacci Zone, Indicator Summary, Technical Score, Conclusion).
 // COMPLIANCE: purely descriptive, no buy/sell/hold verdict — see
 // buildFullTechnicalReport() in utils/indicators.js.
-async function getFullTechnicalReport(symbol, exchange) {
-  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}`;
+async function getFullTechnicalReport(symbol, exchange, period) {
+  // FIX: cache key used to ignore timeframe entirely, so once a report was
+  // cached for a symbol (e.g. from the default daily view) every other
+  // Time Interval chip would just be served that same cached daily report
+  // for the next 20 minutes instead of being recomputed at its own
+  // candle granularity.
+  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}:${period || '1d'}`;
   const cached = reportCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
   try {
-    const { candles } = await getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
+    const { unit, interval, from } = candleParamsForPeriod(period);
+    const { candles } = await getHistoricalCandles(symbol, { unit, interval, from, exchange });
     const ind = computeAllIndicators(candles);
     const report = buildFullTechnicalReport(ind, { lookback: 60 });
     const data = report
-      ? { symbol: symbol.toUpperCase(), currentPrice: ind.currentPrice, ...report }
+      ? { symbol: symbol.toUpperCase(), currentPrice: ind.currentPrice, period: period || '1d', unit, interval, ...report }
       : { symbol: symbol.toUpperCase(), error: 'Not enough real candle history yet to build a full report.' };
     reportCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
     return data;
@@ -976,31 +1037,36 @@ async function getFullTechnicalReport(symbol, exchange) {
   }
 }
 
-async function getTechnicalSignal(symbol, exchange) {
-  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}`;
+async function getTechnicalSignal(symbol, exchange, period) {
+  // FIX: same stale-cache-across-timeframes bug as getFullTechnicalReport
+  // above — the cache key must include the period, otherwise whichever
+  // Time Interval chip happened to populate the cache first "wins" for
+  // every other chip for the next 20 minutes.
+  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}:${period || '1d'}`;
   const cached = signalCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.data;
 
   try {
-    const { candles } = await getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
+    const { unit, interval, from } = candleParamsForPeriod(period);
+    const { candles } = await getHistoricalCandles(symbol, { unit, interval, from, exchange });
     const ind = computeAllIndicators(candles);
     const derived = deriveSignal(ind);
     // COMPLIANCE: exposes strength/bullishVotes (descriptive), not a
     // signal/confidence verdict — see indicators.js deriveSignal() note.
     const data = derived
-      ? { symbol: symbol.toUpperCase(), strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
-      : { symbol: symbol.toUpperCase(), strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
+      ? { symbol: symbol.toUpperCase(), period: period || '1d', strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
+      : { symbol: symbol.toUpperCase(), period: period || '1d', strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
     signalCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
     return data;
   } catch (err) {
-    return { symbol: symbol.toUpperCase(), strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
+    return { symbol: symbol.toUpperCase(), period: period || '1d', strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
   }
 }
 
 // Fetches signals for many symbols with limited concurrency (Upstox has no
 // batch historical-candle endpoint, so this is N individual requests —
 // capped at 6 in flight at a time to stay well under rate limits).
-async function getSignalsBatch(symbols) {
+async function getSignalsBatch(symbols, period) {
   const list = Array.isArray(symbols) ? symbols : [];
   const CONCURRENCY = 6;
   const results = [];
@@ -1011,7 +1077,7 @@ async function getSignalsBatch(symbols) {
       const s = list[idx];
       const symbol = typeof s === 'string' ? s : s.symbol;
       const exchange = typeof s === 'string' ? undefined : s.exchange;
-      results[idx] = await getTechnicalSignal(symbol, exchange);
+      results[idx] = await getTechnicalSignal(symbol, exchange, period);
     }
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker));
@@ -1039,4 +1105,5 @@ module.exports = {
   getTechnicalSignal,
   getSignalsBatch,
   getFullTechnicalReport,
+  candleParamsForPeriod,
 };

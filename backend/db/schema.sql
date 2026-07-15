@@ -278,6 +278,19 @@ CREATE TABLE IF NOT EXISTS instrument_cache (
 );
 CREATE INDEX IF NOT EXISTS idx_instrument_cache_symbol ON instrument_cache(trading_symbol);
 
+-- ── FEEDBACK (Dashboard "Feedback" section — subject/category/rating/message) ──
+CREATE TABLE IF NOT EXISTS feedback (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subject     VARCHAR(150) NOT NULL,
+  category    VARCHAR(40) NOT NULL,
+  rating      SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  message     TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);
+
 -- ── updated_at auto-touch trigger ──
 CREATE OR REPLACE FUNCTION touch_updated_at() RETURNS TRIGGER AS $$
 BEGIN

@@ -123,7 +123,7 @@ const PLANS = {
         monthlyTokenQuota: 375_000,        // ~₹6 worst-case AI cost/mo
       },
       claude_sonnet: {
-        modelId:           'claude-sonnet-4-6',
+        modelId:           'claude-sonnet-5',
         maxOutputTokens:   5_000,
         monthlyTokenQuota: 187_500,        // ~₹160 worst-case AI cost/mo
       },
@@ -200,7 +200,7 @@ const PLANS = {
         monthlyTokenQuota: 675_000,        // ~₹646 worst-case / ~₹250 realistic AI cost/mo
       },
       claude_opus4: {
-        modelId:           'claude-opus-4-7',
+        modelId:           'claude-opus-4-8',
         maxOutputTokens:   10_000,
         monthlyTokenQuota: 250_000,        // ~₹1,794 worst-case / ~₹790 realistic AI cost/mo
       },

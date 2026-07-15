@@ -92,6 +92,15 @@ const validateAddWatchlist = [
   handleValidationErrors,
 ];
 
+// ── Feedback validators ──
+const validateSubmitFeedback = [
+  body('subject').trim().notEmpty().withMessage('Subject is required.').isLength({ max: 150 }).withMessage('Subject must be 150 characters or less.'),
+  body('category').trim().isIn(['Bug Report', 'Feature Request', 'AI Analysis Quality', 'Pricing & Billing', 'General Feedback', 'Other']).withMessage('Invalid category.'),
+  body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5.').toInt(),
+  body('message').trim().notEmpty().withMessage('Message is required.').isLength({ max: 2000 }).withMessage('Message must be 2000 characters or less.'),
+  handleValidationErrors,
+];
+
 // ── AI validators ──
 const validateAiAnalyze = [
   body('stockSymbol')
@@ -106,6 +115,12 @@ const validateAiAnalyze = [
     .optional()
     .isIn(['low', 'moderate', 'high'])
     .withMessage('riskTolerance must be low, moderate, or high.'),
+  // FIX: the "Analysis timeframe" dropdown sends this but it was neither
+  // validated nor read by the controller — see routes/aiRoutes.js.
+  body('timeframe')
+    .optional()
+    .isIn(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1mo', '3mo', '6mo', '1y', '3y', '5y'])
+    .withMessage('timeframe must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1mo, 3mo, 6mo, 1y, 3y, 5y.'),
   body('exchange')
     .optional()
     .isIn(['NSE_EQ', 'BSE_EQ'])
@@ -141,12 +156,31 @@ const validateMarketCandles = [
   handleValidationErrors,
 ];
 
+// Screener "Time Interval" chip values — must match the keys in
+// backend/services/marketDataService.js PERIOD_CANDLE_PARAMS and the
+// frontend's setScreenerTimeframe() button ids (scr-tf-*).
+const SCREENER_PERIODS = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w', '1mo', '3mo', '6mo', '1y', '3y', '5y'];
+
 const validateMarketQuotes = [
   query('symbols')
     .trim().notEmpty().withMessage('symbols is required (comma-separated).')
     .isLength({ max: 2000 }).withMessage('symbols list too long.')
     .matches(/^[A-Za-z0-9&_,-]+$/).withMessage('symbols contains invalid characters.'),
   query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
+  // FIX: /signals accepts ?period= (the Screener's Time Interval chip) but
+  // it was never validated or even read by the controller — see
+  // marketController.js getSignals.
+  query('period').optional().isIn(SCREENER_PERIODS).withMessage(`period must be one of: ${SCREENER_PERIODS.join(', ')}.`),
+  handleValidationErrors,
+];
+
+const validateMarketReport = [
+  param('symbol')
+    .trim().notEmpty().withMessage('symbol is required.')
+    .isLength({ max: 30 }).withMessage('symbol too long.')
+    .matches(/^[A-Za-z0-9&_-]+$/).withMessage('symbol contains invalid characters.'),
+  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
+  query('period').optional().isIn(SCREENER_PERIODS).withMessage(`period must be one of: ${SCREENER_PERIODS.join(', ')}.`),
   handleValidationErrors,
 ];
 
@@ -169,10 +203,12 @@ module.exports = {
   validateAddHolding,
   validateUpdateHolding,
   validateAddWatchlist,
+  validateSubmitFeedback,
   validateAiAnalyze,
   validateUpdateUserPlan,
   validateMarketSymbol,
   validateMarketCandles,
   validateMarketQuotes,
+  validateMarketReport,
   validateMarketSearch,
 };

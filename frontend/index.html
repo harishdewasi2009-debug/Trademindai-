@@ -405,6 +405,20 @@ nav{
   .dash-menu-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:12px 14px;margin-bottom:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);color:var(--text);font-weight:600;font-size:14px;cursor:pointer}
   .dash-side{display:none;margin-bottom:12px;border-radius:var(--radius-lg);border:1px solid var(--border);max-height:70vh;overflow-y:auto}
   .dash-side.dash-side-open{display:block}
+  /* Direct-tap tile grid instead of a plain scrolling link list — each
+     feature (Market Scanner, Technical Indicators, 35 Tools, etc.) is a
+     tappable tile; tapping a bundled one like "Browse all 35" still drills
+     into its own sub-grid via switchDash('allfeatures'). */
+  .dash-side{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px}
+  .dash-side .dash-user-card,.dash-side .side-section-label{grid-column:1/-1}
+  .dash-side .side-nav-item{
+    flex-direction:column;text-align:center;justify-content:center;gap:6px;
+    padding:14px 6px;border:1px solid var(--border);border-radius:var(--radius-lg);
+    background:var(--bg3);margin-bottom:0;min-height:76px;white-space:normal;
+    position:relative;
+  }
+  .dash-side .side-icon{font-size:22px}
+  .dash-side .side-badge{position:absolute;top:6px;right:6px;margin-left:0}
 }
 .dash-user-card{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:6px;background:var(--bg3)}
 .dash-ava{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#5B1FC8,#7C5CFC);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0}
@@ -939,6 +953,8 @@ html{scroll-behavior:smooth}
 
 @media(max-width:680px){
   nav{padding:12px 16px}.nav-links{display:none}
+  .nav-right{flex:1;justify-content:center}
+  .live-pill{display:none}
   .hero-h1{font-size:32px;letter-spacing:-1.2px}
   .hero-sub{font-size:14.5px;padding:0 4px}
   .hero{padding:56px 20px 48px}
@@ -1029,13 +1045,12 @@ img,svg,video,canvas,iframe{max-width:100%}
     <span class="nav-link" data-page="screener" onclick="show('screener')">Screener</span>
     <span class="nav-link" data-page="options" onclick="show('options')">Options</span>
     <span class="nav-link" data-page="pricing" onclick="show('pricing')">Pricing</span>
-    <span class="nav-link" data-page="dashboard" onclick="show('dashboard')">Dashboard</span>
     <span class="nav-link" id="nav-admin-link" data-page="admin" onclick="show('admin')" style="display:none">Admin</span>
   </div>
   <div class="nav-right">
     <div class="live-pill" id="live-status-pill"><span class="live-dot"></span>Connecting…</div>
     <div class="nav-notif" onclick="show('dashboard')"><i class="ti ti-bell"></i><span class="notif-dot"></span></div>
-    <div id="nav-auth-area">
+    <div id="nav-auth-area" style="display:flex;align-items:center;gap:10px;margin:0 auto">
       <button class="btn-ghost" onclick="show('login')">Sign in</button>
       <button class="btn-primary" onclick="show('pricing')">Get started</button>
     </div>
@@ -1056,7 +1071,6 @@ img,svg,video,canvas,iframe{max-width:100%}
   <span class="nav-link" data-page="options" onclick="show('options');toggleMobileSidebar(false)"><i class="ti ti-stack" style="margin-right:8px"></i>Options</span>
   <span class="nav-link" onclick="show('dashboard');switchDash('chat');toggleMobileSidebar(false)"><i class="ti ti-robot" style="margin-right:8px"></i>AI Assistant</span>
   <span class="nav-link" data-page="pricing" onclick="show('pricing');toggleMobileSidebar(false)"><i class="ti ti-tag" style="margin-right:8px"></i>Pricing</span>
-  <span class="nav-link" data-page="dashboard" onclick="show('dashboard');toggleMobileSidebar(false)"><i class="ti ti-layout-dashboard" style="margin-right:8px"></i>Dashboard</span>
   <span class="nav-link" id="mobile-nav-admin-link" data-page="admin" onclick="show('admin');toggleMobileSidebar(false)" style="display:none"><i class="ti ti-shield-lock" style="margin-right:8px"></i>Admin</span>
 </div>
 
@@ -1809,6 +1823,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="side-section-label">Account</div>
       <div class="side-nav-item" onclick="switchDash('referral')"><i class="ti ti-gift side-icon"></i> Referral</div>
       <div class="side-nav-item" onclick="switchDash('billing')"><i class="ti ti-receipt side-icon"></i> Billing</div>
+      <div class="side-nav-item" onclick="switchDash('feedback')"><i class="ti ti-message-2 side-icon"></i> Feedback</div>
       <div style="height:1px;background:var(--border);margin:12px 4px"></div>
       <div class="side-nav-item" onclick="logout()"><i class="ti ti-logout side-icon"></i> Sign out</div>
     </div>
@@ -1875,6 +1890,56 @@ img,svg,video,canvas,iframe{max-width:100%}
         <thead><tr><th>Company</th><th>Contact</th><th>Budget</th><th>Placement</th><th>Status</th><th>Action</th></tr></thead>
         <tbody id="admin-advertisers-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
       </table>
+    </div>
+    <div class="admin-panel" style="margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+        <div class="sec-title" style="margin-bottom:0">User feedback</div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:12px;color:var(--text2)">
+          <span>Avg rating: <strong id="adm-fb-avg" style="color:var(--text)">—</strong></span>
+          <select class="tm-inp" id="adm-fb-category" style="height:32px;font-size:11px;cursor:pointer" onchange="loadAdminFeedback(1)">
+            <option value="">All categories</option>
+            <option>Bug Report</option><option>Feature Request</option><option>AI Analysis Quality</option><option>Pricing &amp; Billing</option><option>General Feedback</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Every feedback form submission from users, newest first.</div>
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>User</th><th>Category</th><th>Rating</th><th>Subject / Message</th></tr></thead>
+        <tbody id="admin-feedback-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+      </table>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text2)">
+        <span id="adm-fb-summary">—</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-ghost" style="font-size:11px" id="adm-fb-prev" onclick="loadAdminFeedback(adminFeedbackState.page-1)"><i class="ti ti-chevron-left"></i> Prev</button>
+          <button class="btn-ghost" style="font-size:11px" id="adm-fb-next" onclick="loadAdminFeedback(adminFeedbackState.page+1)">Next <i class="ti ti-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="admin-panel" style="margin-top:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+        <div class="sec-title" style="margin-bottom:0">Referrals</div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:12px;color:var(--text2)">
+          <span>Credited: <strong id="adm-ref-credited-count" style="color:var(--text)">—</strong></span>
+          <span>Total paid out: <strong id="adm-ref-credited-amount" style="color:var(--text)">—</strong></span>
+          <select class="tm-inp" id="adm-ref-status" style="height:32px;font-size:11px;cursor:pointer" onchange="loadAdminReferrals(1)">
+            <option value="">All statuses</option>
+            <option value="credited">Credited (Pro/Elite purchased)</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Who referred whom, and whether the referred user has purchased Pro/Elite (credited) yet.</div>
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>Referrer</th><th>Referred user</th><th>Plan purchased</th><th>Status</th><th>Credit</th></tr></thead>
+        <tbody id="admin-referrals-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+      </table>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text2)">
+        <span id="adm-ref-summary">—</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-ghost" style="font-size:11px" id="adm-ref-prev" onclick="loadAdminReferrals(adminReferralsState.page-1)"><i class="ti ti-chevron-left"></i> Prev</button>
+          <button class="btn-ghost" style="font-size:11px" id="adm-ref-next" onclick="loadAdminReferrals(adminReferralsState.page+1)">Next <i class="ti ti-chevron-right"></i></button>
+        </div>
+      </div>
     </div>
     <div class="admin-panel" style="margin-top:20px;border-top-color:var(--rose2)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -2197,6 +2262,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div>
         <div class="modal-title" id="sd-symbol">—</div>
         <div style="font-size:12px;color:var(--text3)" id="sd-name">—</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px" id="sd-timeframe-badge"></div>
       </div>
       <button class="modal-close" onclick="closeStockDetail()">×</button>
     </div>
@@ -2236,6 +2302,17 @@ function isPlaceholder(v){ return !v || v.includes('YOUR_') || v.includes('YOUR-
 // ══════════════════════════════════════════════════════════════════════════
 let authToken=null;     // in-memory access token (kept out of localStorage on purpose)
 let currentUser=null;   // { id, name, email, plan, subscription_status, is_admin, ... }
+// FIX: when show() redirects a logged-out visitor to /login (e.g. from
+// Screener), we need to land them back where they were trying to go
+// instead of always dumping them on the Dashboard after a successful
+// sign-in. Set right before show('login') is called for that reason, read
+// once by goToPostLoginDestination() below, then cleared.
+let postLoginRedirect=null;
+function goToPostLoginDestination(){
+  const dest=postLoginRedirect||'dashboard';
+  postLoginRedirect=null;
+  show(dest);
+}
 
 function setText(id,text){ const el=document.getElementById(id); if(el)el.textContent=text; }
 
@@ -2334,7 +2411,6 @@ function updateAuthUI(){
   if(currentUser){
     if(navArea)navArea.innerHTML=`
       <span style="font-size:12px;color:var(--text2);margin-right:4px">Hi, ${currentUser.name.split(' ')[0]}</span>
-      <button class="btn-ghost" onclick="show('dashboard')">Dashboard</button>
       <button class="btn-primary" onclick="logout()">Sign out</button>`;
     if(adminLink)adminLink.style.display=currentUser.is_admin?'':'none';
     const mobileAdminLink=document.getElementById('mobile-nav-admin-link');
@@ -2450,7 +2526,7 @@ async function submitLogin(){
     if(!res.ok)throw new Error(data.error||'Login failed.');
     authToken=data.accessToken;currentUser=data.user;
     updateAuthUI();
-    show('dashboard');
+    goToPostLoginDestination();
   }catch(e){showLoginError(e.message);}
 }
 
@@ -2466,7 +2542,7 @@ async function submitSignup(){
     if(!res.ok)throw new Error(data.error||'Could not create account.');
     authToken=data.accessToken;currentUser=data.user;
     updateAuthUI();
-    show('dashboard');
+    goToPostLoginDestination();
   }catch(e){showLoginError(e.message);}
 }
 
@@ -2535,7 +2611,7 @@ async function handleGoogleCredential(response){
     if(!res.ok)throw new Error(data.error||'Google sign-in failed.');
     authToken=data.accessToken;currentUser=data.user;
     updateAuthUI();
-    show('dashboard');
+    goToPostLoginDestination();
   }catch(e){
     showLoginError(e.message||'Google sign-in failed. Please try again.');
   }
@@ -2642,6 +2718,17 @@ window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='fu
 function show(id){
   if(id==='dashboard' && !currentUser){ show('login'); return; }
   if(id==='admin' && (!currentUser || !currentUser.is_admin)){ show('login'); return; }
+  // FIX: Screener requires a signed-in session on the backend
+  // (requireAuth + requireFeature('screener') in routes/marketRoutes.js),
+  // but nothing stopped a logged-out visitor from opening the Screener page
+  // itself — they'd see the full sidebar/filters, then renderScreener()'s
+  // /api/market/stocks call would 401 and land on a generic "Stocks are
+  // temporarily unavailable" message with no mention of signing in. Now
+  // gated the same way Dashboard/Admin already were: straight to the
+  // Google sign-in screen, and back to Screener automatically on success —
+  // see postLoginRedirect / goToPostLoginDestination() above and their use
+  // in submitLogin()/submitSignup()/handleGoogleCredential().
+  if(id==='screener' && !currentUser){ postLoginRedirect='screener'; show('login'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
   const p=document.getElementById('page-'+id);
@@ -3212,6 +3299,82 @@ function toggleChip(el){
     return; // can't deselect the last remaining model
   }
   el.classList.toggle('sel');
+  if(group)saveChipSelection(group.id);
+}
+// PRD: "Save the user's last selected models." Persists per chip-strip
+// (each AI feature keeps its own selection) so returning to a page — or
+// reloading — restores exactly what was ticked last time, instead of
+// always resetting to the single default model.
+function saveChipSelection(containerId){
+  if(!containerId)return;
+  try{
+    const ids=getSelectedModelIds(containerId);
+    localStorage.setItem('tm_ai_models_'+containerId, JSON.stringify(ids));
+  }catch(e){/* localStorage unavailable — selection just won't persist */}
+}
+function restoreChipSelection(containerId){
+  const group=document.getElementById(containerId);
+  if(!group)return;
+  let saved;
+  try{ saved=JSON.parse(localStorage.getItem('tm_ai_models_'+containerId)||'null'); }catch(e){ saved=null; }
+  if(!Array.isArray(saved)||!saved.length)return;
+  const chips=[...group.querySelectorAll('.ai-chip:not(.locked)')];
+  const matches=chips.filter(c=>saved.includes(c.dataset.model));
+  if(!matches.length)return; // nothing saved is selectable on this plan — leave the default
+  chips.forEach(c=>c.classList.remove('sel'));
+  matches.forEach(c=>c.classList.add('sel'));
+}
+// PRD: "Allow quick Select All and Clear All buttons." Select All ticks
+// every unlocked (plan-available) model; Clear All resets back to just the
+// single default model rather than zero, since at least one model must
+// always stay selected for an analysis to run.
+function selectAllChips(containerId){
+  const group=document.getElementById(containerId);
+  if(!group)return;
+  group.querySelectorAll('.ai-chip:not(.locked)').forEach(c=>c.classList.add('sel'));
+  saveChipSelection(containerId);
+}
+function clearAllChips(containerId){
+  const group=document.getElementById(containerId);
+  if(!group)return;
+  const chips=[...group.querySelectorAll('.ai-chip:not(.locked)')];
+  chips.forEach(c=>c.classList.remove('sel'));
+  if(chips[0])chips[0].classList.add('sel');
+  saveChipSelection(containerId);
+}
+// Inserts a small "Select all / Clear all" toolbar right after a given
+// ".ai-chips" strip, once per container (safe to call repeatedly whenever
+// that section re-renders).
+function ensureChipToolbar(container){
+  if(!container||!container.id)return;
+  const next=container.nextElementSibling;
+  if(next&&next.classList&&next.classList.contains('ai-chip-toolbar'))return;
+  const bar=document.createElement('div');
+  bar.className='ai-chip-toolbar';
+  bar.style.cssText='display:flex;gap:14px;margin-top:8px';
+  bar.innerHTML=`<button type="button" style="background:none;border:none;padding:0;font-size:11px;color:var(--teal);cursor:pointer;text-decoration:underline" onclick="selectAllChips('${container.id}')">Select all</button>
+    <button type="button" style="background:none;border:none;padding:0;font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline" onclick="clearAllChips('${container.id}')">Clear all</button>`;
+  container.insertAdjacentElement('afterend',bar);
+}
+// Builds one "Select AI models" chip strip + toolbar as an HTML string, for
+// features that render their chips dynamically (Market Brief, Trade Ideas)
+// rather than as static markup. Kept in the same visual language (same
+// classes, same 4 models + plan-gated extras) as the existing static strips
+// on Stock Analysis / Portfolio Health / Option Strategy.
+function modelChipsHtml(containerId){
+  return `<div class="inp-group" style="margin:14px 0 16px">
+    <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
+    <div class="ai-chips" id="${containerId}">
+      <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
+      <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
+      <button class="ai-chip" data-plan="pro" data-model="claude-sonnet-4.6" onclick="toggleChip(this)"><span class="chip-dot chip-claude"></span> Claude Sonnet 4.6 <i class="ti ti-lock" style="font-size:11px"></i></button>
+      <button class="ai-chip" data-plan="pro" data-model="gpt-4o" onclick="toggleChip(this)"><span class="chip-dot chip-gpt"></span> GPT-4o <i class="ti ti-lock" style="font-size:11px"></i></button>
+      <button class="ai-chip locked" data-plan="elite" data-model="gemini-2.5-pro" onclick="toggleChip(this)"><span class="chip-dot chip-geminipro"></span> Gemini 2.5 Pro <i class="ti ti-lock" style="font-size:11px"></i></button>
+      <button class="ai-chip locked" data-plan="elite" data-model="claude-opus-4.7" onclick="toggleChip(this)"><span class="chip-dot chip-opus"></span> Claude Opus 4.7 <i class="ti ti-lock" style="font-size:11px"></i></button>
+      <button class="ai-chip locked" data-plan="elite" data-model="deepseek-r1" onclick="toggleChip(this)"><span class="chip-dot chip-r1"></span> DeepSeek R1 <i class="ti ti-lock" style="font-size:11px"></i></button>
+    </div>
+    <span style="font-size:11px;color:var(--text3)">Tap a model to include it (at least one stays selected) · selecting 2+ asks each one independently and shows every answer side by side.</span>
+  </div>`;
 }
 // Reads the model ids (data-model) the user has actually ticked in a given
 // "Select AI models" strip — only unlocked+selected chips count. Falls back
@@ -3246,6 +3409,15 @@ function refreshModelChipLocks(){
     const locked=rank<needRank;
     chip.classList.toggle('locked',locked);
     if(locked)chip.classList.remove('sel'); // never show a locked model as "selected"
+  });
+  // Every "Select AI models" strip on the page gets a Select all/Clear all
+  // toolbar and has its last saved selection restored (falls back to
+  // whatever's already ticked by default if nothing was saved, or if a
+  // previously-saved model is no longer available on this plan).
+  document.querySelectorAll('.ai-chips').forEach(group=>{
+    if(!group.id)return;
+    ensureChipToolbar(group);
+    restoreChipSelection(group.id);
   });
 }
 // After a real AI result comes back, reflect which model(s) actually ran
@@ -3489,7 +3661,7 @@ async function runAnalysis(){
     // ran more than one; ticking a single model always collapses to the
     // single-model report, even on plans/accounts where the backend
     // would otherwise default to a multi-model debate.
-    const rawDebate=result.modelDebate||null; // present on Elite plan only
+    const rawDebate=result.modelDebate||null; // present whenever the backend actually ran 2+ models (Pro or Elite)
     const wantsDebate=selectedModels.length>1;
     const debate=(wantsDebate&&Array.isArray(rawDebate)&&rawDebate.length>1)?rawDebate:null;
     const debateShortfall=wantsDebate&&!debate; // user asked for 2+ models but only one ran
@@ -3527,7 +3699,7 @@ async function runAnalysis(){
           <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
-      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but your plan currently returns one model per analysis (<strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time). Upgrade to Elite for a full multi-model debate.</div>`:''}
+      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but only <strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time — the other selected models may be temporarily unavailable or out of monthly quota on your plan.${(currentUser?.plan||'free').toLowerCase()!=='elite'?' Upgrade for a higher per-model quota and access to more flagship models.':''}</div>`:''}
       <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
@@ -3672,7 +3844,7 @@ async function runDeepResearch(){
           <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
         </div>`).join('')}
       </div>`:''}
-      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but your plan currently returns one model per analysis (<strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time). Upgrade to Elite for a full multi-model debate.</div>`:''}
+      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but only <strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time — the other selected models may be temporarily unavailable or out of monthly quota on your plan.${(currentUser?.plan||'free').toLowerCase()!=='elite'?' Upgrade for a higher per-model quota and access to more flagship models.':''}</div>`:''}
       <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
@@ -3785,6 +3957,11 @@ async function renderScreener(){
       // generic, unexplained failure before.
       const err=new Error(body.error||('HTTP '+res.status));
       err.isPlanGate=res.status===403;
+      // FIX: if the session expired while the user was already sitting on
+      // the Screener (apiFetch's own silent-refresh already tried and
+      // failed), fall through to a clear "sign in" prompt instead of the
+      // generic unavailable message below.
+      err.isAuthRequired=res.status===401;
       throw err;
     }
     const {items,totalPages,partialFailure}=body;
@@ -3864,6 +4041,8 @@ async function renderScreener(){
   }catch(e){
     el.innerHTML=e.isPlanGate
       ? `<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-lock" style="font-size:22px;color:var(--text3);display:block;margin-bottom:10px"></i><strong>${e.message}</strong><div style="margin-top:14px"><button class="btn-lg" onclick="show('pricing')">View plans</button></div></div>`
+      : e.isAuthRequired
+      ? `<div style="padding:40px;text-align:center;color:var(--text2)"><i class="ti ti-lock" style="font-size:22px;color:var(--text3);display:block;margin-bottom:10px"></i><strong>Sign in to use the Screener</strong><div style="margin-top:14px"><button class="btn-lg" onclick="postLoginRedirect='screener';show('login')">Sign in</button></div></div>`
       : `<div style="padding:24px;text-align:center;color:var(--rose2)">Stocks are temporarily unavailable — please try again shortly.</div>`;
   }
 }
@@ -4081,6 +4260,7 @@ function renderDashboard(section){
           <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Morning Market Brief</div>
           <button class="btn-sm" onclick="generateMarketBrief()"><i class="ti ti-refresh"></i> Refresh</button>
         </div>
+        ${modelChipsHtml('ai-model-chips-marketbrief')}
         <div id="market-brief" style="font-size:13px;color:var(--text2);line-height:1.7">Loading real market data…</div>
       </div>
       <div class="quick-actions">
@@ -4107,6 +4287,7 @@ function renderDashboard(section){
       <div style="display:flex;gap:10px">
         <button class="qa-btn" onclick="show('analysis')" style="border-color:var(--teal);color:var(--teal)"><i class="ti ti-sparkles"></i> Go to AI Analysis</button>
       </div>`;
+    refreshModelChipLocks();
     loadOverviewPnl();
     generateMarketBrief();
     loadTodayAiAlerts();
@@ -4310,10 +4491,12 @@ function renderDashboard(section){
           <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Trade Ideas</div>
           <button class="btn-analyse" style="padding:8px 18px;font-size:12px" onclick="generateAITradeIdeas()"><i class="ti ti-bulb"></i> Get AI take on these results</button>
         </div>
+        ${modelChipsHtml('ai-model-chips-tradeideas')}
         <div id="ai-trade-ideas" style="font-size:13px;color:var(--text2);line-height:1.7">Run a scan above, then click the button for AI commentary on the real matches — grounded in the actual scan data, not invented.</div>
       </div>`;
     registerStockSearch('scanner-search-inp',(sym,name)=>{ renderSingleStockScan(sym,name); });
     renderScannerCards('breakout');
+    refreshModelChipLocks();
   }
 
   // ══════════════ TECHNICAL INDICATORS ══════════════
@@ -4481,6 +4664,136 @@ function renderDashboard(section){
     renderPaperTrading();
     renderPaperLeaderboard();
   }
+
+  // ══════════════ FEEDBACK ══════════════
+  else if(section==='feedback'){
+    el.innerHTML=`
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Feedback</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Tell us what's working, what's not, or what you'd like to see next — every submission goes straight to the team.</div>
+      <div class="admin-panel" style="margin-bottom:20px">
+        <div class="inp-group" style="margin-bottom:16px">
+          <label class="inp-lbl">Subject</label>
+          <input class="tm-inp" id="feedback-subject" placeholder="A short summary of your feedback" maxlength="150"/>
+        </div>
+        <div class="inp-row">
+          <div class="inp-group">
+            <label class="inp-lbl">Category</label>
+            <select class="tm-inp" id="feedback-category">
+              <option>Bug Report</option>
+              <option>Feature Request</option>
+              <option>AI Analysis Quality</option>
+              <option>Pricing &amp; Billing</option>
+              <option selected>General Feedback</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="inp-group">
+            <label class="inp-lbl">Rating</label>
+            <div id="feedback-stars" style="display:flex;gap:6px;font-size:22px;line-height:1;padding-top:8px">
+              <i class="ti ti-star" data-val="1" onclick="setFeedbackRating(1)" style="cursor:pointer;color:var(--text3)"></i>
+              <i class="ti ti-star" data-val="2" onclick="setFeedbackRating(2)" style="cursor:pointer;color:var(--text3)"></i>
+              <i class="ti ti-star" data-val="3" onclick="setFeedbackRating(3)" style="cursor:pointer;color:var(--text3)"></i>
+              <i class="ti ti-star" data-val="4" onclick="setFeedbackRating(4)" style="cursor:pointer;color:var(--text3)"></i>
+              <i class="ti ti-star" data-val="5" onclick="setFeedbackRating(5)" style="cursor:pointer;color:var(--text3)"></i>
+            </div>
+            <input type="hidden" id="feedback-rating-val" value="0"/>
+          </div>
+        </div>
+        <div class="inp-group" style="margin:16px 0">
+          <label class="inp-lbl">Message</label>
+          <textarea class="tm-inp" id="feedback-message" rows="4" maxlength="2000" placeholder="Tell us more…" style="resize:vertical"></textarea>
+        </div>
+        <div id="feedback-error" style="display:none;font-size:12px;color:var(--rose2);margin-bottom:10px;padding:8px;background:rgba(255,77,106,.08);border-radius:var(--radius)"></div>
+        <div id="feedback-success" style="display:none;font-size:12px;color:var(--green2);margin-bottom:10px;padding:8px;background:rgba(0,194,168,.08);border-radius:var(--radius)"></div>
+        <button class="btn-lg" id="feedback-submit-btn" style="font-size:12px;padding:11px 20px" onclick="submitFeedbackForm()"><i class="ti ti-send"></i> Submit feedback</button>
+      </div>
+      <div class="sec-title">Your past feedback</div>
+      <div id="feedback-history"></div>`;
+    setFeedbackRating(0);
+    loadMyFeedback();
+  }
+}
+
+// ══════════════ FEEDBACK ══════════════
+function feedbackEscapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function setFeedbackRating(n){
+  const hidden=document.getElementById('feedback-rating-val');
+  if(hidden)hidden.value=n;
+  document.querySelectorAll('#feedback-stars .ti-star,#feedback-stars .ti-star-filled').forEach(icon=>{
+    const val=Number(icon.dataset.val);
+    const filled=val<=n;
+    icon.className=filled?'ti ti-star-filled':'ti ti-star';
+    icon.style.color=filled?'var(--amber)':'var(--text3)';
+  });
+}
+function showFeedbackError(msg){
+  const el=document.getElementById('feedback-error');
+  if(el){el.textContent=msg;el.style.display='block';}
+  const ok=document.getElementById('feedback-success');
+  if(ok)ok.style.display='none';
+}
+async function submitFeedbackForm(){
+  const subjectEl=document.getElementById('feedback-subject');
+  const categoryEl=document.getElementById('feedback-category');
+  const messageEl=document.getElementById('feedback-message');
+  const errEl=document.getElementById('feedback-error');
+  const okEl=document.getElementById('feedback-success');
+  if(!subjectEl||!categoryEl||!messageEl)return;
+  if(errEl)errEl.style.display='none';
+  if(okEl)okEl.style.display='none';
+
+  const subject=subjectEl.value.trim();
+  const category=categoryEl.value;
+  const rating=parseInt(document.getElementById('feedback-rating-val')?.value||'0',10);
+  const message=messageEl.value.trim();
+
+  if(!subject){ showFeedbackError('Please add a subject.'); return; }
+  if(!rating){ showFeedbackError('Please select a star rating.'); return; }
+  if(!message){ showFeedbackError('Please add a message.'); return; }
+
+  const btn=document.getElementById('feedback-submit-btn');
+  const originalBtnHtml=btn?btn.innerHTML:'';
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2"></i> Submitting…'; }
+  try{
+    const res=await apiFetch('/api/feedback',{method:'POST',body:JSON.stringify({subject,category,rating,message})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Could not submit feedback right now.');
+    subjectEl.value='';
+    messageEl.value='';
+    setFeedbackRating(0);
+    if(okEl){ okEl.textContent=data.message||'Thanks — your feedback has been submitted.'; okEl.style.display='block'; }
+    loadMyFeedback();
+  }catch(e){
+    showFeedbackError(e.message||'Could not submit feedback right now — please try again shortly.');
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML=originalBtnHtml; }
+  }
+}
+async function loadMyFeedback(){
+  const el=document.getElementById('feedback-history');
+  if(!el)return;
+  el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--text3)"><i class="ti ti-loader-2"></i> Loading…</div>`;
+  try{
+    const res=await apiFetch('/api/feedback');
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Could not load feedback history.');
+    const items=data.feedback||[];
+    el.innerHTML=items.length?items.map(f=>`<div class="admin-panel" style="margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="font-weight:700;color:var(--text);font-family:'Space Grotesk',sans-serif">${feedbackEscapeHtml(f.subject)}</div>
+          <div style="font-size:11px;color:var(--text3);white-space:nowrap">${new Date(f.created_at).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'})}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
+          <span class="badge b-plan">${feedbackEscapeHtml(f.category)}</span>
+          <span style="color:var(--amber);letter-spacing:2px">${'★'.repeat(f.rating)}${'☆'.repeat(5-f.rating)}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap">${feedbackEscapeHtml(f.message)}</div>
+      </div>`).join(''):`<div class="admin-panel" style="text-align:center;padding:24px;color:var(--text3)">You haven't submitted any feedback yet.</div>`;
+  }catch(e){
+    el.innerHTML=`<div class="admin-panel" style="text-align:center;padding:24px;color:var(--rose2)">Could not load your feedback history right now.</div>`;
+  }
 }
 
 // ══════════════ REFERRALS (real backend data) ══════════════
@@ -4631,10 +4944,11 @@ async function generateMarketBrief(){
       el.innerHTML=`<span style="color:var(--text3)">No real index data available yet — try again shortly.</span>`;
       return;
     }
-    const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'marketBrief',context:{marketData:{indices,gainers,losers}}})});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
+    await runMultiModelInsight(
+      'market-brief','marketBrief',{marketData:{indices,gainers,losers}},'ai-model-chips-marketbrief',
+      `Writing today's brief from real market data…`,
+      'Could not generate brief right now — please try again shortly.'
+    );
   }catch(e){
     el.innerHTML=`<span style="color:var(--rose2)">Could not generate brief right now — please try again shortly.</span>`;
   }
@@ -5030,15 +5344,11 @@ async function generateAITradeIdeas(){
     el.innerHTML=`<span style="color:var(--text3)">Run a scan first — no real matches to analyse yet.</span>`;
     return;
   }
-  el.innerHTML=`<span style="color:var(--text3)">Asking AI to review ${lastScanMatches.length} real matches…</span>`;
-  try{
-    const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'tradeIdeas',context:{scanType:lastScanType,matches:lastScanMatches}})});
-    const data=await res.json();
-    if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
-  }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI commentary right now — please try again shortly.</span>`;
-  }
+  await runMultiModelInsight(
+    'ai-trade-ideas','tradeIdeas',{scanType:lastScanType,matches:lastScanMatches},'ai-model-chips-tradeideas',
+    `Asking AI to review ${lastScanMatches.length} real matches…`,
+    'Could not get AI commentary right now — please try again shortly.'
+  );
 }
 
 async function renderScannerCards(active){
@@ -5572,6 +5882,8 @@ async function loadAdminPanel(){
     const accData = await accRes.json().catch(()=>null);
     if(!statsRes.ok) throw new Error(stats.error||'Failed to load admin stats.');
     loadPredictionLog(1); // full raw prediction log (every date, every user) — loaded separately since it paginates on its own
+    loadAdminFeedback(1); // user feedback submissions — loaded separately since it paginates on its own
+    loadAdminReferrals(1); // referral history — loaded separately since it paginates on its own
 
     setText('adm-total-users', (stats.totalUsers ?? 0).toLocaleString('en-IN'));
     setText('adm-new-users', `↑ +${stats.newUsersThisWeek ?? 0} this week`);
@@ -5730,6 +6042,101 @@ async function loadPredictionLog(page){
     if(nextBtn) nextBtn.disabled = data.page >= data.totalPages;
   }catch(e){
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--rose2);padding:16px">Could not load prediction log right now.</td></tr>';
+  }
+}
+
+// User feedback submissions — every row from the "Feedback" dashboard form,
+// shown to admins so real product feedback doesn't get lost.
+let adminFeedbackState = { page: 1, totalPages: 1, total: 0 };
+async function loadAdminFeedback(page){
+  const tbody = document.getElementById('admin-feedback-tbody');
+  if(!tbody || !currentUser || !currentUser.is_admin) return;
+  page = Math.max(page || 1, 1);
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr>';
+  try{
+    const category = document.getElementById('adm-fb-category')?.value || '';
+    const params = new URLSearchParams({ page, limit: 50 });
+    if(category) params.set('category', category);
+    const res = await apiFetch('/api/admin/feedback?'+params.toString());
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed to load feedback.');
+
+    adminFeedbackState = { page: data.page, totalPages: data.totalPages, total: data.total };
+    setText('adm-fb-avg', data.avgRating!=null ? `${data.avgRating} / 5` : '—');
+
+    const rows = data.feedback || [];
+    tbody.innerHTML = rows.length
+      ? rows.map(f=>{
+          const dateStr = f.created_at ? new Date(f.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          const stars = '★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0));
+          return `<tr>
+            <td style="font-size:11px;color:var(--text3)">${dateStr}</td>
+            <td><div style="color:var(--text);font-weight:600">${feedbackEscapeHtml(f.user_name||'—')}</div><div style="font-size:11px;color:var(--text3)">${feedbackEscapeHtml(f.user_email||'')}</div></td>
+            <td><span class="badge b-plan">${feedbackEscapeHtml(f.category||'—')}</span></td>
+            <td style="color:var(--amber)">${stars}</td>
+            <td><div style="color:var(--text);font-weight:600;margin-bottom:2px">${feedbackEscapeHtml(f.subject||'')}</div><div style="font-size:12px;color:var(--text2)">${feedbackEscapeHtml(f.message||'')}</div></td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">No feedback submitted yet.</td></tr>';
+
+    const summary = document.getElementById('adm-fb-summary');
+    if(summary) summary.textContent = data.total
+      ? `Page ${data.page} of ${data.totalPages} · ${data.total.toLocaleString('en-IN')} submissions total`
+      : 'No feedback submitted yet.';
+    const prevBtn = document.getElementById('adm-fb-prev');
+    const nextBtn = document.getElementById('adm-fb-next');
+    if(prevBtn) prevBtn.disabled = data.page <= 1;
+    if(nextBtn) nextBtn.disabled = data.page >= data.totalPages;
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--rose2);padding:16px">Could not load feedback right now.</td></tr>';
+  }
+}
+
+// Referral history — who referred whom, and whether the referred user has
+// purchased Pro/Elite yet (status 'credited' = the referrer's payout fired).
+let adminReferralsState = { page: 1, totalPages: 1, total: 0 };
+async function loadAdminReferrals(page){
+  const tbody = document.getElementById('admin-referrals-tbody');
+  if(!tbody || !currentUser || !currentUser.is_admin) return;
+  page = Math.max(page || 1, 1);
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr>';
+  try{
+    const status = document.getElementById('adm-ref-status')?.value || '';
+    const params = new URLSearchParams({ page, limit: 50 });
+    if(status) params.set('status', status);
+    const res = await apiFetch('/api/admin/referrals?'+params.toString());
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed to load referrals.');
+
+    adminReferralsState = { page: data.page, totalPages: data.totalPages, total: data.total };
+    setText('adm-ref-credited-count', (data.creditedCount ?? 0).toLocaleString('en-IN'));
+    setText('adm-ref-credited-amount', '₹'+Number(data.totalCreditedAmount||0).toLocaleString('en-IN'));
+
+    const rows = data.referrals || [];
+    tbody.innerHTML = rows.length
+      ? rows.map(r=>{
+          const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          return `<tr>
+            <td style="font-size:11px;color:var(--text3)">${dateStr}</td>
+            <td><div style="color:var(--text);font-weight:600">${feedbackEscapeHtml(r.referrer_name||'—')}</div><div style="font-size:11px;color:var(--text3)">${feedbackEscapeHtml(r.referrer_email||'')}</div></td>
+            <td><div style="color:var(--text);font-weight:600">${feedbackEscapeHtml(r.referred_name||'—')}</div><div style="font-size:11px;color:var(--text3)">${feedbackEscapeHtml(r.referred_email||'')}</div></td>
+            <td><span class="badge b-plan" style="text-transform:capitalize">${feedbackEscapeHtml(r.referred_plan||'—')}</span></td>
+            <td><span class="badge ${r.status==='credited'?'b-active':'b-pending'}" style="text-transform:capitalize">${r.status==='credited'?'Purchased Pro/Elite':'Pending'}</span></td>
+            <td style="color:var(--text)">₹${Number(r.credit_amount||0).toLocaleString('en-IN')}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:16px">No referrals yet.</td></tr>';
+
+    const summary = document.getElementById('adm-ref-summary');
+    if(summary) summary.textContent = data.total
+      ? `Page ${data.page} of ${data.totalPages} · ${data.total.toLocaleString('en-IN')} referrals total`
+      : 'No referrals yet.';
+    const prevBtn = document.getElementById('adm-ref-prev');
+    const nextBtn = document.getElementById('adm-ref-next');
+    if(prevBtn) prevBtn.disabled = data.page <= 1;
+    if(nextBtn) nextBtn.disabled = data.page >= data.totalPages;
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--rose2);padding:16px">Could not load referrals right now.</td></tr>';
   }
 }
 
@@ -5943,7 +6350,7 @@ function computeTradeSignalCard(candles){
 
   return {strength,strengthScore,entryLow:refLow,entryHigh:refHigh,stopLoss:downsideRef,t1:r1,t2:r2,t3:r3,support,resistance,trendDirection,breakout,duration,votes,lastClose,bullish};
 }
-function tradeSignalCardHtml(sig,sym){
+function tradeSignalCardHtml(sig,sym,periodLabel){
   if(!sig)return `<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Not enough real candle history yet to compute a technical reading for ${sym}.</div>`;
   const sigCls=sig.strength.includes('Bullish')?'ind-bull':sig.strength.includes('Bearish')?'ind-bear':'ind-neut';
   return `
@@ -5961,8 +6368,22 @@ function tradeSignalCardHtml(sig,sym){
       <div class="ind-card"><div class="ind-name">Analysis Timeframe</div><div class="ind-value" style="font-size:13px">${sig.duration}</div><div class="ind-signal ind-neut">Volatility-implied timeframe, not a holding-period suggestion</div></div>
     </div>
     <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px"><strong style="color:var(--text)">Technical reasoning:</strong> ${sig.votes.join(' · ')}.</div>
-    <div style="font-size:11px;color:var(--text3);margin-top:10px">Computed from real daily candles — not AI-generated, not financial advice.</div>`;
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">Computed from real ${periodLabel||'daily'} candles — not AI-generated, not financial advice.</div>`;
 }
+
+// FIX: mirrors backend/services/marketDataService.js PERIOD_CANDLE_PARAMS so
+// the stock-detail mini-chart actually requests candles at the Time
+// Interval the user picked in the Screener sidebar, instead of always
+// requesting unit=days&interval=1 like it did before regardless of
+// screenerPeriod.
+const SCREENER_PERIOD_CANDLE_PARAMS={
+  '1m':{unit:'minutes',interval:1},'5m':{unit:'minutes',interval:5},'15m':{unit:'minutes',interval:15},
+  '30m':{unit:'minutes',interval:30},'1h':{unit:'hours',interval:1},'4h':{unit:'hours',interval:4},
+  '1d':{unit:'days',interval:1},'1w':{unit:'weeks',interval:1},'1mo':{unit:'months',interval:1},
+  '3mo':{unit:'days',interval:1},'6mo':{unit:'days',interval:1},'1y':{unit:'days',interval:1},
+  '3y':{unit:'days',interval:1},'5y':{unit:'days',interval:1},
+};
+function screenerCandleParams(period){ return SCREENER_PERIOD_CANDLE_PARAMS[period]||{unit:'days',interval:1}; }
 
 // ══════════════ STOCK DETAIL MODAL (Screener → click any stock) ══════════════
 // Shows a real quote + mini price chart + day range for any NSE/BSE stock
@@ -5976,7 +6397,16 @@ async function openStockDetail(symbol,exchange,name){
   const exLabel=exchange==='BSE_EQ'?'BSE':'NSE';
   document.getElementById('sd-symbol').textContent=symbol+' · '+exLabel;
   document.getElementById('sd-name').textContent=name||'';
-  document.getElementById('sd-body').innerHTML=`<div style="padding:30px;text-align:center;color:var(--text3)">Loading real quote &amp; chart for ${symbol}…</div>`;
+  // FIX: the modal used to always say "quote & chart" with no mention of
+  // timeframe, and silently computed everything on daily candles no matter
+  // which Time Interval chip was active in the Screener sidebar — so the
+  // analysis shown here never matched the interval the user had just
+  // selected. Now it both requests and labels the interval actually used.
+  const activePeriod=screenerPeriod||'1d';
+  const activePeriodLabel=TIMEFRAME_LABELS[activePeriod]||'1 Day';
+  const tfBadgeEl=document.getElementById('sd-timeframe-badge');
+  if(tfBadgeEl)tfBadgeEl.innerHTML=`<i class="ti ti-clock-hour-4" style="margin-right:3px"></i>Analysis timeframe: <strong style="color:var(--text)">${activePeriodLabel}</strong>`;
+  document.getElementById('sd-body').innerHTML=`<div style="padding:30px;text-align:center;color:var(--text3)">Loading real quote &amp; ${activePeriodLabel} analysis for ${symbol}…</div>`;
   document.getElementById('sd-analysis-btn').onclick=()=>{
     closeStockDetail();
     show('analysis');
@@ -5993,10 +6423,11 @@ async function openStockDetail(symbol,exchange,name){
   modal.classList.add('open');
 
   try{
+    const {unit,interval}=screenerCandleParams(activePeriod);
     const [quoteRes,candlesRes,reportRes]=await Promise.all([
       fetchBackendQuotesBatch([symbol]).catch(()=>({})),
-      apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=days&interval=1${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
-      apiFetch(`/api/market/report/${encodeURIComponent(symbol)}${exchange?('?exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+      apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=${unit}&interval=${interval}${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+      apiFetch(`/api/market/report/${encodeURIComponent(symbol)}?period=${encodeURIComponent(activePeriod)}${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
     ]);
     if(stockDetailCurrent?.symbol!==symbol)return; // user opened a different stock while this was in flight
     const q=quoteRes[symbol];
@@ -6009,19 +6440,24 @@ async function openStockDetail(symbol,exchange,name){
         </div>`
       :`<div style="color:var(--text3);font-size:13px;margin-bottom:14px">No live quote available right now.</div>`;
     let rangeHtml='';
+    // FIX: this was hardcoded "30D High/Low" regardless of the selected Time
+    // Interval — misleading once candles could be 1-minute bars (30 candles
+    // = 30 minutes, not 30 days) or weekly/monthly bars (30 candles = years).
+    // Label now names the actual interval so the range is never mislabeled.
+    const rangeLabel=`Last 30 · ${activePeriodLabel}`;
     if(candles&&candles.length){
       const last30=candles.slice(-30);
       const highs=last30.map(c=>c.h), lows=last30.map(c=>c.l);
       const dayHigh=Math.max(...highs), dayLow=Math.min(...lows);
       rangeHtml=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-        <div class="opt-card"><div class="opt-lbl">30D High</div><div class="opt-val" style="font-size:16px">₹${fmtINR(dayHigh)}</div></div>
-        <div class="opt-card"><div class="opt-lbl">30D Low</div><div class="opt-val" style="font-size:16px">₹${fmtINR(dayLow)}</div></div>
+        <div class="opt-card"><div class="opt-lbl">${rangeLabel} High</div><div class="opt-val" style="font-size:16px">₹${fmtINR(dayHigh)}</div></div>
+        <div class="opt-card"><div class="opt-lbl">${rangeLabel} Low</div><div class="opt-val" style="font-size:16px">₹${fmtINR(dayLow)}</div></div>
       </div>`;
     }
     const chartHtml = candles&&candles.length
       ? `<canvas id="sd-mini-chart" width="580" height="140" style="width:100%;height:140px;margin-bottom:8px"></canvas>`
       : `<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Chart data unavailable right now.</div>`;
-    const signalHtml = tradeSignalCardHtml(candles?computeTradeSignalCard(candles):null,symbol);
+    const signalHtml = tradeSignalCardHtml(candles?computeTradeSignalCard(candles):null,symbol,activePeriodLabel.toLowerCase());
     // Full rule-based technical report (Trend, Price Action, RSI, MACD,
     // Volume, Candlestick, Volatility, ADX, Bollinger, Fibonacci, Indicator
     // Summary, Technical Score, Conclusion) — same shape as the AI Analysis

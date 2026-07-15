@@ -18,5 +18,7 @@ router.post('/ai-accuracy/evaluate-now', ctrl.runAiAccuracyEvaluationNow);
 router.get('/predictions', ctrl.getAllPredictions);
 router.get('/advertisers', ctrl.listAdvertiserEnquiries);
 router.patch('/advertisers/:id/status', ctrl.updateAdvertiserStatus);
+router.get('/feedback', ctrl.listFeedback);
+router.get('/referrals', ctrl.listReferrals);
 
 module.exports = router;

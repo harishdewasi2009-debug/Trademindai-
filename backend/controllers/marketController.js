@@ -105,14 +105,18 @@ const getQuotes = asyncHandler(async (req, res) => {
 // from /quotes since it's cached much longer (20 min vs 3 sec) and is a
 // heavier per-symbol computation.
 const getSignals = asyncHandler(async (req, res) => {
-  const { symbols, exchange } = req.query;
+  const { symbols, exchange, period } = req.query;
   if (!symbols) throw new AppError('symbols query param is required (comma-separated).', 400);
 
   const list = symbols.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 100);
   const input = exchange ? list.map((symbol) => ({ symbol, exchange })) : list;
 
-  const signals = await marketDataService.getSignalsBatch(input);
-  res.json({ signals, source: 'computed', fetchedAt: new Date().toISOString() });
+  // FIX: the Screener's Time Interval sidebar sends ?period= (e.g. '5m',
+  // '1w', '1y') alongside symbols, but this was never read here, so every
+  // signal badge in the list was always computed off daily candles no
+  // matter which chip was selected. Now threaded through to the service.
+  const signals = await marketDataService.getSignalsBatch(input, period);
+  res.json({ signals, period: period || '1d', source: 'computed', fetchedAt: new Date().toISOString() });
 });
 
 // ── GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50  (any authenticated user) ──
@@ -186,7 +190,12 @@ const searchFnoSymbols = asyncHandler(async (req, res) => {
 // buildFullTechnicalReport() for the compliance rationale.
 const getFullReport = asyncHandler(async (req, res) => {
   const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const report = await marketDataService.getFullTechnicalReport(req.params.symbol, exchange);
+  // FIX: same missing-param bug as getSignals — the full report (Trend,
+  // RSI, MACD, Volume, etc. shown on the stock-detail "Analysis" view) was
+  // always computed off hardcoded daily candles, ignoring whichever Time
+  // Interval chip the Screener had selected when the user opened the stock.
+  const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+  const report = await marketDataService.getFullTechnicalReport(req.params.symbol, exchange, period);
   res.json(report);
 });
 

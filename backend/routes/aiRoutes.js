@@ -104,7 +104,7 @@ router.post(
   attachAvailableModels,    // TERTIARY: skip individual models whose own sub-quota is exhausted
   validateAiAnalyze,
   asyncHandler(async (req, res) => {
-    const { stockSymbol, horizon, riskTolerance, exchange } = req.body;
+    const { stockSymbol, horizon, riskTolerance, timeframe, exchange } = req.body;
     const start = Date.now();
 
     let analysisResult;
@@ -113,6 +113,10 @@ router.post(
         stockSymbol,
         horizon,
         riskTolerance,
+        timeframe, // FIX: the Analysis page's "Analysis timeframe" dropdown (1 Minute..5 Year)
+        // was being collected and sent by the frontend but silently dropped here —
+        // every analysis was always computed on daily candles regardless of what
+        // the user picked. See aiService.js fetchRealMarketContext().
         exchange, // 'NSE_EQ' | 'BSE_EQ' | undefined (undefined = try NSE then BSE, same as before)
         userPlan: req.user.plan,
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
@@ -353,13 +357,37 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 // actually get the cascade that was already built for them. Free stays
 // excluded, consistent with prediction_history and other Basic+ features.
 const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe'];
+
+// FIX (root cause of "AI model selection has no effect anywhere except
+// Stock Analysis"): the "Select AI models" chip strips send the chip's
+// data-model attribute (a display-facing model id like "claude-sonnet-4.6"
+// or "gpt-4o") as `model` in the request body. This route used to destructure
+// only { kind, context } and drop that field entirely, so every insight
+// call — Trade Ideas, Portfolio Health, Market Brief, Option Strategy,
+// Backtest Advisor, Multi-Timeframe — always ran whatever the plan's
+// default cascade picked, no matter which model(s) the user actually
+// ticked. This map translates each chip's data-model value to the
+// plans.js aiModels key aiService.getAIInsight() now accepts, so a
+// specific selection is actually honored (and rejected with a clear 403
+// if the user's plan doesn't include that model, instead of silently
+// swapping in a different one).
+const CHIP_MODEL_TO_KEY = {
+  'gemini-2.5-flash':  'gemini_flash',
+  'gemini-2.5-pro':    'gemini_pro',
+  'claude-sonnet-4.6': 'claude_sonnet',
+  'claude-opus-4.7':   'claude_opus4',
+  'gpt-4o':            'gpt4o',
+  'deepseek-v3':       'deepseek_v3',
+  'deepseek-r1':       'deepseek_r1',
+};
+
 router.post(
   '/insight',
   requireAuth,
   requireFeature('ai_insight'),
   aiLimiter,
   asyncHandler(async (req, res) => {
-    const { kind, context } = req.body || {};
+    const { kind, context, model } = req.body || {};
     if (!VALID_INSIGHT_KINDS.includes(kind)) {
       throw new AppError(`kind must be one of: ${VALID_INSIGHT_KINDS.join(', ')}`, 400);
     }
@@ -367,23 +395,29 @@ router.post(
       throw new AppError('context object is required.', 400);
     }
 
+    let modelKey = model ? (CHIP_MODEL_TO_KEY[model] || null) : null;
+    // Elite gets the higher-token-cap GPT-4o slot ('gpt4o_high') rather than
+    // Pro's 'gpt4o' — same chip, same underlying model, different plan quota.
+    if (modelKey === 'gpt4o' && req.user.plan === 'elite') modelKey = 'gpt4o_high';
+
     const { getAIInsight } = require('../services/aiService');
     let text, modelUsed;
     try {
-      const result = await getAIInsight(kind, context, req.user.plan);
+      const result = await getAIInsight(kind, context, req.user.plan, modelKey);
       text = result.text;
       modelUsed = result.modelUsed;
     } catch (err) {
+      if (err instanceof AppError) throw err;
       console.error(`[/api/ai/insight:${kind}] failed:`, err.message);
       throw new AppError('AI insight is temporarily unavailable.', 503);
     }
 
     await query(
       `INSERT INTO ai_requests
-         (user_id, stock_symbol, request_type, model_used,
+         (user_id, stock_symbol, request_type, model_used, model_key,
           tokens_input, tokens_output, cost_usd, latency_ms)
-       VALUES ($1, NULL, $2, $3, 0, 0, 0, 0)`,
-      [req.user.id, `insight_${kind}`, modelUsed]
+       VALUES ($1, NULL, $2, $3, $4, 0, 0, 0, 0)`,
+      [req.user.id, `insight_${kind}`, modelUsed, modelKey]
     );
 
     res.json({ kind, text, model: modelUsed });

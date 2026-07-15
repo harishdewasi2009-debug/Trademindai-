@@ -158,7 +158,79 @@ const updateAdvertiserStatus = asyncHandler(async (req, res) => {
   res.json({ advertiser: rows[0] });
 });
 
+// ── GET /api/admin/feedback ── (every feedback form submission, newest first —
+// backs the "User feedback" panel in the admin dashboard)
+const listFeedback = asyncHandler(async (req, res) => {
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = 50;
+  const category = req.query.category || undefined;
+
+  const { rows } = await query(
+    `SELECT f.id, f.subject, f.category, f.rating, f.message, f.created_at,
+            u.name AS user_name, u.email AS user_email, u.plan AS user_plan
+     FROM feedback f
+     JOIN users u ON u.id = f.user_id
+     WHERE ($1::varchar IS NULL OR f.category = $1)
+     ORDER BY f.created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [category || null, limit, (page - 1) * limit]
+  );
+  const { rows: countRows } = await query(
+    `SELECT COUNT(*)::int AS count FROM feedback WHERE ($1::varchar IS NULL OR category = $1)`,
+    [category || null]
+  );
+  const { rows: avgRows } = await query(`SELECT ROUND(AVG(rating)::numeric,2) AS avg_rating, COUNT(*)::int AS total FROM feedback`);
+
+  res.json({
+    feedback: rows,
+    page,
+    total: countRows[0].count,
+    totalPages: Math.max(1, Math.ceil(countRows[0].count / limit)),
+    avgRating: avgRows[0].avg_rating != null ? Number(avgRows[0].avg_rating) : null,
+    totalFeedback: avgRows[0].total,
+  });
+});
+
+// ── GET /api/admin/referrals ── (every referral ever recorded, across all
+// users — who referred whom, what plan they bought, and whether the referrer's
+// credit has been paid out. Backs the "Referrals" panel in the admin dashboard.)
+const listReferrals = asyncHandler(async (req, res) => {
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = 50;
+  const status = ['pending', 'credited'].includes(req.query.status) ? req.query.status : undefined;
+
+  const { rows } = await query(
+    `SELECT r.id, r.credit_amount, r.status, r.created_at,
+            ru.name AS referrer_name, ru.email AS referrer_email,
+            du.name AS referred_name, du.email AS referred_email, du.plan AS referred_plan
+     FROM referrals r
+     JOIN users ru ON ru.id = r.referrer_id
+     JOIN users du ON du.id = r.referred_id
+     WHERE ($1::varchar IS NULL OR r.status = $1)
+     ORDER BY r.created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [status || null, limit, (page - 1) * limit]
+  );
+  const { rows: countRows } = await query(
+    `SELECT COUNT(*)::int AS count FROM referrals WHERE ($1::varchar IS NULL OR status = $1)`,
+    [status || null]
+  );
+  const { rows: creditedRows } = await query(
+    `SELECT COUNT(*)::int AS count, COALESCE(SUM(credit_amount),0)::float AS total_credited
+     FROM referrals WHERE status = 'credited'`
+  );
+
+  res.json({
+    referrals: rows,
+    page,
+    total: countRows[0].count,
+    totalPages: Math.max(1, Math.ceil(countRows[0].count / limit)),
+    creditedCount: creditedRows[0].count,
+    totalCreditedAmount: creditedRows[0].total_credited,
+  });
+});
+
 module.exports = {
   getStats, listUsers, updateUserPlan, getApiUsage, getAiAccuracy, runAiAccuracyEvaluationNow,
-  getAllPredictions, listAdvertiserEnquiries, updateAdvertiserStatus,
+  getAllPredictions, listAdvertiserEnquiries, updateAdvertiserStatus, listFeedback, listReferrals,
 };

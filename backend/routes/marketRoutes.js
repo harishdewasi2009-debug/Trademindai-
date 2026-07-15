@@ -5,7 +5,7 @@ const { requireAuth } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminCheck');
 const { requireFeature } = require('../middleware/planCheck');
 const { marketLimiter, adminLimiter } = require('../middleware/rateLimit');
-const { validateMarketSymbol, validateMarketCandles, validateMarketQuotes, validateMarketSearch } = require('../middleware/validate');
+const { validateMarketSymbol, validateMarketCandles, validateMarketQuotes, validateMarketReport, validateMarketSearch } = require('../middleware/validate');
 const ctrl = require('../controllers/marketController');
 
 // ── Upstox connection management (admin only) ──
@@ -43,7 +43,7 @@ router.get('/signals', marketLimiter, validateMarketQuotes, ctrl.getSignals);
 // Candlestick, Volatility, ADX, Bollinger, Fibonacci, Indicator Summary,
 // Technical Score, Conclusion) for the Screener's "full analysis" view:
 // GET /api/market/report/:symbol?exchange=BSE_EQ
-router.get('/report/:symbol', marketLimiter, validateMarketSymbol, ctrl.getFullReport);
+router.get('/report/:symbol', marketLimiter, validateMarketReport, ctrl.getFullReport);
 router.get('/indices', marketLimiter, ctrl.getIndices);
 router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
