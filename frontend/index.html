@@ -2291,7 +2291,7 @@ img,svg,video,canvas,iframe{max-width:100%}
 //                          the backend's .env file, never here)
 // ══════════════════════════════════════════════════════════════════════════
 const APP_CONFIG = {
-  API_BASE_URL: 'https://api.trademindai.co.in',
+  API_BASE_URL: 'https://trademindai-backend-78ky.onrender.com',
   GOOGLE_CLIENT_ID:  '708129325781-cv77hsg7dovs0klevipdj885pv6clgsl.apps.googleusercontent.com',
   RAZORPAY_KEY_ID:   'rzp_live_T3BljltuYfiqmy',
 };
@@ -3148,6 +3148,27 @@ function renderIndices(){
       ${q.stale?`<div style="font-size:10px;color:var(--text3)">Last Close</div>`:''}
     </div>`;
   }).join('');
+  updateHeroPriceFromLiveQuote(); // keep the hero NIFTY 50 price in sync with the same real feed as the strip above — see comment on that function
+}
+
+// FIX: the hero chart's price (top-left of the NIFTY 50 widget) was being
+// set from the last historical/intraday CANDLE's close (see renderHeroChart
+// below) instead of the real live index quote — the same one the indices
+// strip and ticker already use. Candles are cached for up to 60s server-side
+// and only "close" once a candle period finishes, so that price could sit
+// well behind — or during a merge edge case, wildly different from — the
+// actual live NIFTY 50 value. This pulls the SAME liveQuoteCache['NIFTY 50']
+// value the indices strip trusts, so the two numbers can never disagree.
+function updateHeroPriceFromLiveQuote(){
+  const q=liveQuoteCache['NIFTY 50'];
+  const priceEl=document.getElementById('hc-price');
+  if(!q||!priceEl||typeof q.price!=='number')return;
+  priceEl.textContent=q.price.toFixed(2);
+  priceEl.style.color=q.changePct>=0?'var(--green2)':'var(--rose2)';
+  const pillEl=document.getElementById('hc-live-pill');
+  if(pillEl)pillEl.innerHTML=q.stale
+    ? '<span class="live-dot" style="background:var(--amber)"></span>Last Close'
+    : '<span class="live-dot"></span>Live';
 }
 
 function updateMarketStatusUI(){
@@ -6915,11 +6936,17 @@ function renderHeroChart(){
   const last=slice[slice.length-1];
   const first=slice[0];
   const up=last.c>=first.o;
-  document.getElementById('hc-price').textContent=last.c.toFixed(2);
-  document.getElementById('hc-price').style.color=up?'var(--green2)':'var(--rose2)';
   document.getElementById('hc-open').textContent=first.o.toFixed(2);
   document.getElementById('hc-high').textContent=Math.max(...slice.map(c=>c.h)).toFixed(2);
   document.getElementById('hc-low').textContent=Math.min(...slice.map(c=>c.l)).toFixed(2);
+  // Show the last candle's close only as an immediate placeholder — the
+  // moment a real live quote is available, updateHeroPriceFromLiveQuote()
+  // overwrites this with the true current price so the two never diverge.
+  if(!liveQuoteCache['NIFTY 50']){
+    document.getElementById('hc-price').textContent=last.c.toFixed(2);
+    document.getElementById('hc-price').style.color=up?'var(--green2)':'var(--rose2)';
+  }
+  updateHeroPriceFromLiveQuote();
   const pillEl=document.getElementById('hc-live-pill');
   if(pillEl)pillEl.innerHTML='<span class="live-dot"></span>Live';
 }
