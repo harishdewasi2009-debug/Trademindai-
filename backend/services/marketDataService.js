@@ -885,9 +885,11 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   // "months" candle, so skip the call entirely for those units instead of
   // firing a request that can only ever come back empty (or error). This is
   // the weekly leg the Multi-Timeframe / "Check daily vs weekly" view uses.
+ // Run alongside the historical call above instead of after it — these two
+  // Upstox requests are independent, so awaiting them sequentially just adds
+  // their latencies together (each can take up to ~15s, or longer with
+  // 429 retries), which was blowing past the frontend's 20s fetch timeout.
   const intraday = ['weeks', 'months'].includes(unit) ? [] : await getIntradayCandles(instrumentKey, unit, interval);
-  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
-
   const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
   return result;
