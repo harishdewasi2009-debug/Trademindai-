@@ -845,7 +845,17 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
 
   const accessToken = await getValidAccessToken();
   const encodedKey = encodeURIComponent(instrumentKey);
-  const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
+ const url = `${BASE_V3}/historical-candle/${encodedKey}/${unit}/${interval}/${toDate}/${fromDate}`;
+
+  // FIX (candle fetches getting cancelled client-side at 20s): this used to
+  // await the historical call, THEN await the intraday call, adding their
+  // latencies together — each can take up to 15s alone, or longer with 429
+  // retries. Kicking off intraday here (in parallel with the historical
+  // fetch below) instead of after it roughly halves worst-case latency, so
+  // it actually fits inside the frontend's 20s fetch timeout.
+  const intradayPromise = ['weeks', 'months'].includes(unit)
+    ? Promise.resolve([])
+    : getIntradayCandles(instrumentKey, unit, interval);
 
   const res = await fetchUpstoxWithRetry(url, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
