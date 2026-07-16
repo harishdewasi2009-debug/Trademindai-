@@ -9,24 +9,47 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const crypto = require('crypto');
 
-const IS_PROD = process.env.NODE_ENV === 'production';
+// FIX (root cause of "signed in doesn't stick / has to log in every visit"):
+// this used to hard-gate secure/sameSite off process.env.NODE_ENV === 'production'.
+// The frontend (Vercel/Netlify) and backend (Render) live on two different
+// domains, which makes every cookie a *cross-site* cookie. Cross-site cookies
+// are only ever delivered by the browser when set with `SameSite=None;
+// Secure` — and `SameSite=Lax` cookies (what we'd fall back to whenever
+// NODE_ENV wasn't exactly the string 'production', e.g. left unset on the
+// hosting dashboard) are simply never attached to cross-site fetch()/XHR
+// calls at all. So on any deploy where NODE_ENV wasn't perfectly set, the
+// refreshToken cookie silently never made it back to POST /api/auth/refresh,
+// tryRestoreSession() on the frontend always failed, and every visitor was
+// forced to log in again on every page load — even though the DB session
+// was still valid for 30 days.
+//
+// Fixed by deciding secure/sameSite per-request from req.secure (reliable
+// here because `app.set('trust proxy', 1)` is set in server.js, so Express
+// correctly reads the X-Forwarded-Proto header Render's proxy sends) instead
+// of trusting an env var to be spelled exactly right. Any request arriving
+// over HTTPS — i.e. every real deployment — now correctly gets `Secure;
+// SameSite=None` regardless of NODE_ENV. Only plain-HTTP local dev
+// (http://localhost) falls back to `SameSite=Lax` without `Secure`, because
+// browsers refuse Secure cookies on non-HTTPS connections anyway.
+function cookieOpts(req, extra) {
+  const crossSite = req.secure; // true whenever the request came in over HTTPS
+  return {
+    httpOnly: true,
+    secure: crossSite,
+    sameSite: crossSite ? 'none' : 'lax',
+    ...extra,
+  };
+}
 
-// FIX: secure: true in production, added __Host- prefix for access token
-const ACCESS_COOKIE_OPTS = {
-  httpOnly: true,
-  secure: IS_PROD,
-  sameSite: IS_PROD ? 'none' : 'lax',
+const accessCookieOpts = (req) => cookieOpts(req, {
   maxAge: 15 * 60 * 1000, // 15 min — matches JWT_EXPIRES_IN
   path: '/',
-};
+});
 
-const REFRESH_COOKIE_OPTS = {
-  httpOnly: true,
-  secure: IS_PROD,
-  sameSite: IS_PROD ? 'none' : 'lax',
+const refreshCookieOpts = (req) => cookieOpts(req, {
   maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   path: '/api/auth/refresh', // FIX: scope refresh cookie to refresh endpoint only
-};
+});
 
 function sanitizeUser(user) {
   const { password_hash, two_fa_secret, ...safe } = user;
@@ -50,8 +73,8 @@ async function issueTokensAndSession(user, req, res) {
     [user.id, refreshTokenHash, req.headers['x-device-label'] || 'Unknown device', req.ip, req.headers['user-agent']]
   );
 
-  res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTS);
-  res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTS);
+  res.cookie('accessToken', accessToken, accessCookieOpts(req));
+  res.cookie('refreshToken', refreshToken, refreshCookieOpts(req));
   return { accessToken, refreshToken };
 }
 
@@ -246,8 +269,8 @@ const refresh = asyncHandler(async (req, res) => {
   );
 
   const accessToken = signAccessToken(userRows[0]);
-  res.cookie('accessToken', accessToken, ACCESS_COOKIE_OPTS);
-  res.cookie('refreshToken', newRefreshToken, REFRESH_COOKIE_OPTS);
+  res.cookie('accessToken', accessToken, accessCookieOpts(req));
+  res.cookie('refreshToken', newRefreshToken, refreshCookieOpts(req));
 
   res.json({ accessToken });
 });
