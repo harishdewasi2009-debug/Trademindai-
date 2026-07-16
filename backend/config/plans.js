@@ -43,7 +43,12 @@ const PLANS = {
     },
     features: [
       'watchlist_5',
-      // 'screener' removed — AI Stock Screener is now Basic/Pro/Elite only.
+      // FIX: AI Stock Screener is now available on every plan, including
+      // Free — see routes/marketRoutes.js (requireFeature('screener') and
+      // requireAuth both removed from GET /api/market/stocks) and
+      // frontend/index.html (pricing page/comparison table/homepage
+      // feature grid updated to show it as "All Plans").
+      'screener',
       // AI Brief (AI Morning Market Brief) is available on every plan,
       // including Free — insightCascadeForPlan()'s default/free case
       // already routes this to Gemini Flash only, so this just unlocks

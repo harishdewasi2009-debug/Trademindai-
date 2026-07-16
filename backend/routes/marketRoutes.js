@@ -51,9 +51,11 @@ router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Options-only autocomplete: GET /api/market/search-fno?q=REL
 router.get('/search-fno', marketLimiter, validateMarketSearch, ctrl.searchFnoSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
-// Screener is a Basic/Pro/Elite feature — Free no longer includes
-// 'screener' in config/plans.js, so Free users get a 403 here with an
-// "upgrade your plan" message (handled by requireFeature below).
+// FIX: Screener requires a signed-in session again (matching the Analysis
+// page's gate in frontend/index.html), but stays available on EVERY plan —
+// 'screener' is in every plan's features list in config/plans.js
+// (including Free), so requireFeature('screener') below passes for any
+// signed-in user regardless of plan; only logged-out visitors are blocked.
 router.get('/stocks', requireAuth, requireFeature('screener'), marketLimiter, ctrl.listStocks);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
 // FIX: sold as Elite-only on the pricing page/comparison table but had no
