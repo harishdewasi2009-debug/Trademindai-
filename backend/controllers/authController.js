@@ -308,4 +308,4 @@ const revokeSession = asyncHandler(async (req, res) => {
   res.json({ message: 'Session revoked.' });
 });
 
-module.exports = { signup, login, googleLogin, forgotPassword, resetPassword, refresh, logout, getMe, listSessions, revokeSession };
+module.exports = { signup, login, googleLogin, forgotPassword, resetPassword, refresh, logout, getMe, listSessions, revokeSession, accessCookieOpts };

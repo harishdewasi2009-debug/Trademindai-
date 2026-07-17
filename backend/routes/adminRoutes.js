@@ -10,6 +10,7 @@ const ctrl = require('../controllers/adminController');
 router.use(requireAuth, requireAdmin, adminLimiter);
 
 router.get('/stats', ctrl.getStats);
+router.get('/risk-flags', ctrl.getRiskFlags);
 router.get('/users', ctrl.listUsers);
 router.patch('/users/:id/plan', validateUpdateUserPlan, ctrl.updateUserPlan);
 router.get('/api-usage', ctrl.getApiUsage);

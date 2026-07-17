@@ -1,5 +1,5 @@
 // middleware/authMiddleware.js
-const { verifyAccessToken } = require('../utils/jwt');
+const { verifyAccessToken, verifyRefreshToken, signAccessToken } = require('../utils/jwt');
 const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -19,14 +19,43 @@ const requireAuth = asyncHandler(async (req, res, next) => {
     token = req.cookies.accessToken;
   }
 
-  if (!token) throw new AppError('Not authenticated. Please log in.', 401);
-
   let payload;
-  try {
-    payload = verifyAccessToken(token);
-  } catch (err) {
-    throw new AppError('Session expired or invalid. Please log in again.', 401);
+  if (token) {
+    try {
+      payload = verifyAccessToken(token);
+    } catch (err) {
+      payload = null; // expired/invalid accessToken — fall through to refresh-cookie retry below
+    }
   }
+
+  // FIX ("logged in on the site but a direct link like /api/market/upstox/login
+  // says Not authenticated"): the accessToken cookie only lives 15 minutes.
+  // The frontend SPA silently calls /api/auth/refresh in the background to
+  // keep itself logged in, but that refresh never fires for a plain browser
+  // navigation to a different URL/new tab (e.g. an admin pasting the Upstox
+  // login link directly). If we have a still-valid 30-day refreshToken
+  // cookie, mint a fresh accessToken here instead of rejecting the request.
+  if (!payload && req.cookies?.refreshToken) {
+    try {
+      const refreshPayload = verifyRefreshToken(req.cookies.refreshToken);
+      const { rows: refreshRows } = await query(
+        `SELECT id, name, email, plan, subscription_status, is_admin, two_fa_enabled, created_at
+         FROM users WHERE id = $1`,
+        [refreshPayload.sub]
+      );
+      if (refreshRows.length) {
+        const newAccessToken = signAccessToken(refreshRows[0]);
+        const { accessCookieOpts } = require('../controllers/authController');
+        res.cookie('accessToken', newAccessToken, accessCookieOpts(req));
+        req.user = refreshRows[0];
+        return next();
+      }
+    } catch (err) {
+      // refreshToken also invalid/expired — fall through to the 401 below
+    }
+  }
+
+  if (!payload) throw new AppError('Not authenticated. Please log in.', 401);
 
   const { rows } = await query(
     `SELECT id, name, email, plan, subscription_status, is_admin, two_fa_enabled, created_at

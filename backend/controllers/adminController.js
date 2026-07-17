@@ -230,7 +230,79 @@ const listReferrals = asyncHandler(async (req, res) => {
   });
 });
 
+// ── GET /api/admin/risk-flags ── (real, computed alerts — no hardcoded
+// placeholder numbers. Flags: (1) any single user whose AI usage in the
+// last 24h is running well above what their plan's monthly quota implies
+// as a fair daily rate, and (2) failed payment attempts in the last 24h.
+// Also returns a platform health score derived from the real 30-day
+// payment success rate, since there's no separate churn table to draw on.)
+const getRiskFlags = asyncHandler(async (req, res) => {
+  const { getPlan } = require('../config/plans');
+
+  const [heavyUsers, failedPayments, paymentStats] = await Promise.all([
+    query(`
+      SELECT u.id, u.name, u.plan, COUNT(ar.*)::int AS calls_24h
+      FROM ai_requests ar
+      JOIN users u ON u.id = ar.user_id
+      WHERE ar.created_at >= now() - interval '24 hours'
+      GROUP BY u.id, u.name, u.plan
+      ORDER BY calls_24h DESC
+      LIMIT 5
+    `),
+    query(`
+      SELECT COUNT(*)::int AS count, COALESCE(SUM(amount),0)::float AS amount
+      FROM payments WHERE status = 'failed' AND created_at >= now() - interval '24 hours'
+    `),
+    query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'paid')::int AS paid,
+        COUNT(*) FILTER (WHERE status = 'failed')::int AS failed
+      FROM payments WHERE created_at >= now() - interval '30 days'
+    `),
+  ]);
+
+  // A user's "fair" daily AI call allowance, assuming even use across a
+  // 30-day month. Flag anyone running at 3x+ that rate in the last 24h.
+  const flags = [];
+  for (const u of heavyUsers.rows) {
+    const dailyAllowance = Math.max(1, getPlan(u.plan).monthlyAiQueries / 30);
+    if (u.calls_24h >= dailyAllowance * 3) {
+      flags.push({
+        severity: 'high',
+        title: 'High API usage spike',
+        detail: `${u.name} (${u.plan} plan) — ${u.calls_24h} AI calls in 24h (fair daily rate ≈ ${Math.round(dailyAllowance)})`,
+      });
+    }
+  }
+
+  const fp = failedPayments.rows[0];
+  if (fp.count > 0) {
+    flags.push({
+      severity: 'medium',
+      title: 'Payment failure spike',
+      detail: `${fp.count} failed payment${fp.count === 1 ? '' : 's'} in the last 24h (₹${Number(fp.amount).toLocaleString('en-IN')} attempted) · Review required`,
+    });
+  }
+
+  const { paid, failed } = paymentStats.rows[0];
+  const totalAttempts = paid + failed;
+  const successRate = totalAttempts > 0 ? (paid / totalAttempts) * 100 : null;
+  let grade = 'N/A', gradeNote = 'Not enough payment activity in the last 30 days yet.';
+  if (successRate != null) {
+    if (successRate >= 95) { grade = 'A+'; gradeNote = `${successRate.toFixed(1)}% payment success rate over 30 days`; }
+    else if (successRate >= 85) { grade = 'A'; gradeNote = `${successRate.toFixed(1)}% payment success rate over 30 days`; }
+    else if (successRate >= 70) { grade = 'B'; gradeNote = `${successRate.toFixed(1)}% payment success rate — some failures worth reviewing`; }
+    else { grade = 'C'; gradeNote = `${successRate.toFixed(1)}% payment success rate — high failure rate, review required`; }
+  }
+
+  res.json({
+    flags,
+    healthScore: { grade, note: gradeNote, successRatePct: successRate != null ? Number(successRate.toFixed(1)) : null, paid, failed },
+  });
+});
+
 module.exports = {
   getStats, listUsers, updateUserPlan, getApiUsage, getAiAccuracy, runAiAccuracyEvaluationNow,
   getAllPredictions, listAdvertiserEnquiries, updateAdvertiserStatus, listFeedback, listReferrals,
+  getRiskFlags,
 };
