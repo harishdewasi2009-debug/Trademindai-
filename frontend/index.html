@@ -106,7 +106,7 @@ nav{
 .idx-price{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;color:var(--text)}
 
 /* ── HERO ── */
-.hero{padding:100px 40px 80px;text-align:center;background:var(--bg);position:relative;overflow:hidden}
+.hero{padding:100px 40px 80px;text-align:center;background:var(--bg);position:relative}
 .hero-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .hero-glow1{position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse,rgba(124,92,252,.2) 0%,transparent 65%)}
 .hero-glow2{position:absolute;top:30%;left:10%;width:400px;height:300px;background:radial-gradient(ellipse,rgba(240,165,0,.08) 0%,transparent 60%)}
@@ -511,6 +511,10 @@ nav{
 .login-h2{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text);text-align:center;margin-bottom:8px}
 .login-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:36px;line-height:1.65}
 .btn-google{width:100%;padding:13px;border-radius:var(--radius);font-size:14px;font-weight:600;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
+.inapp-browser-banner{display:none;text-align:left;font-size:12.5px;line-height:1.55;color:var(--text2);background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.35);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px}
+.inapp-browser-banner strong{color:var(--text)}
+.inapp-browser-banner .btn-open-browser{margin-top:9px;width:100%;padding:11px;border-radius:var(--radius);font-size:13px;font-weight:600;border:none;background:var(--accent,#3d7fff);color:#fff;cursor:pointer}
+.inapp-browser-banner .btn-open-browser:active{opacity:.85}
 .btn-google:hover{background:var(--bg4);border-color:var(--border3)}
 .or-div{text-align:center;font-size:12px;color:var(--text3);margin:24px 0;position:relative}
 .or-div::before,.or-div::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--border)}
@@ -1024,6 +1028,43 @@ html{scroll-behavior:smooth}
 
 /* Generic safety net: never let media or wide fixed-width elements force horizontal scroll */
 img,svg,video,canvas,iframe{max-width:100%}
+
+/* ── CINEMATIC SCROLL-SCRUBBER ──
+   A tall wrapper (400vh) holds a sticky full-height canvas. As the user
+   scrolls through the wrapper, scroll position (0→1) is mapped to a frame
+   index (1→200) and painted onto the canvas — the classic "scroll-driven
+   video" effect used on product pages, without needing an actual video file. */
+.cinematic-wrap{position:relative;height:250vh;background:var(--bg)}
+.cinematic-sticky{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  /* Fallback backdrop so the section never reads as a blank/empty rectangle
+     if the frame images haven't painted yet (slow network, failed load, etc). */
+  background:radial-gradient(120% 90% at 50% 15%,rgba(0,194,168,.14),transparent 60%),
+             radial-gradient(90% 70% at 85% 85%,rgba(124,92,252,.14),transparent 60%),var(--bg2)}
+.cinematic-sticky canvas{width:100%;height:100%;object-fit:cover;display:block;background:transparent;position:relative;z-index:1}
+.cinematic-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:0 6vw 8vh;pointer-events:none;background:linear-gradient(180deg,rgba(7,8,15,0) 40%,rgba(7,8,15,.75) 100%);z-index:2}
+.cinematic-eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-light);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.cinematic-eyebrow .cinematic-scroll-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-light);animation:cinematicPulse 1.4s ease-in-out infinite}
+@keyframes cinematicPulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+.cinematic-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,4vw,40px);font-weight:600;color:var(--text);max-width:640px;line-height:1.25}
+/* Horizontal progress bar along the bottom edge of the pinned frame */
+.cinematic-progress{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.1);z-index:3}
+.cinematic-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--teal),var(--violet-light));transition:width .05s linear;box-shadow:0 0 10px rgba(46,236,212,.6)}
+/* Vertical scroll rail: pinned to the right edge of the frame for the whole
+   duration of the cinematic section, so there's always a clearly-visible,
+   high-contrast indicator that this is live scrollable content and not
+   empty space — independent of whether the image frames have loaded. */
+.cinematic-rail{position:absolute;top:50%;right:22px;transform:translateY(-50%);width:4px;height:min(38vh,280px);border-radius:4px;background:rgba(255,255,255,.14);z-index:3;overflow:hidden}
+.cinematic-rail-thumb{position:absolute;left:0;top:0;width:100%;height:14%;border-radius:4px;background:linear-gradient(180deg,var(--teal-light),var(--violet-light));box-shadow:0 0 12px rgba(46,236,212,.5);transition:top .05s linear}
+.cinematic-rail-pct{position:absolute;right:22px;bottom:calc(50% + min(19vh,140px) + 14px);transform:translateX(50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);z-index:3;letter-spacing:.04em}
+@media(max-width:768px){
+  .cinematic-rail,.cinematic-rail-pct{display:none}
+}
+.cinematic-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;background:transparent;z-index:2}
+@media(max-width:768px){
+  .cinematic-wrap{height:180vh}
+  .cinematic-title{font-size:20px}
+}
+
 </style>
 </head>
 <body>
@@ -1040,6 +1081,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   </div>
   <div class="nav-links">
     <span class="nav-link active" data-page="home" onclick="show('home')">Home</span>
+    <span class="nav-link" data-page="dashboard" onclick="show('dashboard')">Dashboard</span>
     <span class="nav-link" data-page="analysis" onclick="show('analysis')">Analysis</span>
     <span class="nav-link" data-page="charts" onclick="show('charts')">Charts</span>
     <span class="nav-link" data-page="screener" onclick="show('screener')">Screener</span>
@@ -1065,6 +1107,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="mobile-sidebar-close" onclick="toggleMobileSidebar(false)"><i class="ti ti-x"></i></div>
   </div>
   <span class="nav-link" data-page="home" onclick="show('home');toggleMobileSidebar(false)"><i class="ti ti-home" style="margin-right:8px"></i>Home</span>
+  <span class="nav-link" data-page="dashboard" onclick="show('dashboard');toggleMobileSidebar(false)"><i class="ti ti-layout-dashboard" style="margin-right:8px"></i>Dashboard</span>
   <span class="nav-link" data-page="analysis" onclick="show('analysis');toggleMobileSidebar(false)"><i class="ti ti-sparkles" style="margin-right:8px"></i>Analysis</span>
   <span class="nav-link" data-page="charts" onclick="show('charts');toggleMobileSidebar(false)"><i class="ti ti-chart-candle" style="margin-right:8px"></i>Charts</span>
   <span class="nav-link" data-page="screener" onclick="show('screener');toggleMobileSidebar(false)"><i class="ti ti-list-search" style="margin-right:8px"></i>Screener</span>
@@ -1104,6 +1147,24 @@ img,svg,video,canvas,iframe{max-width:100%}
       <span class="trust-pill"><i class="ti ti-refresh"></i>Real-Time Market Updates</span>
       <span class="trust-pill"><i class="ti ti-bolt"></i>Fast &amp; Reliable Performance</span>
     </div>
+
+  <!-- ── Scroll-driven cinematic sequence ──
+       200 JPG frames painted onto a canvas, scrubbed by scroll position
+       (no video file needed). Pinned full-height while the wrapper below
+       scrolls past underneath it. -->
+  <div class="cinematic-wrap" id="cinematic-wrap">
+    <div class="cinematic-sticky">
+      <canvas id="cinematic-canvas"></canvas>
+      <div class="cinematic-loading" id="cinematic-loading">Loading cinematic…</div>
+      <div class="cinematic-overlay">
+        <div class="cinematic-eyebrow"><span class="cinematic-scroll-dot"></span>Scroll to play</div>
+        <div class="cinematic-title">Watch how TradeMind AI turns raw market data into a live trading edge.</div>
+      </div>
+      <div class="cinematic-rail-pct" id="cinematic-rail-pct">0%</div>
+      <div class="cinematic-rail"><div class="cinematic-rail-thumb" id="cinematic-rail-thumb"></div></div>
+      <div class="cinematic-progress"><div class="cinematic-progress-bar" id="cinematic-progress-bar"></div></div>
+    </div>
+  </div>
 
     <div class="hero-chart-wrap">
       <div class="hero-chart-hdr">
@@ -1167,7 +1228,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="feat-icon"><i class="ti ti-filter"></i></div>
         <div class="feat-title">AI Stock Screener</div>
         <p class="feat-desc">Screen 5,000+ stocks by AI score, momentum, breakout potential, value, or growth. Custom filters updated nightly with fresh AI signal data.</p>
-        <span class="feat-tag tag-free">All Plans</span>
+        <span class="feat-tag tag-elite">7-Day Free Trial</span>
       </div>
     </div>
     <div class="feat-grid-4">
@@ -1416,6 +1477,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="sec-eyebrow">AI Stock Screener</div>
     <h2 class="sec-h2">Discover winning stocks</h2>
     <p class="sec-sub">Curated picks below are updated with AI signals. Use the search box to look up live price data for any of the 5,000+ NSE and BSE listed stocks.</p>
+    <div id="screener-trial-banner" style="display:none"></div>
     <div style="position:relative;margin-bottom:16px">
       <input class="tm-inp" id="screener-search-inp" placeholder="Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…" style="width:100%;height:44px;padding-left:40px" oninput="onScreenerSearchInput(this.value)"/>
       <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
@@ -1679,7 +1741,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash analysis · 50,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Bullish / Bearish / Neutral bias signals</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Basic risk scoring</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
+          <li class="plan-li"><i class="ti ti-clock chk" style="color:var(--amber)"></i><span>AI Stock Screener <span class="soon-badge" style="background:rgba(245,158,11,.12);color:var(--amber);border-color:rgba(245,158,11,.3)">7-Day Trial</span></span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>News sentiment analysis <span class="soon-badge">Coming Soon</span></span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (5 stocks)</span></li>
         </ul>
@@ -1780,7 +1842,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <tr><td>AI Brief (Morning Market Brief)</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>AI Technical Score</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
-          <tr><td>AI Stock Screener</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Stock Screener</td><td style="color:var(--amber);font-size:12px;font-weight:600">7-day trial</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Telegram / WhatsApp Alerts</td><td colspan="4" class="comp-soon" style="text-align:center">Coming Soon — Pro &amp; Elite</td></tr>
           <tr><td>AI Trading Assistant Chat</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>4-Model Consensus Analysis</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
@@ -2003,6 +2065,71 @@ img,svg,video,canvas,iframe{max-width:100%}
         </div>
       </div>
     </div>
+    <div class="admin-panel" style="margin-top:20px;border-top-color:var(--teal)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="sec-title" style="margin-bottom:0">Scanner signal accuracy — all stocks, all timeframes</div>
+        <button class="btn-ghost" style="font-size:11px" onclick="runScannerAccuracyEvaluationNow()"><i class="ti ti-refresh"></i> Evaluate now</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px"><i class="ti ti-lock" style="margin-right:4px"></i>Admin-only. Every technical signal the Screener computes for every stock it scans (RSI/EMA/MACD/Supertrend/VWAP), on every Time Interval chip, while the market is open — checked against real price outcomes. Separate from the AI-analysis accuracy above, which only covers manual single-stock "AI Analyze" runs.</div>
+      <div class="admin-metrics" style="margin-bottom:16px">
+        <div class="adm"><div class="adm-lbl">Overall accuracy</div><div class="adm-val" id="sacc-overall-pct">—</div><div class="adm-chg up" id="sacc-overall-count">—</div></div>
+        <div class="adm"><div class="adm-lbl">Correct</div><div class="adm-val" id="sacc-correct">—</div><div class="adm-chg up">Evaluated signals</div></div>
+        <div class="adm"><div class="adm-lbl">Incorrect</div><div class="adm-val" id="sacc-incorrect">—</div><div class="adm-chg down">Evaluated signals</div></div>
+        <div class="adm"><div class="adm-lbl">Pending evaluation</div><div class="adm-val" id="sacc-pending">—</div><div class="adm-chg up">Horizon not reached yet</div></div>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="sec-title" style="padding-bottom:6px">Accuracy by timeframe (all Time Interval chips)</div>
+          <div id="sacc-by-timeframe"></div>
+        </div>
+        <div>
+          <div class="sec-title" style="padding-bottom:6px">Accuracy by signal direction</div>
+          <div id="sacc-by-signal"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="sec-title" style="padding-bottom:6px">Accuracy by symbol (min 3 evaluated)</div>
+        <table class="tbl">
+          <thead><tr><th>Symbol</th><th>Correct</th><th>Incorrect</th><th>Accuracy</th></tr></thead>
+          <tbody id="sacc-by-symbol-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div style="margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:6px">
+          <div class="sec-title" style="margin-bottom:0;padding-bottom:0">All scanner signals (every stock, every timeframe, every trading day)</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select class="tm-inp" id="sig-log-outcome" style="height:34px;font-size:12px;cursor:pointer" onchange="loadScannerSignalLog(1)">
+              <option value="">All outcomes</option>
+              <option value="pending">Pending</option>
+              <option value="correct">Correct</option>
+              <option value="incorrect">Incorrect</option>
+            </select>
+            <select class="tm-inp" id="sig-log-timeframe" style="height:34px;font-size:12px;cursor:pointer" onchange="loadScannerSignalLog(1)">
+              <option value="">All timeframes</option>
+              <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
+              <option value="30m">30m</option><option value="1h">1h</option><option value="4h">4h</option>
+              <option value="1d">1d</option><option value="1w">1w</option><option value="1mo">1mo</option>
+              <option value="3mo">3mo</option><option value="6mo">6mo</option><option value="1y">1y</option>
+              <option value="3y">3y</option><option value="5y">5y</option>
+            </select>
+            <input class="tm-inp" id="sig-log-symbol" placeholder="Filter symbol…" style="height:34px;font-size:12px;width:130px" onkeydown="if(event.key==='Enter')loadScannerSignalLog(1)">
+            <button class="btn-ghost" style="font-size:11px" onclick="loadScannerSignalLog(1)"><i class="ti ti-search"></i> Filter</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Every Screener signal ever logged — pending, correct, and incorrect — deduped to one row per stock+timeframe per trading day. This is the full underlying data behind the accuracy numbers above.</div>
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Symbol</th><th>Timeframe</th><th>Signal</th><th>Entry price</th><th>Actual price</th><th>Outcome</th><th>Evaluated</th></tr></thead>
+          <tbody id="sig-log-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr></tbody>
+        </table>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text2)">
+          <span id="sig-log-summary">—</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-ghost" style="font-size:11px" id="sig-log-prev" onclick="loadScannerSignalLog(sigLogState.page-1)"><i class="ti ti-chevron-left"></i> Prev</button>
+            <button class="btn-ghost" style="font-size:11px" id="sig-log-next" onclick="loadScannerSignalLog(sigLogState.page+1)">Next <i class="ti ti-chevron-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <!-- ══════════════ ADS ══════════════ -->
@@ -2213,6 +2340,28 @@ img,svg,video,canvas,iframe{max-width:100%}
       </div>
       <div class="login-h2">Sign in to continue</div>
       <p class="login-sub">Access institutional-grade AI stock analysis across NSE &amp; BSE.</p>
+      <!-- FIX (Instagram-bio-link login issue): Google actively blocks its
+           Sign-In button/One Tap flow inside in-app browsers (Instagram,
+           Facebook, TikTok, etc. — detected via UA sniffing in
+           isInAppBrowser() below). Inside those webviews the button either
+           silently fails or falls back to a degraded flow that forces the
+           visitor to manually retype their email + password on Google's
+           side. Those same embedded webviews also don't reliably persist
+           the cross-site refreshToken cookie (cleared on backgrounding /
+           webview reload), which is why sessions there also drop after a
+           short while even though the real 30-day cookie logic works fine
+           in a normal browser. Rather than let people hit a broken flow,
+           detect the webview up front and steer them to their real browser
+           (Chrome/Safari), where both Google Sign-In and session
+           persistence work as intended.
+      -->
+      <div id="inapp-browser-banner" class="inapp-browser-banner">
+        <i class="ti ti-alert-triangle" style="color:#ff9f0a"></i>
+        <strong>You're viewing this inside Instagram's in-app browser.</strong>
+        Google blocks Sign-In there, so it won't work properly and you may get signed out repeatedly.
+        Tap the button below, or use the <strong>••• menu → "Open in Browser"</strong> (Instagram) to continue in Chrome or Safari.
+        <button type="button" class="btn-open-browser" onclick="openInSystemBrowser()">Open in browser</button>
+      </div>
       <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:14px;cursor:pointer;text-align:left">
         <input type="checkbox" id="consent-checkbox" onchange="onConsentChange()" style="margin-top:2px;flex-shrink:0;cursor:pointer"/>
         <span>I agree to the <u style="cursor:pointer" onclick="event.preventDefault();show('terms')">Terms of Service</u> and <u style="cursor:pointer" onclick="event.preventDefault();show('privacy')">Privacy Policy</u>.</span>
@@ -2300,7 +2449,7 @@ img,svg,video,canvas,iframe{max-width:100%}
 //                          the backend's .env file, never here)
 // ══════════════════════════════════════════════════════════════════════════
 const APP_CONFIG = {
- API_BASE_URL: 'https://api.trademindai.co.in', 
+  API_BASE_URL: 'https://api.trademindai.co.in',
   GOOGLE_CLIENT_ID:  '708129325781-cv77hsg7dovs0klevipdj885pv6clgsl.apps.googleusercontent.com',
   RAZORPAY_KEY_ID:   'rzp_live_T3BljltuYfiqmy',
 };
@@ -2643,9 +2792,65 @@ function showConsentWarning(){
 }
 
 
+// FIX (Instagram-bio-link login issue, part 1 of 2): Google's Identity
+// Services SDK deliberately refuses to run its normal Sign-In flow inside
+// in-app/embedded browsers (Instagram, Facebook, Messenger, TikTok, Line,
+// Snapchat, generic Android WebViews) — either the button never renders, or
+// it degrades to a flow that makes people manually type their Google email
+// + password instead of the usual one-tap chooser. This detects those
+// webview user agents so we can steer people to their real browser instead
+// of showing them a broken button.
+function isInAppBrowser(){
+  const ua=navigator.userAgent||navigator.vendor||'';
+  // Instagram / Facebook / Messenger in-app browsers
+  if(/Instagram|FBAN|FBAV|FB_IAB|Messenger/i.test(ua))return true;
+  // Other common in-app browsers that also break Google Sign-In
+  if(/Line\/|Snapchat|TikTok|Twitter|BytedanceWebview/i.test(ua))return true;
+  // Generic Android WebView (not Chrome itself) opened by another app
+  if(/Android/i.test(ua) && /; wv\)/i.test(ua))return true;
+  return false;
+}
+
+// FIX (Instagram-bio-link login issue, part 2 of 2): give people a one-tap
+// way out of the in-app browser. Android in-app browsers respect an
+// `intent://` URL to hand the page off to Chrome directly. iOS in-app
+// browsers (including Instagram's) don't expose any JS API to force-launch
+// Safari, so there we fall back to copying the link + clear instructions
+// (the banner text already tells them to use the ••• menu → "Open in
+// Browser", which is the only reliable path Instagram provides on iOS).
+function openInSystemBrowser(){
+  const url=location.href;
+  const ua=navigator.userAgent||'';
+  if(/Android/i.test(ua)){
+    const noScheme=url.replace(/^https?:\/\//,'');
+    location.href='intent://'+noScheme+'#Intent;scheme=https;package=com.android.chrome;end';
+    return;
+  }
+  // iOS / unknown: best effort — copy the link so they can paste it into
+  // Safari if the ••• menu instruction isn't visible to them.
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).catch(()=>{});
+  }
+  showLoginError('Tap the ••• (or Share) icon at the top of Instagram\'s browser, then choose "Open in Browser" — the link has been copied for you too.');
+}
+
+function maybeShowInAppBrowserBanner(){
+  const banner=document.getElementById('inapp-browser-banner');
+  if(banner)banner.style.display=isInAppBrowser()?'block':'none';
+}
+
 function initGoogleSignIn(){
+  maybeShowInAppBrowserBanner();
   const container=document.getElementById('google-signin-container');
   const fallback=document.getElementById('google-signin-fallback');
+  // Don't even attempt to render the Google button inside a known in-app
+  // browser — it either won't render or will hand the visitor a broken/
+  // degraded flow. The banner above already tells them how to get to a
+  // real browser, where initGoogleSignIn() will run normally.
+  if(isInAppBrowser()){
+    if(container)container.style.display='none';
+    return;
+  }
   if(isPlaceholder(APP_CONFIG.GOOGLE_CLIENT_ID) || typeof google==='undefined' || !google.accounts){
     if(fallback)fallback.style.display='block';
     return;
@@ -2656,6 +2861,7 @@ function initGoogleSignIn(){
       callback: handleGoogleCredential,
     });
     if(container){
+      container.style.display='flex';
       google.accounts.id.renderButton(container,{theme:'outline',size:'large',width:320,text:'continue_with'});
     }
   }catch(e){
@@ -2721,7 +2927,146 @@ function animateCount(el,target,opts={}){
 // the "Real Upstox Account" portfolio feature (see the note near the old
 // broker-sync functions further down).
 
-window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); });
+/** Scroll-scrubbed image-sequence "cinematic". Maps scroll progress through
+ *  #cinematic-wrap to a frame 1..FRAME_COUNT and draws it on the canvas —
+ *  the same technique Apple-style product pages use, minus the video file. */
+function initCinematicScroll(){
+  const wrap=document.getElementById('cinematic-wrap');
+  const canvas=document.getElementById('cinematic-canvas');
+  const loadingEl=document.getElementById('cinematic-loading');
+  const progressBar=document.getElementById('cinematic-progress-bar');
+  const railThumb=document.getElementById('cinematic-rail-thumb');
+  const railPct=document.getElementById('cinematic-rail-pct');
+  if(!wrap||!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const FRAME_COUNT=200;
+  const FRAME_PATH=i=>`assets/cinematic/frame-${String(i).padStart(3,'0')}.jpg`;
+
+  const images=new Array(FRAME_COUNT+1); // 1-indexed
+  let loadedCount=0;
+  let currentFrame=1;
+  let ready=false;
+
+  function resizeCanvas(){
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=canvas.clientWidth*dpr;
+    canvas.height=canvas.clientHeight*dpr;
+  }
+
+  function drawFrame(n){
+    const img=images[n];
+    // If this frame hasn't loaded (or failed to load), leave the canvas
+    // transparent rather than erroring out — the CSS gradient backdrop on
+    // .cinematic-sticky shows through underneath so the section never
+    // renders as a flat empty rectangle even when a frame is missing.
+    if(!img||!img.complete||!img.naturalWidth)return;
+    const cw=canvas.width,ch=canvas.height;
+    // object-fit:cover math so frames fill the canvas without distortion
+    const scale=Math.max(cw/img.naturalWidth,ch/img.naturalHeight);
+    const dw=img.naturalWidth*scale,dh=img.naturalHeight*scale;
+    ctx.clearRect(0,0,cw,ch);
+    ctx.drawImage(img,(cw-dw)/2,(ch-dh)/2,dw,dh);
+  }
+
+  // Drives both the bottom progress bar and the pinned vertical scroll rail —
+  // these stay visible and update continuously for the whole 250vh of scroll
+  // distance, so there's always a clear, high-contrast "you are here" marker
+  // even while frames are still loading.
+  function onScroll(){
+    const rect=wrap.getBoundingClientRect();
+    const total=wrap.offsetHeight-window.innerHeight;
+    let progress=total>0?(-rect.top)/total:0;
+    progress=Math.max(0,Math.min(1,progress));
+    const pct=(progress*100);
+    if(progressBar)progressBar.style.width=pct.toFixed(1)+'%';
+    if(railThumb)railThumb.style.top=(progress*86).toFixed(1)+'%';
+    if(railPct)railPct.textContent=Math.round(pct)+'%';
+    if(!ready)return;
+    const frame=Math.min(FRAME_COUNT,Math.max(1,Math.round(progress*(FRAME_COUNT-1))+1));
+    if(frame!==currentFrame||true){ currentFrame=frame; drawFrame(frame); }
+  }
+
+  let ticking=false;
+  function onScrollThrottled(){
+    if(ticking)return;
+    ticking=true;
+    requestAnimationFrame(()=>{ onScroll(); ticking=false; });
+  }
+
+  function preloadFrom(startIndex){
+    // Load sequentially so the earliest frames (visible first) are ready fast,
+    // rather than firing 200 parallel requests at once.
+    let i=startIndex;
+    function loadNext(){
+      if(i>FRAME_COUNT){
+        if(!ready){ ready=true; if(loadingEl)loadingEl.style.display='none'; drawFrame(currentFrame); }
+        return;
+      }
+      const img=new Image();
+      img.onload=img.onerror=()=>{
+        loadedCount++;
+        if(!ready && loadedCount>=Math.min(20,FRAME_COUNT)){
+          ready=true;
+          if(loadingEl)loadingEl.style.display='none';
+          resizeCanvas(); drawFrame(currentFrame);
+        }
+        i++; loadNext();
+      };
+      img.src=FRAME_PATH(i);
+      images[i]=img;
+    }
+    loadNext();
+  }
+
+  if(_reduceMotion){
+    // Respect reduced-motion: show a single static frame, no scroll animation.
+    if(loadingEl)loadingEl.style.display='none';
+    resizeCanvas();
+    const img=new Image();
+    // onerror included: if the frame fails to load, we still fall through to
+    // the CSS gradient backdrop instead of leaving the canvas permanently blank.
+    img.onload=img.onerror=()=>{ if(img.naturalWidth){ images[1]=img; } ready=true; drawFrame(1); };
+    img.src=FRAME_PATH(1);
+    if(progressBar)progressBar.style.width='100%';
+    if(railThumb)railThumb.style.top='86%';
+    if(railPct)railPct.textContent='100%';
+    window.addEventListener('resize',()=>{ resizeCanvas(); drawFrame(1); });
+    return;
+  }
+
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        resizeCanvas();
+        preloadFrom(1);
+        io.unobserve(entry.target);
+      }
+    });
+  },{rootMargin:'400px 0px 400px 0px'});
+  io.observe(wrap);
+
+  window.addEventListener('scroll',onScrollThrottled,{passive:true});
+  window.addEventListener('resize',()=>{ resizeCanvas(); if(ready)drawFrame(currentFrame); });
+}
+
+window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); initCinematicScroll(); });
+
+// FIX (part of the "signed out after ~30 min" issue): mobile browsers —
+// especially in-app webviews like Instagram's — routinely suspend or fully
+// discard this tab in the background to save memory. authToken only ever
+// lives in memory (by design, see comment above), so coming back to a
+// suspended/reloaded tab can leave the UI thinking it's logged out even
+// though the 30-day refresh cookie is still valid server-side. Re-run
+// session restore whenever the tab regains visibility/is restored from
+// bfcache, instead of only once on initial `load`, so a stale in-memory
+// state gets silently repaired rather than showing the user a login wall.
+async function revalidateSessionIfNeeded(){
+  if(document.visibilityState!=='visible')return;
+  if(currentUser)return; // already have a live session in memory
+  await tryRestoreSession();
+}
+document.addEventListener('visibilitychange',revalidateSessionIfNeeded);
+window.addEventListener('pageshow',(e)=>{ if(e.persisted)revalidateSessionIfNeeded(); });
 
 // ══════════════ CORE NAVIGATION ══════════════
 function show(id){
@@ -2740,9 +3085,13 @@ function show(id){
   // FIX: matching the Analysis page's gate above — Screener now also sends
   // logged-out visitors straight to the Google/email sign-in screen before
   // they see the page, instead of leaving it open to the public. This is
-  // purely an auth gate, not a plan gate: 'screener' is still in every
-  // plan's features list (config/plans.js), so any signed-in user on any
-  // plan, including Free, still gets full Screener access once signed in.
+  // just the sign-in gate, not the plan gate — Basic/Pro/Elite get full
+  // permanent Screener access once signed in, but Free only gets a 7-day
+  // trial from signup (backend/config/plans.js FREE_SCREENER_TRIAL_DAYS,
+  // enforced by requireScreenerAccess()). Once a Free user's trial ends,
+  // GET /api/market/stocks starts 403'ing and renderScreener()'s existing
+  // e.isPlanGate branch below shows the upgrade prompt with the backend's
+  // "trial has ended" message.
   if(id==='screener' && !currentUser){ postLoginRedirect='screener'; show('login'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
@@ -2764,13 +3113,14 @@ function show(id){
     // rendering; the live-tick path further down is untouched.
     const resEl=document.getElementById('screener-results');
     if(resEl)resEl.dataset.loaded='false';
+    renderScreenerTrialBanner();
     renderScreener();
     startScreenerAutoRefresh();
   }
   if(id==='charts')initChartsPage();
   if(id==='options'){renderOptionsChain();refreshModelChipLocks();}
   if(id==='analysis')refreshModelChipLocks();
-  if(id==='admin')loadAdminPanel();
+  if(id==='admin'){loadAdminPanel();startAdminAutoRefresh();}else{stopAdminAutoRefresh();}
   if(id==='login'){clearLoginError();setAuthMode(pendingResetToken?'reset':'login');setTimeout(initGoogleSignIn,0);}
   toggleMobileSidebar(false);
   window.scrollTo(0,0);
@@ -3311,9 +3661,36 @@ function friendlyAiError(status,rawMsg){
 }
 // ══════════════ CHIP TOGGLE ══════════════
 const PLAN_RANK={free:0,basic:1,pro:2,elite:3};
+// Mirrors backend/config/plans.js `aiModels` EXACTLY — which plans actually
+// call each model. This is NOT a "minimum plan unlocks it forever" ladder:
+// Elite runs its own 4 flagship models (Gemini Pro, Claude Opus, GPT-4o
+// high, DeepSeek R1) INSTEAD OF the cheaper models lower plans use, not in
+// addition to them. So Gemini Flash / DeepSeek V3 / Claude Sonnet must be
+// LOCKED again on Elite, not left unlocked just because Elite outranks the
+// plan that first introduced them. GPT-4o is the one model that spans two
+// tiers (Pro's 'gpt4o' slot and Elite's higher-cap 'gpt4o_high' slot), so
+// it's the only chip allowed on both.
+const MODEL_ALLOWED_PLANS={
+  'gemini-2.5-flash':  ['free','basic','pro'],   // Elite uses Gemini Pro instead
+  'deepseek-v3':       ['basic','pro'],           // Elite uses DeepSeek R1 instead
+  'claude-sonnet-4.6': ['pro'],                   // Elite uses Claude Opus instead
+  'gpt-4o':            ['pro','elite'],
+  'gemini-2.5-pro':    ['elite'],
+  'claude-opus-4.7':   ['elite'],
+  'deepseek-r1':       ['elite'],
+};
 function toggleChip(el){
   if(el.classList.contains('locked')){
-    const need=el.dataset.plan||'elite';
+    const allowed=MODEL_ALLOWED_PLANS[el.dataset.model];
+    const currentRank=PLAN_RANK[(currentUser?.plan||'free').toLowerCase()]??0;
+    // If every plan that includes this model ranks BELOW the user's current
+    // plan, it's not "locked behind an upgrade" — it's simply not part of
+    // this plan's lineup (e.g. an Elite user tapping Gemini Flash).
+    if(allowed && allowed.every(p=>(PLAN_RANK[p]??0)<currentRank)){
+      alert(`This model isn't part of your current plan's AI lineup — your plan already runs its own set of flagship models automatically on every analysis.`);
+      return;
+    }
+    const need=el.dataset.plan||(allowed?allowed[0]:'elite');
     const needLabel=need.charAt(0).toUpperCase()+need.slice(1);
     alert(`This model runs automatically for ${needLabel} plan subscribers and above. Upgrade on the Pricing page to include it in every analysis.`);
     return;
@@ -3433,10 +3810,19 @@ function getSelectedModelIds(containerId){
 // so plan-based locking stays correct everywhere at once.
 function refreshModelChipLocks(){
   const plan=(currentUser?.plan||'free').toLowerCase();
-  const rank=PLAN_RANK[plan]??0;
-  document.querySelectorAll('.ai-chips .ai-chip[data-plan]').forEach(chip=>{
-    const needRank=PLAN_RANK[chip.dataset.plan]??3;
-    const locked=rank<needRank;
+  // FIX: this used to lock a chip only if the user's plan RANKED BELOW the
+  // chip's data-plan minimum — a ladder where anything unlocked at a lower
+  // tier stayed unlocked forever after. That's wrong for this app: Elite
+  // runs 4 flagship models INSTEAD OF Free/Basic/Pro's cheaper ones (see
+  // backend/config/plans.js — 'elite'.aiModels has no gemini_flash,
+  // deepseek_v3, or claude_sonnet keys at all), so an Elite user used to see
+  // Gemini Flash / DeepSeek V3 / Claude Sonnet as selectable, tick one, and
+  // get a 403 from /api/ai/insight since the backend never runs those
+  // models on Elite. Now every chip is locked/unlocked by exact membership
+  // in MODEL_ALLOWED_PLANS, matching the backend model set for real.
+  document.querySelectorAll('.ai-chips .ai-chip[data-model]').forEach(chip=>{
+    const allowed=MODEL_ALLOWED_PLANS[chip.dataset.model];
+    const locked=allowed?!allowed.includes(plan):false;
     chip.classList.toggle('locked',locked);
     if(locked)chip.classList.remove('sel'); // never show a locked model as "selected"
   });
@@ -3448,6 +3834,14 @@ function refreshModelChipLocks(){
     if(!group.id)return;
     ensureChipToolbar(group);
     restoreChipSelection(group.id);
+    // If, after locking + restoring, nothing usable ended up selected (e.g.
+    // an Elite user whose only 'sel' chip in the markup was Gemini Flash,
+    // now locked), fall back to the first unlocked chip so a request always
+    // has at least one valid model to send instead of silently sending none.
+    if(!group.querySelector('.ai-chip.sel:not(.locked)')){
+      const first=group.querySelector('.ai-chip:not(.locked)');
+      if(first)first.classList.add('sel');
+    }
   });
 }
 // After a real AI result comes back, reflect which model(s) actually ran
@@ -3950,6 +4344,38 @@ async function quickAddToWatchlist(sym){
 // rather than fake it, this now shows real symbol/name/price/change% only,
 // paginated across the full NSE+BSE instrument list via /api/market/stocks.
 let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined, screenerSignal=undefined, screenerPeriod='1d';
+
+// FIX: Free plan's AI Stock Screener is now a 7-day trial from signup
+// (backend/config/plans.js FREE_SCREENER_TRIAL_DAYS, enforced server-side
+// by requireScreenerAccess() — this client-side copy is purely a courtesy
+// heads-up, the backend is the real gate). Shows a small countdown banner
+// while the trial is still active; once it's expired we don't duplicate
+// messaging here — the GET /api/market/stocks call in renderScreener()
+// below will 403 and its existing e.isPlanGate branch already renders a
+// full lock screen with the backend's exact "trial has ended" message and
+// an upgrade button, so this banner just hides itself in that case.
+function renderScreenerTrialBanner(){
+  const el=document.getElementById('screener-trial-banner');
+  if(!el)return;
+  if(!currentUser || (currentUser.plan||'free').toLowerCase()!=='free' || !currentUser.created_at){
+    el.style.display='none'; el.innerHTML='';
+    return;
+  }
+  const TRIAL_DAYS=7;
+  const createdAt=new Date(currentUser.created_at);
+  const trialEndsAt=new Date(createdAt.getTime()+TRIAL_DAYS*24*60*60*1000);
+  const msLeft=trialEndsAt.getTime()-Date.now();
+  if(msLeft<=0){
+    el.style.display='none'; el.innerHTML='';
+    return;
+  }
+  const daysLeft=Math.max(1,Math.ceil(msLeft/(24*60*60*1000)));
+  el.style.display='block';
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;margin-bottom:16px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius-lg)">
+    <span style="font-size:12px;color:var(--text2)"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i><strong style="color:var(--amber)">${daysLeft} day${daysLeft===1?'':'s'} left</strong> in your free AI Stock Screener trial. Upgrade to keep unlimited access after it ends.</span>
+    <button class="btn-lg-ghost" style="padding:6px 16px;font-size:11px;white-space:nowrap" onclick="show('pricing')">View plans</button>
+  </div>`;
+}
 
 async function renderScreener(){
   const el=document.getElementById('screener-results');
@@ -5893,6 +6319,26 @@ async function sendChat(){
 // Real data, loaded from /api/admin/* when an admin user opens this page.
 // (Backend doesn't track month-by-month revenue history yet, so that one
 // panel shows the current month's actual total instead of inventing a trend.)
+// FIX ("new sign-ins/logins not showing in admin panel"): loadAdminPanel()
+// only ever ran once, on the moment the Admin nav link was clicked. If an
+// admin left the Admin tab open, any user who signed up or logged in after
+// that point was already sitting in the `users` table (listUsers is a
+// straight `ORDER BY created_at DESC` — nothing was actually being
+// filtered out), but nothing on screen ever re-fetched it, so the "Recent
+// sign-ups" table just sat frozen on whatever it looked like at page-open
+// time. Same idea as Screener's live auto-refresh: poll while the Admin
+// page is actually the one on screen, stop as soon as it isn't.
+let adminAutoRefreshTimer=null;
+function startAdminAutoRefresh(){
+  stopAdminAutoRefresh();
+  adminAutoRefreshTimer=setInterval(()=>{
+    if(document.getElementById('page-admin')?.classList.contains('active'))loadAdminPanel();
+  },15000);
+}
+function stopAdminAutoRefresh(){
+  if(adminAutoRefreshTimer){ clearInterval(adminAutoRefreshTimer); adminAutoRefreshTimer=null; }
+}
+
 let adminUsersCache = []; // populated by loadAdminPanel; backs the "Export CSV" button
 async function loadAdminPanel(){
   const rh=document.getElementById('rev-history');
@@ -5904,22 +6350,25 @@ async function loadAdminPanel(){
     return;
   }
   try{
-    const [statsRes, usersRes, adsRes, accRes, riskRes] = await Promise.all([
+    const [statsRes, usersRes, adsRes, accRes, riskRes, saccRes] = await Promise.all([
       apiFetch('/api/admin/stats'),
       apiFetch('/api/admin/users'),
       apiFetch('/api/admin/advertisers'),
       apiFetch('/api/admin/ai-accuracy'),
       apiFetch('/api/admin/risk-flags'),
+      apiFetch('/api/admin/scanner-accuracy'),
     ]);
     const stats = await statsRes.json();
     const usersData = await usersRes.json();
     const adsData = await adsRes.json().catch(()=>({enquiries:[],pendingCount:0}));
     const accData = await accRes.json().catch(()=>null);
     const riskData = await riskRes.json().catch(()=>null);
+    const saccData = await saccRes.json().catch(()=>null);
     if(!statsRes.ok) throw new Error(stats.error||'Failed to load admin stats.');
     loadPredictionLog(1); // full raw prediction log (every date, every user) — loaded separately since it paginates on its own
     loadAdminFeedback(1); // user feedback submissions — loaded separately since it paginates on its own
     loadAdminReferrals(1); // referral history — loaded separately since it paginates on its own
+    loadScannerSignalLog(1); // full raw scanner signal log (every stock, every timeframe) — loaded separately since it paginates on its own
 
     setText('adm-total-users', (stats.totalUsers ?? 0).toLocaleString('en-IN'));
     setText('adm-new-users', `↑ +${stats.newUsersThisWeek ?? 0} this week`);
@@ -6041,6 +6490,42 @@ async function loadAdminPanel(){
           : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Not enough evaluated calls yet.</td></tr>';
       }
     }
+
+    // Scanner signal accuracy — every technical signal the Screener computes
+    // for every stock, across every Time Interval chip. See
+    // scannerAccuracyService.js / adminController.getScannerAccuracy.
+    if(saccData){
+      const sov = saccData.overall || {};
+      setText('sacc-overall-pct', sov.accuracyPct!=null ? sov.accuracyPct+'%' : '—');
+      setText('sacc-overall-count', sov.totalEvaluated!=null ? `${sov.totalEvaluated} evaluated signals` : '—');
+      setText('sacc-correct', sov.correct ?? '—');
+      setText('sacc-incorrect', sov.incorrect ?? '—');
+      setText('sacc-pending', saccData.pendingCount ?? '—');
+
+      const byTf = document.getElementById('sacc-by-timeframe');
+      if(byTf){
+        const rows = saccData.byTimeframe || [];
+        byTf.innerHTML = rows.length
+          ? rows.map(t=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600">${t.timeframe}</span><span style="color:var(--text2)">${t.correct}/${t.total} · ${t.accuracyPct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${t.accuracyPct}%;background:var(--teal)"></div></div></div>`).join('')
+          : '<div style="font-size:12px;color:var(--text3)">Not enough evaluated signals yet.</div>';
+      }
+
+      const bySig = document.getElementById('sacc-by-signal');
+      if(bySig){
+        const rows = saccData.bySignal || [];
+        bySig.innerHTML = rows.length
+          ? rows.map(s=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600;text-transform:capitalize">${(s.signal||'—').replace(/_/g,' ')}</span><span style="color:var(--text2)">${s.correct}/${s.total} · ${s.accuracyPct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${s.accuracyPct}%;background:var(--blue)"></div></div></div>`).join('')
+          : '<div style="font-size:12px;color:var(--text3)">Not enough evaluated signals yet.</div>';
+      }
+
+      const sbySymTbody = document.getElementById('sacc-by-symbol-tbody');
+      if(sbySymTbody){
+        const rows = saccData.bySymbol || [];
+        sbySymTbody.innerHTML = rows.length
+          ? rows.map(s=>`<tr><td style="color:var(--text);font-weight:600">${s.symbol}</td><td>${s.correct}</td><td>${s.incorrect}</td><td>${s.accuracyPct}%</td></tr>`).join('')
+          : '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:16px">Not enough evaluated signals yet.</td></tr>';
+      }
+    }
   }catch(e){
     if(rh)rh.innerHTML=`<div style="font-size:12px;color:var(--rose2)">Could not load admin data right now. Please try again shortly.</div>`;
   }
@@ -6100,6 +6585,77 @@ async function loadPredictionLog(page){
   }catch(e){
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--rose2);padding:16px">Could not load prediction log right now.</td></tr>';
   }
+}
+
+// Full raw scanner signal log — every technical signal ever logged by the
+// Screener, for every stock and every Time Interval chip, including ones
+// still pending. Backs the "All scanner signals" table under the scanner
+// accuracy panel; paginates server-side via /api/admin/scanner-signals.
+let sigLogState = { page: 1, totalPages: 1, total: 0 };
+async function loadScannerSignalLog(page){
+  const tbody = document.getElementById('sig-log-tbody');
+  if(!tbody || !currentUser || !currentUser.is_admin) return;
+  page = Math.max(page || 1, 1);
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">Loading…</td></tr>';
+  try{
+    const outcome = document.getElementById('sig-log-outcome')?.value || '';
+    const timeframe = document.getElementById('sig-log-timeframe')?.value || '';
+    const symbol = (document.getElementById('sig-log-symbol')?.value || '').trim();
+    const params = new URLSearchParams({ page, limit: 25 });
+    if(outcome) params.set('outcome', outcome);
+    if(timeframe) params.set('timeframe', timeframe);
+    if(symbol) params.set('symbol', symbol);
+
+    const res = await apiFetch('/api/admin/scanner-signals?'+params.toString());
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed to load scanner signal log.');
+
+    sigLogState = { page: data.page, totalPages: data.totalPages, total: data.total };
+
+    const rows = data.signals || [];
+    tbody.innerHTML = rows.length
+      ? rows.map(s=>{
+          const outcomeColor = s.outcome==='correct' ? 'var(--teal)' : s.outcome==='incorrect' ? 'var(--rose2)' : 'var(--text3)';
+          const dateStr = s.signal_date ? new Date(s.signal_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          const evalStr = s.evaluated_at ? new Date(s.evaluated_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+          return `<tr>
+            <td>${dateStr}</td>
+            <td style="color:var(--text);font-weight:600">${s.stock_symbol}</td>
+            <td>${s.timeframe}</td>
+            <td style="text-transform:capitalize">${(s.signal||'—').replace(/_/g,' ')}</td>
+            <td>₹${Number(s.entry_price||0).toLocaleString('en-IN')}</td>
+            <td>${s.actual_price_at_horizon!=null ? '₹'+Number(s.actual_price_at_horizon).toLocaleString('en-IN') : '—'}</td>
+            <td style="color:${outcomeColor};font-weight:600;text-transform:capitalize">${s.outcome||'pending'}</td>
+            <td style="font-size:11px;color:var(--text3)">${evalStr}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:16px">No scanner signals logged yet.</td></tr>';
+
+    const summary = document.getElementById('sig-log-summary');
+    if(summary) summary.textContent = data.total
+      ? `Page ${data.page} of ${data.totalPages} · ${data.total.toLocaleString('en-IN')} signals total`
+      : 'No scanner signals logged yet.';
+
+    const prevBtn = document.getElementById('sig-log-prev');
+    const nextBtn = document.getElementById('sig-log-next');
+    if(prevBtn) prevBtn.disabled = data.page <= 1;
+    if(nextBtn) nextBtn.disabled = data.page >= data.totalPages;
+  }catch(e){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--rose2);padding:16px">Could not load scanner signal log right now.</td></tr>';
+  }
+}
+
+// Manually kicks off the same daily 18:00 IST scanner-signal evaluation job
+// on demand, for when an admin wants fresh accuracy numbers without waiting
+// for cron.
+async function runScannerAccuracyEvaluationNow(){
+  try{
+    const res=await apiFetch('/api/admin/scanner-accuracy/evaluate-now',{method:'POST'});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Evaluation failed.');
+    await loadAdminPanel();
+    await loadScannerSignalLog(1);
+  }catch(e){alert('Could not run evaluation right now. Please try again shortly.');}
 }
 
 // User feedback submissions — every row from the "Feedback" dashboard form,
