@@ -15,7 +15,7 @@
 //   requireAuth → enforceTokenQuota → enforceAiQueryLimit → attachAvailableModels → validateAiAnalyze → controller
 
 const { query }                              = require('../db/pool');
-const { getPlan, planHasFeature, getModelKeys } = require('../config/plans');
+const { getPlan, planHasFeature, getModelKeys, FREE_SCREENER_TRIAL_DAYS } = require('../config/plans');
 const AppError                               = require('../utils/AppError');
 const asyncHandler                           = require('../utils/asyncHandler');
 
@@ -32,6 +32,47 @@ function requireFeature(feature) {
     }
     next();
   };
+}
+
+// ── 1b. requireScreenerAccess ───────────────────────────────────────────
+/**
+ * Screener-specific gate, used INSTEAD OF requireFeature('screener') on
+ * GET /api/market/stocks.
+ *
+ * Basic/Pro/Elite: same as requireFeature — permanent access as long as
+ * 'screener' is in the plan's features list.
+ *
+ * Free: 'screener' being in the features list only means "trial-eligible".
+ * Access is allowed for FREE_SCREENER_TRIAL_DAYS days starting from
+ * user.created_at (signup date), then blocked with a clear "trial ended"
+ * message distinct from the generic upgrade copy. Must run after
+ * requireAuth (needs req.user.plan + req.user.created_at).
+ */
+function requireScreenerAccess(req, res, next) {
+  if (!req.user) return next(new AppError('Not authenticated.', 401));
+
+  if (!planHasFeature(req.user.plan, 'screener')) {
+    return next(new AppError(
+      'This feature requires a higher plan. Upgrade to unlock "screener".',
+      403
+    ));
+  }
+
+  const isFreePlan = (req.user.plan || 'free').toLowerCase() === 'free';
+  if (isFreePlan) {
+    const createdAt = new Date(req.user.created_at);
+    const trialEndsAt = new Date(createdAt.getTime() + FREE_SCREENER_TRIAL_DAYS * 24 * 60 * 60 * 1000);
+    if (Date.now() >= trialEndsAt.getTime()) {
+      return next(new AppError(
+        `Your ${FREE_SCREENER_TRIAL_DAYS}-day free trial of the AI Stock Screener has ended. Upgrade to a paid plan to keep using it.`,
+        403
+      ));
+    }
+    // Let the frontend show "X days left in your trial" without a second call.
+    req.screenerTrialEndsAt = trialEndsAt.toISOString();
+  }
+
+  next();
 }
 
 // ── 2. enforceAiQueryLimit ───────────────────────────────────────────────
@@ -176,4 +217,4 @@ const attachAvailableModels = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = { requireFeature, enforceAiQueryLimit, enforceTokenQuota, attachAvailableModels };
+module.exports = { requireFeature, requireScreenerAccess, enforceAiQueryLimit, enforceTokenQuota, attachAvailableModels };

@@ -26,6 +26,7 @@ const { config } = require('../config');
 const marketDataService = require('./marketDataService');
 const { sendUpstoxTokenAlert } = require('./emailService');
 const { evaluateDuePredictions } = require('./predictionAccuracyService');
+const { evaluateDueScannerSignals } = require('./scannerAccuracyService');
 
 function isUpstoxConfigured() {
   return !!(config.upstox.apiKey && config.upstox.apiSecret);
@@ -95,8 +96,18 @@ function startUpstoxTokenScheduler() {
     );
   }, { timezone: 'Asia/Kolkata' });
 
+  // Same 18:00 IST slot — checks every Screener technical signal (ALL
+  // stocks, ALL Time Interval chips) whose horizon has passed against the
+  // real price. See scannerAccuracyService.js.
+  cron.schedule('0 18 * * *', () => {
+    evaluateDueScannerSignals().catch(err =>
+      console.error('[tokenScheduler] Scanner signal accuracy evaluation failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
   console.log('[tokenScheduler] Automatic daily Upstox token refresh scheduled (08:00 IST request, 08:45 IST follow-up check).');
   console.log('[tokenScheduler] Automatic daily AI-prediction accuracy evaluation scheduled (18:00 IST).');
+  console.log('[tokenScheduler] Automatic daily Scanner-signal accuracy evaluation scheduled (18:00 IST).');
 }
 
 module.exports = { startUpstoxTokenScheduler, runDailyTokenRequest, runFollowUpCheck };

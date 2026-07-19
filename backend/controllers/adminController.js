@@ -3,6 +3,7 @@ const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { getAccuracyStats, evaluateDuePredictions, listAllPredictions } = require('../services/predictionAccuracyService');
+const { getScannerAccuracyStats, evaluateDueScannerSignals, listAllScannerSignals } = require('../services/scannerAccuracyService');
 const { config } = require('../config');
 
 // AI provider bills come back from ai_requests.cost_usd in USD (that's what
@@ -118,6 +119,32 @@ const runAiAccuracyEvaluationNow = asyncHandler(async (req, res) => {
 const getAllPredictions = asyncHandler(async (req, res) => {
   const { page, limit, outcome, symbol, from, to } = req.query;
   const result = await listAllPredictions({ page, limit, outcome, symbol, from, to });
+  res.json(result);
+});
+
+// ── GET /api/admin/scanner-accuracy ── (accuracy of the Screener's
+// rule-based bullish/bearish/neutral signal, across EVERY stock it scans
+// and EVERY Time Interval chip — see scannerAccuracyService.js. This is
+// the "all stock predictions from the scanner" view, separate from
+// /ai-accuracy above which only covers manual single-stock AI Analyze.)
+const getScannerAccuracy = asyncHandler(async (req, res) => {
+  const stats = await getScannerAccuracyStats();
+  res.json(stats);
+});
+
+// ── POST /api/admin/scanner-accuracy/evaluate-now ── (manual trigger, in
+// case you don't want to wait for the 18:00 IST daily cron job)
+const runScannerAccuracyEvaluationNow = asyncHandler(async (req, res) => {
+  const result = await evaluateDueScannerSignals();
+  res.json({ message: 'Scanner signal evaluation run complete.', ...result });
+});
+
+// ── GET /api/admin/scanner-signals ── (full raw log of EVERY scanner
+// signal ever logged — pending, correct, and incorrect — across every
+// stock, every timeframe, every day the market was open.)
+const getAllScannerSignals = asyncHandler(async (req, res) => {
+  const { page, limit, outcome, symbol, timeframe, from, to } = req.query;
+  const result = await listAllScannerSignals({ page, limit, outcome, symbol, timeframe, from, to });
   res.json(result);
 });
 
@@ -304,5 +331,5 @@ const getRiskFlags = asyncHandler(async (req, res) => {
 module.exports = {
   getStats, listUsers, updateUserPlan, getApiUsage, getAiAccuracy, runAiAccuracyEvaluationNow,
   getAllPredictions, listAdvertiserEnquiries, updateAdvertiserStatus, listFeedback, listReferrals,
-  getRiskFlags,
+  getRiskFlags, getScannerAccuracy, runScannerAccuracyEvaluationNow, getAllScannerSignals,
 };

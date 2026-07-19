@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { requireAuth } = require('../middleware/authMiddleware');
 const { requireAdmin } = require('../middleware/adminCheck');
-const { requireFeature } = require('../middleware/planCheck');
+const { requireFeature, requireScreenerAccess } = require('../middleware/planCheck');
 const { marketLimiter, adminLimiter } = require('../middleware/rateLimit');
 const { validateMarketSymbol, validateMarketCandles, validateMarketQuotes, validateMarketReport, validateMarketSearch } = require('../middleware/validate');
 const ctrl = require('../controllers/marketController');
@@ -51,12 +51,14 @@ router.get('/search', marketLimiter, validateMarketSearch, ctrl.searchSymbols);
 // Options-only autocomplete: GET /api/market/search-fno?q=REL
 router.get('/search-fno', marketLimiter, validateMarketSearch, ctrl.searchFnoSymbols);
 // Browse ALL stocks: GET /api/market/stocks?exchange=NSE_EQ&page=1&limit=50
-// FIX: Screener requires a signed-in session again (matching the Analysis
-// page's gate in frontend/index.html), but stays available on EVERY plan —
-// 'screener' is in every plan's features list in config/plans.js
-// (including Free), so requireFeature('screener') below passes for any
-// signed-in user regardless of plan; only logged-out visitors are blocked.
-router.get('/stocks', requireAuth, requireFeature('screener'), marketLimiter, ctrl.listStocks);
+// FIX: Screener requires a signed-in session (matching the Analysis page's
+// gate in frontend/index.html) and stays available on every paid plan
+// permanently. Free is a 7-day trial from signup, not unlimited/permanent
+// access — requireScreenerAccess() (config/plans.js FREE_SCREENER_TRIAL_DAYS)
+// reads req.user.created_at and blocks Free users once the trial window
+// closes, prompting them to upgrade. Basic/Pro/Elite behave exactly like
+// the plain requireFeature('screener') check used to.
+router.get('/stocks', requireAuth, requireScreenerAccess, marketLimiter, ctrl.listStocks);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
 // FIX: sold as Elite-only on the pricing page/comparison table but had no
 // backend gate — requireFeature('options_analysis') matches config/plans.js

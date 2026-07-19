@@ -550,6 +550,21 @@ const QUOTE_CACHE_TTL_MS = 3000;
 const CANDLE_CACHE_TTL_MS = 60_000; // 1 minute — historical bars don't need per-second freshness
 const candleCache = new Map(); // cacheKey -> { data, expiresAt }
 
+// FIX (hero chart price flipping between real-time and yesterday's close
+// every ~minute): getIntradayCandles() used to return [] on ANY failure
+// (timeout, 429, a transient empty payload from Upstox) with no fallback.
+// Since getIndexHistoricalCandles() merges historical + intraday and takes
+// the LAST candle as "today's price", a single flaky intraday poll silently
+// dropped all of today's session — the chart reverted to the last daily
+// candle (yesterday's close) for that ~60s cache window, then jumped back
+// to the real live price once the next poll succeeded. That alternation
+// looked like the price was "randomly" changing to numbers that don't
+// match the real market. The indices strip above never had this problem
+// because getIndexQuotes() already sticks to lastGoodIndexQuotes on a
+// failed fetch instead of returning nothing — this mirrors that same
+// stickiness for intraday candles.
+const lastGoodIntraday = new Map(); // instrumentKey:unit:interval -> candles[]
+
 /**
  * fetch() wrapper that automatically retries on HTTP 429. Cloudflare
  * returns 429 (with "Error 1015: You are being rate limited") when too
@@ -921,6 +936,7 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
 }
 /** Fetches TODAY's candles (Upstox's separate intraday endpoint — historical never includes today). */
 async function getIntradayCandles(instrumentKey, unit, interval) {
+  const stickyKey = `${instrumentKey}:${unit}:${interval}`;
   try {
     const cacheKey = `intraday:${instrumentKey}:${unit}:${interval}`;
     const cached = candleCache.get(cacheKey);
@@ -933,15 +949,30 @@ async function getIntradayCandles(instrumentKey, unit, interval) {
       headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return []; // e.g. market closed, or still rate limited after retries — don't break the whole chart over this
+    if (!res.ok) {
+      // Before market open there genuinely is no intraday data yet — that's
+      // a real [], not a failure, so don't mask it with stale data. Any
+      // other non-ok (timeout, 429 after retries, transient 5xx) is a
+      // real failure worth falling back for.
+      if (res.status === 400 && !isIndianMarketOpen()) return [];
+      return lastGoodIntraday.get(stickyKey) || [];
+    }
     const data = await res.json();
     const raw = data.data?.candles || [];
     const result = raw.map(([timestamp, o, h, l, c, v]) => ({ t: timestamp, o, h, l, c, v })).reverse();
+    // An empty-but-ok payload during market hours is also more likely a
+    // transient Upstox blip than "no trades happened all day" — prefer the
+    // last good snapshot over letting the chart lose today's session.
+    if (!result.length && isIndianMarketOpen()) {
+      const sticky = lastGoodIntraday.get(stickyKey);
+      if (sticky) return sticky;
+    }
+    if (result.length) lastGoodIntraday.set(stickyKey, result);
     // Short TTL — intraday candles should stay reasonably fresh during market hours.
     candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + 15_000 });
     return result;
   } catch {
-    return [];
+    return lastGoodIntraday.get(stickyKey) || [];
   }
 }
 function defaultFromDate(unit) {
@@ -1000,6 +1031,7 @@ function candleParamsForPeriod(period) {
 // to move on every live tick like price does — this also keeps Upstox
 // request volume sane when the Screener renders 50 symbols at once.
 const { computeAllIndicators, deriveSignal, buildFullTechnicalReport } = require('../utils/indicators');
+const scannerAccuracyService = require('./scannerAccuracyService');
 const signalCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
 const SIGNAL_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
 const reportCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
@@ -1054,12 +1086,24 @@ async function getTechnicalSignal(symbol, exchange, period) {
     // COMPLIANCE: exposes strength/bullishVotes (descriptive), not a
     // signal/confidence verdict — see indicators.js deriveSignal() note.
     const data = derived
-      ? { symbol: symbol.toUpperCase(), period: period || '1d', strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
-      : { symbol: symbol.toUpperCase(), period: period || '1d', strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
+      ? { symbol: symbol.toUpperCase(), period: period || '1d', currentPrice: ind.currentPrice, strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
+      : { symbol: symbol.toUpperCase(), period: period || '1d', currentPrice: ind.currentPrice, strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
     signalCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
+
+    // Log this freshly-computed signal for accuracy tracking — every stock
+    // the Screener scans, at every timeframe, gets recorded (deduped to one
+    // row per symbol+timeframe+day by the DB unique constraint). Only while
+    // the market is actually open, and never lets a logging failure break
+    // the Screener response — see scannerAccuracyService.js.
+    if (derived && ind.currentPrice && isIndianMarketOpen()) {
+      scannerAccuracyService
+        .logSignal({ symbol: symbol.toUpperCase(), exchange, period: period || '1d', derived, currentPrice: ind.currentPrice })
+        .catch((err) => console.warn(`[scannerAccuracy] log failed for ${symbol}:`, err.message));
+    }
+
     return data;
   } catch (err) {
-    return { symbol: symbol.toUpperCase(), period: period || '1d', strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
+    return { symbol: symbol.toUpperCase(), period: period || '1d', currentPrice: null, strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
   }
 }
 
@@ -1104,6 +1148,7 @@ module.exports = {
   getIndexHistoricalCandles,
   getTechnicalSignal,
   getSignalsBatch,
+  isIndianMarketOpen,
   getFullTechnicalReport,
   candleParamsForPeriod,
 };

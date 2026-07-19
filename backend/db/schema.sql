@@ -174,6 +174,35 @@ CREATE TABLE IF NOT EXISTS prediction_history (
 CREATE INDEX IF NOT EXISTS idx_prediction_history_symbol ON prediction_history(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_prediction_history_outcome ON prediction_history(outcome);
 
+-- ── SCANNER SIGNAL HISTORY (accuracy tracking for the Screener's rule-based
+-- bullish/bearish/neutral bias — separate from prediction_history above,
+-- which only covers the manual "AI Analyze" deep-dive on a single stock.
+-- The Screener computes a technical signal for every stock it scans, for
+-- every Time Interval chip (1m ... 5y); this table logs one row per
+-- symbol+timeframe+day (first signal of the day, market-hours only) so the
+-- admin panel can show accuracy across the FULL scanned market, broken
+-- down by timeframe, not just the small number of stocks a user manually
+-- ran deep AI analysis on. ──
+CREATE TABLE IF NOT EXISTS scanner_signal_history (
+  id                       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  stock_symbol             VARCHAR(30) NOT NULL,
+  exchange                 VARCHAR(10),
+  timeframe                VARCHAR(10) NOT NULL DEFAULT '1d',  -- Screener Time Interval chip: 1m,5m,15m,30m,1h,4h,1d,1w,1mo,3mo,6mo,1y,3y,5y
+  signal                   VARCHAR(20) NOT NULL,                -- strong_bullish | strong_bearish | neutral
+  strength_score           INTEGER,                             -- 0-100 technical strength (see indicators.js deriveSignal)
+  entry_price              NUMERIC(12,2) NOT NULL,
+  horizon_days             INTEGER NOT NULL,                    -- how far out this timeframe is checked (see TIMEFRAME_HORIZON_DAYS)
+  actual_price_at_horizon  NUMERIC(12,2),
+  outcome                  VARCHAR(12) NOT NULL DEFAULT 'pending', -- pending | correct | incorrect
+  signal_date              DATE NOT NULL DEFAULT CURRENT_DATE,   -- IST trading day the signal was generated on
+  evaluated_at             TIMESTAMPTZ,
+  created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (stock_symbol, exchange, timeframe, signal_date)
+);
+CREATE INDEX IF NOT EXISTS idx_scanner_signal_symbol ON scanner_signal_history(stock_symbol);
+CREATE INDEX IF NOT EXISTS idx_scanner_signal_outcome ON scanner_signal_history(outcome);
+CREATE INDEX IF NOT EXISTS idx_scanner_signal_timeframe ON scanner_signal_history(timeframe);
+
 -- ── API USAGE (daily rollup per user per provider, for plan limits + cost control) ──
 CREATE TABLE IF NOT EXISTS api_usage (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

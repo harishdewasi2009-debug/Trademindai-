@@ -18,6 +18,15 @@
 //  Monthly analysis caps set to Free 7 / Basic 49 / Pro 499 / Elite 1499.
 // ══════════════════════════════════════════════════════════════════════════
 
+// FIX: Free plan's AI Stock Screener access is now a 7-day trial from
+// signup (user.created_at), not permanent/unlimited access. After the
+// trial window closes, Free users are blocked from GET /api/market/stocks
+// and prompted to upgrade — see requireScreenerAccess() in
+// middleware/planCheck.js, which is the actual enforcement point (it reads
+// this constant). Paid plans (Basic/Pro/Elite) are unaffected — 'screener'
+// in their features list still means permanent access.
+const FREE_SCREENER_TRIAL_DAYS = 7;
+
 const PLANS = {
   free: {
     name: 'Free',
@@ -43,11 +52,14 @@ const PLANS = {
     },
     features: [
       'watchlist_5',
-      // FIX: AI Stock Screener is now available on every plan, including
-      // Free — see routes/marketRoutes.js (requireFeature('screener') and
-      // requireAuth both removed from GET /api/market/stocks) and
-      // frontend/index.html (pricing page/comparison table/homepage
-      // feature grid updated to show it as "All Plans").
+      // FIX: 'screener' being in this list no longer means permanent
+      // access for Free — it now just means "eligible", gated to a
+      // FREE_SCREENER_TRIAL_DAYS-day trial from signup by
+      // requireScreenerAccess() in middleware/planCheck.js (used on
+      // GET /api/market/stocks instead of the plain requireFeature('screener')
+      // check that every other feature/plan combo uses). Once the trial
+      // ends, Free users get a 403 prompting them to upgrade; Basic/Pro/
+      // Elite keep permanent access via the same list entry.
       'screener',
       // AI Brief (AI Morning Market Brief) is available on every plan,
       // including Free — insightCascadeForPlan()'s default/free case
@@ -261,4 +273,4 @@ function getModelKeys(planName) {
   return Object.keys(getPlan(planName).aiModels);
 }
 
-module.exports = { PLANS, getPlan, planHasFeature, getModelConfig, getModelKeys };
+module.exports = { PLANS, getPlan, planHasFeature, getModelConfig, getModelKeys, FREE_SCREENER_TRIAL_DAYS };
