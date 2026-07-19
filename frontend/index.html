@@ -120,6 +120,27 @@ nav{
 }
 .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Big glowing clickable "7-day free trial" CTA badge — sits above the
+   regular hero-badge so it's the first thing a visitor's eye lands on. */
+.trial-cta-badge{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:11px 28px;border-radius:30px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#F5A623,#FFD75E);
+  color:#241800;font-weight:800;font-size:15px;font-family:inherit;
+  margin-bottom:18px;
+  box-shadow:0 0 22px rgba(245,166,35,.55),0 0 44px rgba(245,166,35,.25);
+  animation:trialGlowPulse 2.2s ease-in-out infinite;
+  transition:transform .2s,box-shadow .2s;
+}
+.trial-cta-badge:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 0 30px rgba(245,166,35,.8),0 0 60px rgba(245,166,35,.4)}
+.trial-cta-badge i{font-size:17px}
+@keyframes trialGlowPulse{
+  0%,100%{box-shadow:0 0 22px rgba(245,166,35,.55),0 0 44px rgba(245,166,35,.25)}
+  50%{box-shadow:0 0 32px rgba(245,166,35,.85),0 0 58px rgba(245,166,35,.4)}
+}
+@media (max-width:640px){
+  .trial-cta-badge{font-size:13px;padding:10px 20px}
+}
 .hero-h1{font-family:'Space Grotesk',sans-serif;font-size:58px;font-weight:700;line-height:1.05;letter-spacing:-2.5px;max-width:760px;margin:0 auto 22px;color:var(--text)}
 .hero-h1 em{font-style:normal;position:relative;background:linear-gradient(100deg,var(--blue) 0%,var(--violet-light) 45%,var(--teal-light) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero-h1 em::after{content:'';position:absolute;bottom:-4px;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--blue),var(--violet-light),var(--teal-light))}
@@ -1130,6 +1151,8 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="hero-glow3"></div>
       <div class="hero-grid"></div>
     </div>
+    <button class="trial-cta-badge" onclick="show('login')"><i class="ti ti-bolt"></i>Start Your 7-Day Free Screener Trial</button>
+    <br/>
     <div class="hero-badge"><span class="hero-badge-dot"></span> Live NSE &amp; BSE data · 4 AI engines · Real Upstox market feed</div>
     <h1 class="hero-h1">India's <em>AI-Powered</em><br/>Stock Market Intelligence<br/>Platform</h1>
     <p class="hero-sub">Live NSE &amp; BSE market data, professional TradingView charts, and AI-powered market insights — all in one place. Sign in to unlock real-time analysis on 5,000+ stocks.</p>
