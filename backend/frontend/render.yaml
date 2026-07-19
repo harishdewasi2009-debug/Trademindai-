@@ -1,0 +1,16 @@
+# FIX: frontend/_headers (Netlify) and frontend/vercel.json (Vercel) are
+# both ignored on Render — Render reads its own render.yaml "headers"
+# section instead. Without this, Render's CDN was free to cache index.html
+# across deploys, which is why fixes kept appearing to "not be live" even
+# after a successful push + hard refresh: the browser (and Render's edge)
+# was still serving an old cached copy. This forces every request for the
+# single-page app to always revalidate against the latest deploy.
+services:
+  - type: web
+    name: trademindai-fronted
+    runtime: static
+    staticPublishPath: ./frontend
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
