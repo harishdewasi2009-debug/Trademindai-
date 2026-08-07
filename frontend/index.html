@@ -16,14 +16,23 @@
 <meta http-equiv="Expires" content="0"/>
 <title>TradeMind AI — India's AI-Powered Stock Market Intelligence Platform</title>
 <meta name="description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
-<link rel="icon" type="image/png" href="/assets/favicon-256.png"/>
-<link rel="apple-touch-icon" href="/assets/favicon-256.png"/>
-<!-- Social share preview (WhatsApp, Twitter/X, iMessage, LinkedIn, etc.) -->
+
+<!-- Site icon / "profile picture" shown in browser tabs, bookmarks, home-screen shortcuts -->
+<link rel="icon" href="/assets/favicon.ico" sizes="any"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png"/>
+
+<!-- Link-sharing preview (WhatsApp, Telegram, X, Facebook, LinkedIn, iMessage, etc.) -->
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="TradeMind AI"/>
 <meta property="og:title" content="TradeMind AI — India's AI-Powered Stock Market Intelligence Platform"/>
 <meta property="og:description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
+<meta property="og:url" content="https://trademindai.co.in/"/>
 <meta property="og:image" content="https://trademindai.co.in/assets/og-image.png"/>
-<meta property="og:url" content="https://trademindai.co.in"/>
-<meta property="og:type" content="website"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:title" content="TradeMind AI — India's AI-Powered Stock Market Intelligence Platform"/>
 <meta name="twitter:description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
@@ -81,9 +90,6 @@ nav{
 }
 .logo-text{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.5px}
 .logo-text span{color:var(--gold)}
-.logo-img{height:26px;width:auto;display:block}
-.footer-brand .logo-img{height:24px}
-.login-logo-img{height:32px;width:auto;display:block}
 .nav-links{display:flex;gap:4px}
 .nav-link{font-size:13px;color:var(--text2);cursor:pointer;transition:all .15s;padding:6px 12px;border-radius:var(--radius);border:1px solid transparent}
 .nav-link:hover{color:var(--text);background:var(--bg3)}
@@ -1187,7 +1193,8 @@ img,svg,video,canvas,iframe{max-width:100%}
       <span></span><span></span><span></span>
     </button>
     <div class="logo" onclick="show('home')">
-      <img class="logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/>
+      <div class="logo-mark">TM</div>
+      <span class="logo-text">Trade<span>Mind</span> AI</span>
     </div>
   </div>
   <div class="nav-links">
@@ -1214,7 +1221,7 @@ img,svg,video,canvas,iframe{max-width:100%}
 <div class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
 <div class="mobile-sidebar" id="mobile-sidebar">
   <div class="mobile-sidebar-hdr">
-    <img class="logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/>
+    <span class="logo-text">Trade<span>Mind</span> AI</span>
     <div class="mobile-sidebar-close" onclick="toggleMobileSidebar(false)"><i class="ti ti-x"></i></div>
   </div>
   <span class="nav-link" data-page="home" onclick="show('home');toggleMobileSidebar(false)"><i class="ti ti-home" style="margin-right:8px"></i>Home</span>
@@ -1599,7 +1606,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <div class="footer-main">
     <div class="footer-grid">
       <div class="footer-brand">
-        <div class="logo"><img class="logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/></div>
+        <div class="logo"><div class="logo-mark">TM</div><span class="logo-text">Trade<span>Mind</span> AI</span></div>
         <p class="footer-desc">India's most advanced AI stock intelligence platform. Institutional-grade signals for retail traders.</p>
         <div style="font-size:11px;color:var(--text3)">Not SEBI registered · AI analysis is not financial advice</div>
       </div>
@@ -2618,7 +2625,8 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="login-box">
       <div style="text-align:center;margin-bottom:28px">
         <div style="display:inline-flex;align-items:center;gap:10px">
-          <img class="login-logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/>
+          <div class="logo-mark">TM</div>
+          <span class="logo-text">Trade<span>Mind</span> AI</span>
         </div>
       </div>
       <div class="login-h2">Sign in to continue</div>
@@ -7356,7 +7364,6 @@ async function handlePay(){
       currency: order.currency||'INR',
       order_id: order.orderId,
       name: 'TradeMind AI',
-      image: (location.origin||'')+'/assets/favicon-256.png',
       description: pendingPlan.charAt(0).toUpperCase()+pendingPlan.slice(1)+' Plan Subscription',
       prefill: {name: currentUser.name||'', email: currentUser.email||''},
       theme: {color:'#7C5CFC'},
