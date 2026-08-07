@@ -16,6 +16,8 @@
 <meta http-equiv="Expires" content="0"/>
 <title>TradeMind AI — India's AI-Powered Stock Market Intelligence Platform</title>
 <meta name="description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
+<link rel="icon" type="image/png" href="/assets/favicon-256.png"/>
+<link rel="apple-touch-icon" href="/assets/favicon-256.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -69,6 +71,9 @@ nav{
 }
 .logo-text{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.5px}
 .logo-text span{color:var(--gold)}
+.logo-img{height:26px;width:auto;display:block}
+.footer-brand .logo-img{height:24px}
+.login-logo-img{height:32px;width:auto;display:block}
 .nav-links{display:flex;gap:4px}
 .nav-link{font-size:13px;color:var(--text2);cursor:pointer;transition:all .15s;padding:6px 12px;border-radius:var(--radius);border:1px solid transparent}
 .nav-link:hover{color:var(--text);background:var(--bg3)}
@@ -1128,6 +1133,7 @@ img,svg,video,canvas,iframe{max-width:100%}
 .tm-level-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);font-size:12px}
 .tm-level-name{font-weight:700;width:110px;flex:none}
 .tm-level-name.demand{color:#FFD166}.tm-level-name.supply{color:var(--rose2)}.tm-level-name.ob{color:#8FB0FF}
+.tm-level-name.support{color:var(--green2)}.tm-level-name.resistance{color:var(--rose2)}.tm-level-name.pivot{color:#8FB0FF}
 .tm-level-range{font-family:'JetBrains Mono',monospace;color:var(--text);width:150px;flex:none}
 .tm-level-note{color:var(--text3);font-size:11px}
 .tm-plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
@@ -1171,8 +1177,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <span></span><span></span><span></span>
     </button>
     <div class="logo" onclick="show('home')">
-      <div class="logo-mark">TM</div>
-      <span class="logo-text">Trade<span>Mind</span> AI</span>
+      <img class="logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/>
     </div>
   </div>
   <div class="nav-links">
@@ -1199,7 +1204,7 @@ img,svg,video,canvas,iframe{max-width:100%}
 <div class="mobile-sidebar-backdrop" id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar(false)"></div>
 <div class="mobile-sidebar" id="mobile-sidebar">
   <div class="mobile-sidebar-hdr">
-    <span class="logo-text">Trade<span>Mind</span> AI</span>
+    <img class="logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/>
     <div class="mobile-sidebar-close" onclick="toggleMobileSidebar(false)"><i class="ti ti-x"></i></div>
   </div>
   <span class="nav-link" data-page="home" onclick="show('home');toggleMobileSidebar(false)"><i class="ti ti-home" style="margin-right:8px"></i>Home</span>
@@ -1584,7 +1589,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <div class="footer-main">
     <div class="footer-grid">
       <div class="footer-brand">
-        <div class="logo"><div class="logo-mark">TM</div><span class="logo-text">Trade<span>Mind</span> AI</span></div>
+        <div class="logo"><img class="logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/></div>
         <p class="footer-desc">India's most advanced AI stock intelligence platform. Institutional-grade signals for retail traders.</p>
         <div style="font-size:11px;color:var(--text3)">Not SEBI registered · AI analysis is not financial advice</div>
       </div>
@@ -2603,8 +2608,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="login-box">
       <div style="text-align:center;margin-bottom:28px">
         <div style="display:inline-flex;align-items:center;gap:10px">
-          <div class="logo-mark">TM</div>
-          <span class="logo-text">Trade<span>Mind</span> AI</span>
+          <img class="login-logo-img" src="/assets/logo-transparent.png" alt="TradeMind AI"/>
         </div>
       </div>
       <div class="login-h2">Sign in to continue</div>
@@ -4079,28 +4083,49 @@ function renderFullReportHtml(r){
   const fib=r.fibonacci;
   return `
     <div style="font-size:11px;color:var(--text3);margin:18px 0 8px"><i class="ti ti-chart-candle" style="margin-right:4px"></i>Full technical breakdown — descriptive data reading, not a recommendation.</div>
-    <div class="res-block"><div class="res-block-title">Overall Trend</div><div class="res-block-text"><span class="badge ${trendCls==='ind-bull'?'b-bull':trendCls==='ind-bear'?'b-bear':'b-neutral'}" style="margin-right:8px">${r.trend?.label||'Neutral'}</span>${r.trend?.text||''}</div></div>
-    <div class="res-block"><div class="res-block-title">Price Action</div><div class="res-block-text"><strong>${r.priceAction?.pattern||r.candlestick?.pattern||'—'}</strong> — ${r.priceAction?.text||r.candlestick?.text||''}</div></div>
-    <div class="res-block"><div class="res-block-title">Support &amp; Resistance</div><div class="res-block-text">Support: ₹${r.supportResistance?.support??'—'} &nbsp;·&nbsp; Resistance: ₹${r.supportResistance?.resistance??'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">Moving Average</div><div class="res-block-text">${r.movingAverage?.text||'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">RSI</div><div class="res-block-text">${r.rsi?.text||'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">MACD</div><div class="res-block-text">${r.macd?.text||'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">Volume</div><div class="res-block-text">${r.volume?.text||'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">Volatility</div><div class="res-block-text">${r.volatility?.text||'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">Trend Strength (ADX)</div><div class="res-block-text">${r.trendStrength?.text||'—'}</div></div>
-    <div class="res-block"><div class="res-block-title">Bollinger Bands</div><div class="res-block-text">${r.bollinger?.text||'—'} (upper ₹${r.bollinger?.upper??'—'} / mid ₹${r.bollinger?.mid??'—'} / lower ₹${r.bollinger?.lower??'—'})</div></div>
-    ${fib?`<div class="res-block"><div class="res-block-title">Fibonacci Zone</div><div class="res-block-text">${fib.text} (swing ₹${fib.swingLow}–₹${fib.swingHigh})</div></div>`:''}
-    <div class="res-block-title" style="padding:10px 0 6px">Indicator Summary</div>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:12px;background:var(--bg3);border-radius:var(--radius);overflow:hidden">${summaryRows}</table>
-    <div class="res-block-title" style="padding:0 0 6px">Technical Score (Educational)</div>
-    <div class="indicator-grid" style="margin-bottom:10px">
-      ${scoreRow('Trend',r.technicalScore?.trend??'—')}
-      ${scoreRow('Momentum',r.technicalScore?.momentum??'—')}
-      ${scoreRow('Strength',r.technicalScore?.strength??'—')}
-      ${scoreRow('Volatility',r.technicalScore?.volatility??'—')}
+
+    <div class="tm-report-block">
+      <div class="tm-report-block-title"><i class="ti ti-trending-up" style="font-size:12px"></i>Overall trend &amp; price action</div>
+      <p class="tm-report-text"><span class="badge ${trendCls==='ind-bull'?'b-bull':trendCls==='ind-bear'?'b-bear':'b-neutral'}" style="margin-right:8px">${r.trend?.label||'Neutral'}</span>${r.trend?.text||''}</p>
+      <p class="tm-report-text" style="margin-top:8px"><strong>${r.priceAction?.pattern||r.candlestick?.pattern||'—'}</strong> — ${r.priceAction?.text||r.candlestick?.text||''}</p>
     </div>
-    <div class="accuracy-banner" style="margin-bottom:12px"><div><span class="acc-num">${r.technicalScore?.overall??'—'}/100</span>Overall Technical Score</div></div>
-    <div class="res-block"><div class="res-block-title">Conclusion</div><div class="res-block-text">${r.conclusion||'—'}</div></div>`;
+
+    <div class="tm-report-block">
+      <div class="tm-report-block-title"><i class="ti ti-map-2" style="font-size:12px"></i>Key levels</div>
+      <div class="tm-levels">
+        <div class="tm-level-row"><span class="tm-level-name support">Support</span><span class="tm-level-range">₹${r.supportResistance?.support??'—'}</span><span class="tm-level-note">Nearest zone where buying has historically stepped in</span></div>
+        <div class="tm-level-row"><span class="tm-level-name resistance">Resistance</span><span class="tm-level-range">₹${r.supportResistance?.resistance??'—'}</span><span class="tm-level-note">Nearest zone where selling has historically stepped in</span></div>
+        <div class="tm-level-row"><span class="tm-level-name pivot">Bollinger</span><span class="tm-level-range">₹${r.bollinger?.lower??'—'} – ₹${r.bollinger?.upper??'—'}</span><span class="tm-level-note">Mid band ₹${r.bollinger?.mid??'—'} · ${r.bollinger?.text||''}</span></div>
+        ${fib?`<div class="tm-level-row"><span class="tm-level-name pivot">Fibonacci</span><span class="tm-level-range">₹${fib.swingLow} – ₹${fib.swingHigh}</span><span class="tm-level-note">${fib.text}</span></div>`:''}
+      </div>
+    </div>
+
+    <div class="tm-report-block">
+      <div class="tm-report-block-title"><i class="ti ti-chart-line" style="font-size:12px"></i>Indicator readings</div>
+      <p class="tm-report-text"><strong>Moving average —</strong> ${r.movingAverage?.text||'—'}</p>
+      <p class="tm-report-text" style="margin-top:6px"><strong>RSI —</strong> ${r.rsi?.text||'—'}</p>
+      <p class="tm-report-text" style="margin-top:6px"><strong>MACD —</strong> ${r.macd?.text||'—'}</p>
+      <p class="tm-report-text" style="margin-top:6px"><strong>Volume —</strong> ${r.volume?.text||'—'}</p>
+      <p class="tm-report-text" style="margin-top:6px"><strong>Volatility —</strong> ${r.volatility?.text||'—'}</p>
+      <p class="tm-report-text" style="margin-top:6px"><strong>Trend strength (ADX) —</strong> ${r.trendStrength?.text||'—'}</p>
+    </div>
+
+    <div class="tm-report-block">
+      <div class="tm-report-block-title"><i class="ti ti-list-check" style="font-size:12px"></i>Indicator summary</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;background:var(--bg3);border-radius:var(--radius);overflow:hidden">${summaryRows}</table>
+      <div class="indicator-grid" style="margin-bottom:14px">
+        ${scoreRow('Trend',r.technicalScore?.trend??'—')}
+        ${scoreRow('Momentum',r.technicalScore?.momentum??'—')}
+        ${scoreRow('Strength',r.technicalScore?.strength??'—')}
+        ${scoreRow('Volatility',r.technicalScore?.volatility??'—')}
+      </div>
+      <div class="accuracy-banner" style="margin-bottom:0"><div><span class="acc-num">${r.technicalScore?.overall??'—'}/100</span>Overall Technical Score</div></div>
+    </div>
+
+    <div class="tm-report-block">
+      <div class="tm-report-block-title"><i class="ti ti-file-description" style="font-size:12px"></i>Conclusion</div>
+      <p class="tm-report-text">${r.conclusion||'—'}</p>
+    </div>`;
 }
 
 // NOTE: the Intraday/Swing/Positional-Long-term "Volatility & Trading-Style
@@ -4240,52 +4265,76 @@ async function runAnalysis(){
     const debate=(wantsDebate&&Array.isArray(rawDebate)&&rawDebate.length>1)?rawDebate:null;
     const debateShortfall=wantsDebate&&!debate; // user asked for 2+ models but only one ran
 
+    // Same visual pattern as the marketing-page demo report (tm-report /
+    // tm-snap-grid / tm-report-block) but every field below is read straight
+    // off the live `result` object — nothing here is placeholder/demo data.
+    // Still zero buy/sell/hold badges and zero price targets, per the
+    // compliance note above.
     rw.innerHTML=`
-      <div class="accuracy-banner">
-        <div><span class="acc-num">${result.technicalScore??'—'}/100</span>Technical score${result.consensusFrom>1?` · ${result.consensusFrom}-model consensus`:''}</div>
-        <div style="display:flex;gap:6px">
-          <span class="badge ${sentimentCls}">${sentimentLabel}</span>
-          <span style="font-size:12px;color:var(--text3)">Data reading, not a recommendation</span>
+      <div class="tm-report" style="max-width:100%;margin:0">
+        <div class="tm-report-hdr">
+          <div class="tm-report-title">
+            <b>${result.stockSymbol||stockSym}</b>
+            <span class="badge ${sentimentCls}">${sentimentLabel}</span>
+            <span style="font-size:11px;color:var(--text3)">${(TIMEFRAME_LABELS[tfValue]||tfValue||'').toString()}</span>
+            ${result.consensusFrom>1?`<span class="feat-tag tag-pro" style="margin:0">${result.consensusFrom}-model consensus</span>`:''}
+          </div>
+          <div class="tm-report-meta">NSE/BSE · ${new Date(result.analysedAt||Date.now()).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}${quota&&quota.remaining!=null?` · ${quota.remaining} analyses left this month`:''}</div>
+          <div class="res-actions">
+            <button class="btn-sm" onclick="quickAddToWatchlist('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-star"></i> Watchlist</button>
+            <button class="btn-sm"><i class="ti ti-share"></i></button>
+          </div>
         </div>
-      </div>
-      <div class="disclaimer" style="margin-bottom:10px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
-      ${renderHorizonRiskHtml(result.horizonRiskContext,tfValue)}
-      <div class="res-header">
-        <div>
-          <div class="res-sym-big">${result.stockSymbol||stockSym}</div>
-          <div class="res-meta">NSE/BSE · ${new Date(result.analysedAt||Date.now()).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}${quota&&quota.remaining!=null?` · ${quota.remaining} analyses left this month`:''}</div>
+        <div class="tm-report-body">
+          <div class="disclaimer" style="margin-bottom:18px">TradeMind AI is not SEBI-registered and does not give investment advice. This describes what the real technical indicators currently show — it is not an instruction to buy, sell, or hold, and does not predict future prices. Please do your own research or consult a SEBI-registered adviser before trading.</div>
+          ${renderHorizonRiskHtml(result.horizonRiskContext,tfValue)}
+
+          <div class="tm-snap-grid">
+            <div class="mc"><div class="mc-lbl">Technical score</div><div class="mc-val">${result.technicalScore??'—'}/100</div></div>
+            <div class="mc"><div class="mc-lbl">Bias reading</div><div class="mc-val" style="color:${sentimentCls==='b-bull'?'var(--green2)':sentimentCls==='b-bear'?'var(--rose2)':'var(--amber)'}">${sentimentLabel}</div></div>
+            <div class="mc"><div class="mc-lbl">Volatility level</div><div class="mc-val">${result.riskLevel??'—'}/10</div></div>
+            <div class="mc"><div class="mc-lbl">Current price</div><div class="mc-val">${result.currentPrice?'₹'+Number(result.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
+            <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`<span style="font-size:10px;color:var(--text3)">(${tech.rsiSignal})</span>`:''}</div></div>
+            <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
+          </div>
+
+          ${debate?`<div class="tm-report-block">
+            <div class="tm-report-block-title"><i class="ti ti-users-group" style="font-size:12px"></i>AI model debate</div>
+            <div class="ai-debate">
+              ${debate.map(m=>`<div class="debate-card">
+                <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
+                <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
+              </div>`).join('')}
+            </div>
+          </div>`:''}
+          ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:14px">You selected ${selectedModels.length} models, but only <strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time — the other selected models may be temporarily unavailable or out of monthly quota on your plan.${(currentUser?.plan||'free').toLowerCase()!=='elite'?' Upgrade for a higher per-model quota and access to more flagship models.':''}</div>`:''}
+
+          <div class="tm-report-block">
+            <div class="tm-report-block-title"><i class="ti ti-eye" style="font-size:12px"></i>What's happening</div>
+            <p class="tm-report-text">${result.reasoning||'—'}</p>
+          </div>
+          ${(result.risks&&result.risks.length)?`<div class="tm-report-block">
+            <div class="tm-report-block-title"><i class="ti ti-alert-triangle" style="font-size:12px"></i>Key risks</div>
+            <p class="tm-report-text">${result.risks.map(r=>'• '+r).join('<br/>')}</p>
+          </div>`:''}
+          ${(result.watchPoints&&result.watchPoints.length)?`<div class="tm-report-block">
+            <div class="tm-report-block-title"><i class="ti ti-map-2" style="font-size:12px"></i>Levels/events to watch</div>
+            <p class="tm-report-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</p>
+          </div>`:''}
+
+          ${renderFullReportHtml(result.fullReport)}
+
+          <div class="tm-report-block" style="background:var(--bg3);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div class="tm-report-block-title" style="margin-bottom:0"><i class="ti ti-sparkles" style="font-size:12px"></i>Multi-timeframe AI view</div>
+              <button class="btn-sm" onclick="getMultiTimeframeView('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-layers-intersect"></i> Check daily vs weekly</button>
+            </div>
+            <div id="mtf-view" style="font-size:13px;color:var(--text2);line-height:1.7">Compares real daily and weekly indicator readings for this stock — click to check if the timeframes agree.</div>
+          </div>
+
+          <div class="disclaimer"><strong>Disclaimer:</strong> This is AI-generated analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>
         </div>
-        <div class="res-actions">
-          <button class="btn-sm" onclick="quickAddToWatchlist('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-star"></i> Watchlist</button>
-          <button class="btn-sm"><i class="ti ti-share"></i></button>
-        </div>
-      </div>
-      <div class="meta-row">
-        <div class="mc"><div class="mc-lbl">Volatility level</div><div class="mc-val">${result.riskLevel??'—'}/10</div></div>
-        <div class="mc"><div class="mc-lbl">Current price</div><div class="mc-val">${result.currentPrice?'₹'+Number(result.currentPrice).toLocaleString('en-IN'):'—'}</div></div>
-        <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`(${tech.rsiSignal})`:''}</div></div>
-        <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
-      </div>
-      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate</div>
-      <div class="ai-debate" style="margin-bottom:10px">
-        ${debate.map(m=>`<div class="debate-card">
-          <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
-          <div class="debate-text">${m.reasoning||''} <span style="color:var(--text3)">(score: ${m.technicalScore})</span></div>
-        </div>`).join('')}
-      </div>`:''}
-      ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but only <strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time — the other selected models may be temporarily unavailable or out of monthly quota on your plan.${(currentUser?.plan||'free').toLowerCase()!=='elite'?' Upgrade for a higher per-model quota and access to more flagship models.':''}</div>`:''}
-      <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
-      ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
-      ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
-      ${renderFullReportHtml(result.fullReport)}
-      <div class="admin-panel" style="margin-bottom:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Multi-Timeframe AI View</div>
-          <button class="btn-sm" onclick="getMultiTimeframeView('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-layers-intersect"></i> Check daily vs weekly</button>
-        </div>
-        <div id="mtf-view" style="font-size:13px;color:var(--text2);line-height:1.7">Compares real daily and weekly indicator readings for this stock — click to check if the timeframes agree.</div>
-      </div>
-      <div class="disclaimer"><strong>Disclaimer:</strong> This is AI-generated analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>`;
+      </div>`;
     rw.style.display='block';
     rw.scrollIntoView({behavior:'smooth',block:'nearest'});
   },2400);
@@ -7297,6 +7346,7 @@ async function handlePay(){
       currency: order.currency||'INR',
       order_id: order.orderId,
       name: 'TradeMind AI',
+      image: (location.origin||'')+'/assets/favicon-256.png',
       description: pendingPlan.charAt(0).toUpperCase()+pendingPlan.slice(1)+' Plan Subscription',
       prefill: {name: currentUser.name||'', email: currentUser.email||''},
       theme: {color:'#7C5CFC'},
