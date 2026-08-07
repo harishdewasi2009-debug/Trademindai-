@@ -120,27 +120,6 @@ nav{
 }
 .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-/* Big glowing clickable "7-day free trial" CTA badge — sits above the
-   regular hero-badge so it's the first thing a visitor's eye lands on. */
-.trial-cta-badge{
-  display:inline-flex;align-items:center;gap:10px;
-  padding:11px 28px;border-radius:30px;border:none;cursor:pointer;
-  background:linear-gradient(135deg,#F5A623,#FFD75E);
-  color:#241800;font-weight:800;font-size:15px;font-family:inherit;
-  margin-bottom:18px;
-  box-shadow:0 0 22px rgba(245,166,35,.55),0 0 44px rgba(245,166,35,.25);
-  animation:trialGlowPulse 2.2s ease-in-out infinite;
-  transition:transform .2s,box-shadow .2s;
-}
-.trial-cta-badge:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 0 30px rgba(245,166,35,.8),0 0 60px rgba(245,166,35,.4)}
-.trial-cta-badge i{font-size:17px}
-@keyframes trialGlowPulse{
-  0%,100%{box-shadow:0 0 22px rgba(245,166,35,.55),0 0 44px rgba(245,166,35,.25)}
-  50%{box-shadow:0 0 32px rgba(245,166,35,.85),0 0 58px rgba(245,166,35,.4)}
-}
-@media (max-width:640px){
-  .trial-cta-badge{font-size:13px;padding:10px 20px}
-}
 .hero-h1{font-family:'Space Grotesk',sans-serif;font-size:58px;font-weight:700;line-height:1.05;letter-spacing:-2.5px;max-width:760px;margin:0 auto 22px;color:var(--text)}
 .hero-h1 em{font-style:normal;position:relative;background:linear-gradient(100deg,var(--blue) 0%,var(--violet-light) 45%,var(--teal-light) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero-h1 em::after{content:'';position:absolute;bottom:-4px;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--blue),var(--violet-light),var(--teal-light))}
@@ -1050,42 +1029,138 @@ html{scroll-behavior:smooth}
 /* Generic safety net: never let media or wide fixed-width elements force horizontal scroll */
 img,svg,video,canvas,iframe{max-width:100%}
 
-/* ── CINEMATIC SCROLL-SCRUBBER ──
-   A tall wrapper (400vh) holds a sticky full-height canvas. As the user
-   scrolls through the wrapper, scroll position (0→1) is mapped to a frame
-   index (1→200) and painted onto the canvas — the classic "scroll-driven
-   video" effect used on product pages, without needing an actual video file. */
-.cinematic-wrap{position:relative;height:250vh;background:var(--bg)}
-.cinematic-sticky{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;
-  /* Fallback backdrop so the section never reads as a blank/empty rectangle
-     if the frame images haven't painted yet (slow network, failed load, etc). */
-  background:radial-gradient(120% 90% at 50% 15%,rgba(0,194,168,.14),transparent 60%),
-             radial-gradient(90% 70% at 85% 85%,rgba(124,92,252,.14),transparent 60%),var(--bg2)}
-.cinematic-sticky canvas{width:100%;height:100%;object-fit:cover;display:block;background:transparent;position:relative;z-index:1}
-.cinematic-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:0 6vw 8vh;pointer-events:none;background:linear-gradient(180deg,rgba(7,8,15,0) 40%,rgba(7,8,15,.75) 100%);z-index:2}
-.cinematic-eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-light);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.cinematic-eyebrow .cinematic-scroll-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-light);animation:cinematicPulse 1.4s ease-in-out infinite}
-@keyframes cinematicPulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
-.cinematic-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(22px,4vw,40px);font-weight:600;color:var(--text);max-width:640px;line-height:1.25}
-/* Horizontal progress bar along the bottom edge of the pinned frame */
-.cinematic-progress{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.1);z-index:3}
-.cinematic-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--teal),var(--violet-light));transition:width .05s linear;box-shadow:0 0 10px rgba(46,236,212,.6)}
-/* Vertical scroll rail: pinned to the right edge of the frame for the whole
-   duration of the cinematic section, so there's always a clearly-visible,
-   high-contrast indicator that this is live scrollable content and not
-   empty space — independent of whether the image frames have loaded. */
-.cinematic-rail{position:absolute;top:50%;right:22px;transform:translateY(-50%);width:4px;height:min(38vh,280px);border-radius:4px;background:rgba(255,255,255,.14);z-index:3;overflow:hidden}
-.cinematic-rail-thumb{position:absolute;left:0;top:0;width:100%;height:14%;border-radius:4px;background:linear-gradient(180deg,var(--teal-light),var(--violet-light));box-shadow:0 0 12px rgba(46,236,212,.5);transition:top .05s linear}
-.cinematic-rail-pct{position:absolute;right:22px;bottom:calc(50% + min(19vh,140px) + 14px);transform:translateX(50%);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);z-index:3;letter-spacing:.04em}
-@media(max-width:768px){
-  .cinematic-rail,.cinematic-rail-pct{display:none}
-}
-.cinematic-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;font-family:'JetBrains Mono',monospace;letter-spacing:.05em;background:transparent;z-index:2}
-@media(max-width:768px){
-  .cinematic-wrap{height:180vh}
-  .cinematic-title{font-size:20px}
-}
+/* ══════════════════════════════════════════════════════════
+   PLATFORM SHOWCASE — desktop-only rich preview of the app
+   (live terminal mock, market intel, screener, sample report)
+   reuses existing theme tokens; hidden below 980px so the
+   existing mobile experience is left untouched.
+   ══════════════════════════════════════════════════════════ */
+.tm-showcase{display:block}
+.tm-window{max-width:1080px;margin:0 auto 20px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--card-shadow)}
+.tm-window-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg3);border-bottom:1px solid var(--border)}
+.tm-dot{width:9px;height:9px;border-radius:50%}
+.tm-dot.r{background:#FF5F57}.tm-dot.y{background:#FEBC2E}.tm-dot.g{background:#28C840}
+.tm-window-url{flex:1;text-align:center;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;background:var(--bg);border-radius:6px;padding:4px 10px;margin:0 auto;max-width:340px}
 
+.tm-terminal{display:grid;grid-template-columns:1fr 250px}
+.tm-term-main{padding:24px;border-right:1px solid var(--border);min-width:0}
+.tm-term-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.tm-term-sym{display:flex;align-items:center;gap:10px}
+.tm-term-sym b{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;color:var(--text)}
+.tm-term-price{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--text)}
+.tm-term-chg{font-size:12px;color:var(--green2);font-weight:600}
+.tm-term-tf{display:flex;gap:4px}
+.tm-tf-btn{padding:5px 10px;border-radius:6px;font-size:11px;color:var(--text3);border:1px solid transparent}
+.tm-tf-btn.active{background:var(--bg);border-color:var(--border2);color:var(--text)}
+.tm-run-btn{padding:8px 16px;border-radius:var(--radius);background:linear-gradient(135deg,#00A892,#00C2A8);color:#07080F;font-size:12px;font-weight:700;border:none;box-shadow:0 0 16px rgba(0,194,168,.3)}
+.tm-chart-svg{width:100%;height:180px;display:block}
+.tm-chart-foot{display:flex;gap:18px;font-size:11px;color:var(--text3);margin-top:10px;padding-top:12px;border-top:1px solid var(--border)}
+.tm-chart-foot b{color:var(--text2)}
+
+.tm-watchlist{padding:20px 16px}
+.tm-watch-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px;font-weight:700}
+.tm-watch-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.tm-watch-row:last-child{border-bottom:none}
+.tm-watch-sym{font-size:12px;font-weight:600;color:var(--text)}
+.tm-watch-price{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.tm-watch-chg{font-size:11px;font-weight:700}
+.tm-watch-chg.up{color:var(--green2)}.tm-watch-chg.dn{color:var(--rose2)}
+
+.tm-intel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1080px;margin:0 auto}
+.tm-intel-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;display:flex;flex-direction:column;gap:2px}
+.tm-intel-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tm-intel-hdr-l{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--text)}
+.tm-intel-hdr-l i{color:var(--violet-light)}
+.tm-live-tag{font-size:9px;font-weight:700;color:var(--green2);display:flex;align-items:center;gap:4px;letter-spacing:.5px}
+.tm-live-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green2)}
+.tm-pro-tag{font-size:9px;font-weight:700;color:var(--gold);display:flex;align-items:center;gap:4px;letter-spacing:.5px}
+.tm-intel-item{padding:10px 0;border-bottom:1px solid var(--border)}
+.tm-intel-item:last-child{border-bottom:none}
+.tm-intel-item-title{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:6px;font-weight:500}
+.tm-intel-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tm-chip-tiny{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;text-transform:uppercase;letter-spacing:.3px}
+.chip-earn{background:rgba(91,140,255,.15);color:#8FB0FF}
+.chip-risk{background:rgba(239,68,68,.14);color:var(--rose2)}
+.chip-catalyst{background:rgba(16,185,129,.14);color:var(--green2)}
+.chip-macro{background:rgba(245,158,11,.14);color:var(--amber)}
+.tm-intel-time{font-size:10px;color:var(--text3);margin-left:auto}
+.tm-mover-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tm-mover-col-hdr{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+.tm-mover-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:11px}
+.tm-mover-name{color:var(--text);font-weight:600}
+.tm-mover-reason{color:var(--text3);font-size:10px;display:block}
+
+.tm-screener-wrap{display:grid;grid-template-columns:1fr 1fr;gap:44px;max-width:1080px;margin:0 auto;align-items:center}
+.tm-screener-bullets{display:flex;flex-direction:column;gap:16px;margin:22px 0 26px}
+.tm-screener-bullet{display:flex;gap:12px;align-items:flex-start}
+.tm-sb-icon{width:32px;height:32px;flex:none;border-radius:8px;background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.35);display:flex;align-items:center;justify-content:center;color:#A78BFA;font-size:15px}
+.tm-sb-text b{display:block;font-size:13px;color:var(--text);margin-bottom:2px}
+.tm-sb-text span{font-size:12px;color:var(--text2);line-height:1.6}
+.tm-scan-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--card-shadow)}
+.tm-scan-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.tm-scan-stat{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:left}
+.tm-scan-stat-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px}
+.tm-scan-stat-val{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--text)}
+.tm-scan-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+.tm-scan-row:last-of-type{border-bottom:none}
+.tm-scan-name{font-size:13px;font-weight:700;color:var(--text);font-family:'Space Grotesk',sans-serif}
+.tm-scan-note{font-size:11px;color:var(--text3);margin-top:2px}
+.tm-scan-score{font-size:11px;color:var(--text3);text-align:right}
+.tm-scan-score b{display:block;font-size:14px;color:var(--text);font-family:'JetBrains Mono',monospace}
+.tm-badge{font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+.badge-actionable{background:rgba(16,185,129,.15);color:var(--green2);border:1px solid rgba(16,185,129,.35)}
+.badge-watchlist{background:rgba(91,140,255,.15);color:#8FB0FF;border:1px solid rgba(91,140,255,.35)}
+.badge-avoid{background:rgba(239,68,68,.14);color:var(--rose2);border:1px solid rgba(239,68,68,.3)}
+
+.tm-report{max-width:900px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--card-shadow);overflow:hidden}
+.tm-report-hdr{padding:20px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.tm-report-title{display:flex;align-items:center;gap:12px}
+.tm-report-title b{font-family:'Space Grotesk',sans-serif;font-size:18px;color:var(--text)}
+.tm-report-meta{font-size:11px;color:var(--text3)}
+.tm-report-body{padding:26px}
+.tm-snap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.tm-report-block{margin-bottom:18px}
+.tm-report-block-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.tm-report-block-title::before{content:'';width:12px;height:1px;background:var(--border3)}
+.tm-report-text{font-size:13px;color:var(--text2);line-height:1.8}
+.tm-lean-pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:var(--green2);font-size:12px;font-weight:700;margin-bottom:10px}
+.tm-levels{display:flex;flex-direction:column;gap:8px;margin-bottom:4px}
+.tm-level-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);font-size:12px}
+.tm-level-name{font-weight:700;width:110px;flex:none}
+.tm-level-name.demand{color:#FFD166}.tm-level-name.supply{color:var(--rose2)}.tm-level-name.ob{color:#8FB0FF}
+.tm-level-range{font-family:'JetBrains Mono',monospace;color:var(--text);width:150px;flex:none}
+.tm-level-note{color:var(--text3);font-size:11px}
+.tm-plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.tm-plan-card{border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg3);padding:16px;position:relative;overflow:hidden}
+.tm-plan-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green)}
+.tm-plan-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tm-plan-name{font-size:12px;font-weight:700;color:var(--text)}
+.tm-plan-long{font-size:9px;font-weight:700;color:var(--green2);background:rgba(16,185,129,.14);padding:2px 8px;border-radius:10px}
+.tm-plan-row{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;color:var(--text2)}
+.tm-plan-row b{color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:600}
+.tm-plan-row.sl b{color:var(--rose2)}
+.tm-plan-row.rr{border-top:1px solid var(--border);margin-top:6px;padding-top:8px}
+.tm-verdict{border-radius:var(--radius-lg);border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.06);padding:18px 20px;margin-bottom:18px}
+.tm-verdict-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tm-verdict-buy{font-size:12px;font-weight:700;color:#07080F;background:var(--green2);padding:4px 12px;border-radius:6px}
+.tm-verdict-headline{font-size:13px;font-weight:700;color:var(--text)}
+.tm-verdict-text{font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px}
+.tm-verdict-tags{display:flex;gap:8px;flex-wrap:wrap}
+.tm-vtag{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);color:var(--text3);display:flex;align-items:center;gap:5px}
+.tm-locked{border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg3);padding:18px;text-align:center}
+.tm-locked i{font-size:20px;color:var(--gold);margin-bottom:8px}
+.tm-locked-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
+.tm-locked-sub{font-size:11px;color:var(--text3)}
+
+.tm-iconfeat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:1080px;margin:0 auto}
+.tm-iconfeat{padding:20px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg2)}
+.tm-iconfeat-icon{width:38px;height:38px;border-radius:9px;background:rgba(0,194,168,.15);border:1px solid rgba(0,194,168,.35);display:flex;align-items:center;justify-content:center;color:var(--teal-light);font-size:17px;margin-bottom:14px}
+.tm-iconfeat-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;font-family:'Space Grotesk',sans-serif}
+.tm-iconfeat-desc{font-size:12px;color:var(--text2);line-height:1.6}
+
+@media(max-width:980px){
+  .tm-showcase{display:none}
+}
 </style>
 </head>
 <body>
@@ -1102,12 +1177,12 @@ img,svg,video,canvas,iframe{max-width:100%}
   </div>
   <div class="nav-links">
     <span class="nav-link active" data-page="home" onclick="show('home')">Home</span>
-    <span class="nav-link" data-page="dashboard" onclick="show('dashboard')">Dashboard</span>
     <span class="nav-link" data-page="analysis" onclick="show('analysis')">Analysis</span>
     <span class="nav-link" data-page="charts" onclick="show('charts')">Charts</span>
     <span class="nav-link" data-page="screener" onclick="show('screener')">Screener</span>
     <span class="nav-link" data-page="options" onclick="show('options')">Options</span>
     <span class="nav-link" data-page="pricing" onclick="show('pricing')">Pricing</span>
+    <span class="nav-link" data-page="dashboard" onclick="show('dashboard')">Dashboard</span>
     <span class="nav-link" id="nav-admin-link" data-page="admin" onclick="show('admin')" style="display:none">Admin</span>
   </div>
   <div class="nav-right">
@@ -1128,13 +1203,13 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="mobile-sidebar-close" onclick="toggleMobileSidebar(false)"><i class="ti ti-x"></i></div>
   </div>
   <span class="nav-link" data-page="home" onclick="show('home');toggleMobileSidebar(false)"><i class="ti ti-home" style="margin-right:8px"></i>Home</span>
-  <span class="nav-link" data-page="dashboard" onclick="show('dashboard');toggleMobileSidebar(false)"><i class="ti ti-layout-dashboard" style="margin-right:8px"></i>Dashboard</span>
   <span class="nav-link" data-page="analysis" onclick="show('analysis');toggleMobileSidebar(false)"><i class="ti ti-sparkles" style="margin-right:8px"></i>Analysis</span>
   <span class="nav-link" data-page="charts" onclick="show('charts');toggleMobileSidebar(false)"><i class="ti ti-chart-candle" style="margin-right:8px"></i>Charts</span>
   <span class="nav-link" data-page="screener" onclick="show('screener');toggleMobileSidebar(false)"><i class="ti ti-list-search" style="margin-right:8px"></i>Screener</span>
   <span class="nav-link" data-page="options" onclick="show('options');toggleMobileSidebar(false)"><i class="ti ti-stack" style="margin-right:8px"></i>Options</span>
   <span class="nav-link" onclick="show('dashboard');switchDash('chat');toggleMobileSidebar(false)"><i class="ti ti-robot" style="margin-right:8px"></i>AI Assistant</span>
   <span class="nav-link" data-page="pricing" onclick="show('pricing');toggleMobileSidebar(false)"><i class="ti ti-tag" style="margin-right:8px"></i>Pricing</span>
+  <span class="nav-link" data-page="dashboard" onclick="show('dashboard');toggleMobileSidebar(false)"><i class="ti ti-layout-dashboard" style="margin-right:8px"></i>Dashboard</span>
   <span class="nav-link" id="mobile-nav-admin-link" data-page="admin" onclick="show('admin');toggleMobileSidebar(false)" style="display:none"><i class="ti ti-shield-lock" style="margin-right:8px"></i>Admin</span>
 </div>
 
@@ -1151,8 +1226,6 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="hero-glow3"></div>
       <div class="hero-grid"></div>
     </div>
-    <button class="trial-cta-badge" onclick="show('login')"><i class="ti ti-bolt"></i>Start Your 7-Day Free Screener Trial</button>
-    <br/>
     <div class="hero-badge"><span class="hero-badge-dot"></span> Live NSE &amp; BSE data · 4 AI engines · Real Upstox market feed</div>
     <h1 class="hero-h1">India's <em>AI-Powered</em><br/>Stock Market Intelligence<br/>Platform</h1>
     <p class="hero-sub">Live NSE &amp; BSE market data, professional TradingView charts, and AI-powered market insights — all in one place. Sign in to unlock real-time analysis on 5,000+ stocks.</p>
@@ -1169,25 +1242,8 @@ img,svg,video,canvas,iframe{max-width:100%}
       <span class="trust-pill"><i class="ti ti-shield-lock"></i>Secure Google Sign-In</span>
       <span class="trust-pill"><i class="ti ti-refresh"></i>Real-Time Market Updates</span>
       <span class="trust-pill"><i class="ti ti-bolt"></i>Fast &amp; Reliable Performance</span>
+      <span class="trust-pill"><i class="ti ti-clock"></i>7-Day Free Screener Trial</span>
     </div>
-
-  <!-- ── Scroll-driven cinematic sequence ──
-       200 JPG frames painted onto a canvas, scrubbed by scroll position
-       (no video file needed). Pinned full-height while the wrapper below
-       scrolls past underneath it. -->
-  <div class="cinematic-wrap" id="cinematic-wrap">
-    <div class="cinematic-sticky">
-      <canvas id="cinematic-canvas"></canvas>
-      <div class="cinematic-loading" id="cinematic-loading">Loading cinematic…</div>
-      <div class="cinematic-overlay">
-        <div class="cinematic-eyebrow"><span class="cinematic-scroll-dot"></span>Scroll to play</div>
-        <div class="cinematic-title">Watch how TradeMind AI turns raw market data into a live trading edge.</div>
-      </div>
-      <div class="cinematic-rail-pct" id="cinematic-rail-pct">0%</div>
-      <div class="cinematic-rail"><div class="cinematic-rail-thumb" id="cinematic-rail-thumb"></div></div>
-      <div class="cinematic-progress"><div class="cinematic-progress-bar" id="cinematic-progress-bar"></div></div>
-    </div>
-  </div>
 
     <div class="hero-chart-wrap">
       <div class="hero-chart-hdr">
@@ -1281,6 +1337,196 @@ img,svg,video,canvas,iframe{max-width:100%}
       </div>
     </div>
   </div>
+
+  <!-- ══════════════ PLATFORM SHOWCASE (desktop preview, theme unchanged) ══════════════ -->
+  <div class="tm-showcase">
+
+  <!-- LIVE TERMINAL PREVIEW -->
+  <div class="section">
+    <div class="sec-eyebrow">Platform preview</div>
+    <h2 class="sec-h2">A real trading terminal</h2>
+    <p class="sec-sub">Chart, market structure, AI trade plan and watchlist — in one unified interface. No tab-switching between five different apps.</p>
+
+    <div class="tm-window">
+      <div class="tm-window-bar"><span class="tm-dot r"></span><span class="tm-dot y"></span><span class="tm-dot g"></span><span class="tm-window-url">app.trademindai.com/analysis/RELIANCE</span></div>
+      <div class="tm-terminal">
+        <div class="tm-term-main">
+          <div class="tm-term-head">
+            <div class="tm-term-sym"><i class="ti ti-chart-candle" style="color:var(--text3)"></i><b>RELIANCE</b><span class="feat-tag tag-free" style="margin:0">Bullish</span><span class="live-pill"><span class="live-dot"></span>LIVE</span></div>
+            <div class="tm-term-tf"><span class="tm-tf-btn">1M</span><span class="tm-tf-btn">1W</span><span class="tm-tf-btn active">1D</span><span class="tm-tf-btn">4H</span><span class="tm-tf-btn">15m</span></div>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
+            <span class="tm-term-price">₹2,847.65</span><span class="tm-term-chg">▲ +1.2%</span>
+            <button class="tm-run-btn" style="margin-left:auto"><i class="ti ti-player-play-filled"></i> Run AI Analysis</button>
+          </div>
+          <svg class="tm-chart-svg" viewBox="0 0 620 180" preserveAspectRatio="none">
+            <polyline points="0,150 40,148 70,140 100,142 130,128 160,132 190,118 220,122 250,108 280,112 310,96 340,100 370,86 400,90 430,74 460,78 490,62 520,58 550,44 580,38 620,26" fill="none" stroke="#373B6A" stroke-width="1.5"/>
+            <polyline points="0,158 40,156 70,150 100,150 130,140 160,142 190,130 220,132 250,118 280,120 310,106 340,108 370,96 400,98 430,84 460,86 490,72 520,70 550,54 580,50 620,40" fill="none" stroke="var(--gold)" stroke-width="1.5" opacity=".8"/>
+            <polyline points="0,150 40,148 70,140 100,142 130,128 160,132 190,118 220,122 250,108 280,112 310,96 340,100 370,86 400,90 430,74 460,78 490,62 520,58 550,44 580,38 620,26" fill="none" stroke="var(--teal-light)" stroke-width="2"/>
+            <circle cx="160" cy="132" r="4" fill="var(--green2)"/><text x="168" y="150" font-size="10" fill="var(--green2)" font-weight="700">BUY</text>
+            <circle cx="490" cy="62" r="4" fill="var(--rose2)"/><text x="440" y="52" font-size="10" fill="var(--rose2)" font-weight="700">SELL</text>
+          </svg>
+          <div class="tm-chart-foot"><span>Open <b>₹2,815</b></span><span>High <b>₹2,863</b></span><span>Low <b>₹2,798</b></span><span>Prev Close <b>₹2,815</b></span></div>
+        </div>
+        <div class="tm-watchlist">
+          <div class="tm-watch-title">Watchlist</div>
+          <div class="tm-watch-row"><span class="tm-watch-sym">RELIANCE</span><span><span class="tm-watch-price">₹2,847.65</span> <span class="tm-watch-chg up">+1.2%</span></span></div>
+          <div class="tm-watch-row"><span class="tm-watch-sym">INFY</span><span><span class="tm-watch-price">₹1,534.20</span> <span class="tm-watch-chg up">+0.8%</span></span></div>
+          <div class="tm-watch-row"><span class="tm-watch-sym">HDFCBANK</span><span><span class="tm-watch-price">₹1,678.90</span> <span class="tm-watch-chg dn">-0.3%</span></span></div>
+          <div class="tm-watch-row"><span class="tm-watch-sym">TCS</span><span><span class="tm-watch-price">₹3,412.50</span> <span class="tm-watch-chg up">+0.5%</span></span></div>
+          <div class="tm-watch-row"><span class="tm-watch-sym">ICICIBANK</span><span><span class="tm-watch-price">₹1,268.40</span> <span class="tm-watch-chg up">+0.6%</span></span></div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--text3)">Illustrative preview — prices &amp; levels shown are sample data, not live quotes or a trade recommendation.</div>
+  </div>
+
+  <!-- AI MARKET INTELLIGENCE -->
+  <div class="section section-alt">
+    <div class="sec-eyebrow">Market intelligence</div>
+    <h2 class="sec-h2">AI-powered market intelligence</h2>
+    <p class="sec-sub">Real-time market news with AI impact tagging, undervalued opportunities the crowd hasn't priced in yet, and the day's top movers — so you never miss what's moving.</p>
+    <div class="tm-intel-grid">
+      <div class="tm-intel-card">
+        <div class="tm-intel-hdr"><span class="tm-intel-hdr-l"><i class="ti ti-news"></i>Real-Time News</span><span class="tm-live-tag">LIVE</span></div>
+        <div class="tm-intel-item"><div class="tm-intel-item-title">RBI holds repo rate at 6.5%, signals easing bias</div><div class="tm-intel-badges"><span class="tm-chip-tiny chip-macro">Macro</span><span class="tm-chip-tiny" style="background:var(--bg3);color:var(--text3)">HDFCBANK · ICICIBANK</span><span class="tm-intel-time">2h ago</span></div></div>
+        <div class="tm-intel-item"><div class="tm-intel-item-title">Reliance Jio 5G subscriber base crosses 190M</div><div class="tm-intel-badges"><span class="tm-chip-tiny chip-earn">Earnings</span><span class="tm-chip-tiny" style="background:var(--bg3);color:var(--text3)">RELIANCE</span><span class="tm-intel-time">3h ago</span></div></div>
+        <div class="tm-intel-item"><div class="tm-intel-item-title">IT sector faces margin pressure from wage hikes</div><div class="tm-intel-badges"><span class="tm-chip-tiny chip-risk">Risk</span><span class="tm-chip-tiny" style="background:var(--bg3);color:var(--text3)">TCS · INFY</span><span class="tm-intel-time">4h ago</span></div></div>
+      </div>
+      <div class="tm-intel-card">
+        <div class="tm-intel-hdr"><span class="tm-intel-hdr-l"><i class="ti ti-diamond"></i>Hidden Gems</span><span class="tm-pro-tag"><i class="ti ti-lock" style="font-size:11px"></i>PRO</span></div>
+        <div class="tm-intel-item"><div class="tm-intel-item-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700">POLYCAB <span style="font-size:10px;font-weight:600;color:var(--green2)">Low risk</span></div><span style="font-size:11px;color:var(--text2)">Undervalued vs peers, strong order book growth</span></div>
+        <div class="tm-intel-item"><div class="tm-intel-item-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700">KAYNES <span style="font-size:10px;font-weight:600;color:var(--amber)">Medium risk</span></div><span style="font-size:11px;color:var(--text2)">EMS sector tailwind, 40% revenue CAGR</span></div>
+        <div class="tm-intel-item"><div class="tm-intel-item-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700">CAMS <span style="font-size:10px;font-weight:600;color:var(--green2)">Low risk</span></div><span style="font-size:11px;color:var(--text2)">Monopoly in MF infra, 85% market share</span></div>
+      </div>
+      <div class="tm-intel-card">
+        <div class="tm-intel-hdr"><span class="tm-intel-hdr-l"><i class="ti ti-bolt"></i>Top Movers</span><span class="tm-live-tag">LIVE</span></div>
+        <div class="tm-mover-cols">
+          <div><div class="tm-mover-col-hdr" style="color:var(--green2)">Gainers</div>
+            <div class="tm-mover-row"><span><span class="tm-mover-name">TATAMOTORS</span><span class="tm-mover-reason">Strong auto sales</span></span><span style="color:var(--green2);font-weight:700">+4.2%</span></div>
+            <div class="tm-mover-row"><span><span class="tm-mover-name">ADANIGREEN</span><span class="tm-mover-reason">New solar capacity</span></span><span style="color:var(--green2);font-weight:700">+3.6%</span></div>
+            <div class="tm-mover-row"><span><span class="tm-mover-name">BAJFINANCE</span><span class="tm-mover-reason">AUM beats estimates</span></span><span style="color:var(--green2);font-weight:700">+2.9%</span></div>
+          </div>
+          <div><div class="tm-mover-col-hdr" style="color:var(--rose2)">Losers</div>
+            <div class="tm-mover-row"><span><span class="tm-mover-name">WIPRO</span><span class="tm-mover-reason">Weak Q4 guidance</span></span><span style="color:var(--rose2);font-weight:700">-2.2%</span></div>
+            <div class="tm-mover-row"><span><span class="tm-mover-name">HINDUNILVR</span><span class="tm-mover-reason">Rural demand slowdown</span></span><span style="color:var(--rose2);font-weight:700">-1.9%</span></div>
+            <div class="tm-mover-row"><span><span class="tm-mover-name">BHARTIARTL</span><span class="tm-mover-reason">Profit booking</span></span><span style="color:var(--rose2);font-weight:700">-1.2%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI SCREENER PROMO -->
+  <div class="section">
+    <div class="tm-screener-wrap">
+      <div>
+        <div class="sec-eyebrow" style="margin-bottom:10px">AI screener</div>
+        <h2 class="sec-h2" style="margin-bottom:0">Find what to analyse before the market moves</h2>
+        <div class="tm-screener-bullets">
+          <div class="tm-screener-bullet"><span class="tm-sb-icon"><i class="ti ti-radar-2"></i></span><span class="tm-sb-text"><b>NIFTY 50 scanning</b><span>Scan leaders automatically instead of checking one chart at a time.</span></span></div>
+          <div class="tm-screener-bullet"><span class="tm-sb-icon"><i class="ti ti-trending-up"></i></span><span class="tm-sb-text"><b>Ranked opportunities</b><span>Prioritise stocks by setup quality, volume context, and market structure.</span></span></div>
+          <div class="tm-screener-bullet"><span class="tm-sb-icon"><i class="ti ti-shield-check"></i></span><span class="tm-sb-text"><b>Avoid weak setups</b><span>Filter out noisy charts before spending an analysis credit on them.</span></span></div>
+        </div>
+        <button class="btn-lg" onclick="show('screener')"><i class="ti ti-filter"></i> Try the screener free</button>
+      </div>
+      <div class="tm-scan-card">
+        <div style="display:flex;align-items:center;justify-content:between;gap:8px;margin-bottom:14px"><span class="tm-intel-hdr-l"><i class="ti ti-radar-2"></i>NIFTY 50 Opportunity Scan</span><span class="tm-live-tag" style="margin-left:auto">LIVE</span></div>
+        <div class="tm-scan-stats">
+          <div class="tm-scan-stat"><div class="tm-scan-stat-lbl">Scanned</div><div class="tm-scan-stat-val">50</div></div>
+          <div class="tm-scan-stat"><div class="tm-scan-stat-lbl">Actionable</div><div class="tm-scan-stat-val" style="color:var(--green2)">7</div></div>
+          <div class="tm-scan-stat"><div class="tm-scan-stat-lbl">Rejected</div><div class="tm-scan-stat-val" style="color:var(--amber)">18</div></div>
+        </div>
+        <div class="tm-scan-row"><div><div class="tm-scan-name">RELIANCE</div><div class="tm-scan-note">Bullish continuation</div><span class="tm-badge badge-actionable">Actionable</span></div><div class="tm-scan-score"><b>84</b>score</div></div>
+        <div class="tm-scan-row"><div><div class="tm-scan-name">HDFCBANK</div><div class="tm-scan-note">Pullback near demand</div><span class="tm-badge badge-watchlist">Watchlist</span></div><div class="tm-scan-score"><b>78</b>score</div></div>
+        <div class="tm-scan-row"><div><div class="tm-scan-name">INFY</div><div class="tm-scan-note">Weak structure</div><span class="tm-badge badge-avoid">Avoid</span></div><div class="tm-scan-score"><b>41</b>score</div></div>
+        <div class="tm-scan-row"><div><div class="tm-scan-name">TATAMOTORS</div><div class="tm-scan-note">High-volume breakout</div><span class="tm-badge badge-actionable">Actionable</span></div><div class="tm-scan-score"><b>81</b>score</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAMPLE REPORT -->
+  <div class="section section-alt">
+    <div class="sec-eyebrow">Sample output</div>
+    <h2 class="sec-h2">See a sample AI report</h2>
+    <p class="sec-sub">Full institutional-grade analysis, generated in seconds — this is exactly what you get after clicking "Run AI Analysis" on any stock.</p>
+    <div class="tm-report">
+      <div class="tm-report-hdr">
+        <div class="tm-report-title"><b>RELIANCE</b><span class="feat-tag tag-free" style="margin:0">Bullish</span><span style="font-size:11px;color:var(--text3)">1H Timeframe</span></div>
+        <div class="tm-report-meta">Generated by TradeMind AI · Verified · 2 Aug 2026</div>
+      </div>
+      <div class="tm-report-body">
+        <div class="tm-snap-grid">
+          <div class="mc"><div class="mc-lbl">CMP</div><div class="mc-val">₹2,847.65</div></div>
+          <div class="mc"><div class="mc-lbl">Trend</div><div class="mc-val" style="color:var(--green2)">Bullish</div></div>
+          <div class="mc"><div class="mc-lbl">Regime</div><div class="mc-val">Trending</div></div>
+          <div class="mc"><div class="mc-lbl">Strength</div><div class="mc-val">72/100</div></div>
+          <div class="mc"><div class="mc-lbl">Confidence</div><div class="mc-val" style="color:var(--amber)">Medium-High</div></div>
+          <div class="mc"><div class="mc-lbl">Volatility</div><div class="mc-val">Moderate</div></div>
+        </div>
+
+        <div class="tm-report-block">
+          <div class="tm-report-block-title"><i class="ti ti-eye" style="font-size:12px"></i>What's happening</div>
+          <p class="tm-report-text">Reliance is building a strong base above the ₹2,800 demand zone after a bullish break of structure on the 1H timeframe. Smart-money accumulation is visible in the ₹2,780–₹2,815 range, with a partially-filled fair value gap between ₹2,820–₹2,835 suggesting a possible retest before continuation.</p>
+        </div>
+
+        <div class="tm-report-block">
+          <div class="tm-report-block-title"><i class="ti ti-gauge" style="font-size:12px"></i>Current lean</div>
+          <div class="tm-lean-pill"><i class="ti ti-trending-up"></i> Bullish · Conviction 7/10</div>
+          <p class="tm-report-text">Long bias above ₹2,800. Higher-high / higher-low structure intact; RSI and MACD confirm momentum without overbought conditions.</p>
+        </div>
+
+        <div class="tm-report-block">
+          <div class="tm-report-block-title"><i class="ti ti-map-2" style="font-size:12px"></i>Key levels</div>
+          <div class="tm-levels">
+            <div class="tm-level-row"><span class="tm-level-name demand">Demand Zone</span><span class="tm-level-range">₹2,800 – ₹2,815</span><span class="tm-level-note">Unmitigated order block + FVG confluence</span></div>
+            <div class="tm-level-row"><span class="tm-level-name supply">Supply Zone</span><span class="tm-level-range">₹2,910 – ₹2,925</span><span class="tm-level-note">Previous swing high + equal-highs liquidity</span></div>
+            <div class="tm-level-row"><span class="tm-level-name ob">Order Block</span><span class="tm-level-range">₹2,770 – ₹2,790</span><span class="tm-level-note">Bullish OB — last down-candle before BOS</span></div>
+          </div>
+        </div>
+
+        <div class="tm-report-block">
+          <div class="tm-report-block-title"><i class="ti ti-target-arrow" style="font-size:12px"></i>Trade plans</div>
+          <div class="tm-plans-grid">
+            <div class="tm-plan-card"><div class="tm-plan-hdr"><span class="tm-plan-name">Conservative</span><span class="tm-plan-long">LONG</span></div>
+              <div class="tm-plan-row"><span>Entry</span><b>₹2,830</b></div><div class="tm-plan-row sl"><span>Stop Loss</span><b>₹2,775</b></div><div class="tm-plan-row"><span>Target 1</span><b>₹2,880</b></div><div class="tm-plan-row"><span>Target 2</span><b>₹2,920</b></div><div class="tm-plan-row rr"><span>Risk:Reward</span><b style="color:var(--green2)">1:2.0</b></div></div>
+            <div class="tm-plan-card"><div class="tm-plan-hdr"><span class="tm-plan-name">Moderate</span><span class="tm-plan-long">LONG</span></div>
+              <div class="tm-plan-row"><span>Entry</span><b>₹2,830</b></div><div class="tm-plan-row sl"><span>Stop Loss</span><b>₹2,790</b></div><div class="tm-plan-row"><span>Target 1</span><b>₹2,910</b></div><div class="tm-plan-row"><span>Target 2</span><b>₹2,960</b></div><div class="tm-plan-row rr"><span>Risk:Reward</span><b style="color:var(--green2)">1:2.0</b></div></div>
+            <div class="tm-plan-card"><div class="tm-plan-hdr"><span class="tm-plan-name">Aggressive</span><span class="tm-plan-long">LONG</span></div>
+              <div class="tm-plan-row"><span>Entry</span><b>₹2,845</b></div><div class="tm-plan-row sl"><span>Stop Loss</span><b>₹2,800</b></div><div class="tm-plan-row"><span>Target 1</span><b>₹2,950</b></div><div class="tm-plan-row"><span>Target 2</span><b>₹3,010</b></div><div class="tm-plan-row rr"><span>Risk:Reward</span><b style="color:var(--green2)">1:2.3</b></div></div>
+          </div>
+        </div>
+
+        <div class="tm-verdict">
+          <div class="tm-verdict-hdr"><span class="tm-verdict-buy">BUY</span><span class="tm-verdict-headline">Bullish bias confirmed on 1H</span></div>
+          <p class="tm-verdict-text">Higher highs and higher lows intact. Unmitigated order block at ₹2,810 provides an optimal entry zone. Wait for a retracement into the OB for the best risk-reward. Invalidation below ₹2,775 — exit all longs if breached on closing basis.</p>
+          <div class="tm-verdict-tags"><span class="tm-vtag"><i class="ti ti-alert-triangle" style="font-size:11px"></i>No-trade zone: ₹2,850–₹2,870</span><span class="tm-vtag"><i class="ti ti-shield" style="font-size:11px"></i>Risk max 1-2% per trade</span><span class="tm-vtag"><i class="ti ti-calendar-event" style="font-size:11px"></i>Next catalyst: Q4 earnings</span></div>
+        </div>
+
+        <div class="tm-locked"><i class="ti ti-lock"></i><div class="tm-locked-title">AI Expert Chat — Pro</div><div class="tm-locked-sub">Ask unlimited follow-up questions about any analysis, in plain English</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUILT FOR SERIOUS TRADERS -->
+  <div class="section">
+    <div class="sec-eyebrow">Why traders switch</div>
+    <h2 class="sec-h2">Built for serious traders</h2>
+    <p class="sec-sub">Institutional-grade tools that filter noise, enforce discipline, and surface actionable setups.</p>
+    <div class="tm-iconfeat-grid">
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-layers-intersect"></i></div><div class="tm-iconfeat-title">Multi-Timeframe Alignment</div><div class="tm-iconfeat-desc">Cross-verify structure across 15m, 1H, 4H and daily charts for high-conviction setups.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-stack-2"></i></div><div class="tm-iconfeat-title">Market Structure &amp; Liquidity</div><div class="tm-iconfeat-desc">SMC-based order blocks, fair value gaps, and liquidity zones auto-detected.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-scale"></i></div><div class="tm-iconfeat-title">Risk-Reward Trade Plans</div><div class="tm-iconfeat-desc">Precise entry, stop-loss and extension targets with calculated R:R ratios.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-hand-stop"></i></div><div class="tm-iconfeat-title">"No Trade" Discipline</div><div class="tm-iconfeat-desc">When structure is unclear, the system says no — protecting you from low-quality setups.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-radar-2"></i></div><div class="tm-iconfeat-title">AI Opportunity Screener</div><div class="tm-iconfeat-desc">Scan the NIFTY universe, rank actionable stocks, and open the best candidates for full analysis.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-refresh"></i></div><div class="tm-iconfeat-title">Real-Time Price Sync</div><div class="tm-iconfeat-desc">Live market data integration keeps every analysis current with price movement.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-file-description"></i></div><div class="tm-iconfeat-title">PDF Export &amp; Reports</div><div class="tm-iconfeat-desc">Turn any analysis into a shareable, print-ready PDF report in one click.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-bell-ringing"></i></div><div class="tm-iconfeat-title">Price Alerts &amp; Watchlist</div><div class="tm-iconfeat-desc">Get notified the moment a watchlist stock hits a key level or condition.</div></div>
+    </div>
+  </div>
+
+  </div>
+  <!-- ══════════════ /PLATFORM SHOWCASE ══════════════ -->
 
   <!-- ACCURACY PROOF -->
   <div class="section section-alt">
@@ -2950,129 +3196,7 @@ function animateCount(el,target,opts={}){
 // the "Real Upstox Account" portfolio feature (see the note near the old
 // broker-sync functions further down).
 
-/** Scroll-scrubbed image-sequence "cinematic". Maps scroll progress through
- *  #cinematic-wrap to a frame 1..FRAME_COUNT and draws it on the canvas —
- *  the same technique Apple-style product pages use, minus the video file. */
-function initCinematicScroll(){
-  const wrap=document.getElementById('cinematic-wrap');
-  const canvas=document.getElementById('cinematic-canvas');
-  const loadingEl=document.getElementById('cinematic-loading');
-  const progressBar=document.getElementById('cinematic-progress-bar');
-  const railThumb=document.getElementById('cinematic-rail-thumb');
-  const railPct=document.getElementById('cinematic-rail-pct');
-  if(!wrap||!canvas)return;
-  const ctx=canvas.getContext('2d');
-  const FRAME_COUNT=200;
-  const FRAME_PATH=i=>`assets/cinematic/frame-${String(i).padStart(3,'0')}.jpg`;
-
-  const images=new Array(FRAME_COUNT+1); // 1-indexed
-  let loadedCount=0;
-  let currentFrame=1;
-  let ready=false;
-
-  function resizeCanvas(){
-    const dpr=Math.min(window.devicePixelRatio||1,2);
-    canvas.width=canvas.clientWidth*dpr;
-    canvas.height=canvas.clientHeight*dpr;
-  }
-
-  function drawFrame(n){
-    const img=images[n];
-    // If this frame hasn't loaded (or failed to load), leave the canvas
-    // transparent rather than erroring out — the CSS gradient backdrop on
-    // .cinematic-sticky shows through underneath so the section never
-    // renders as a flat empty rectangle even when a frame is missing.
-    if(!img||!img.complete||!img.naturalWidth)return;
-    const cw=canvas.width,ch=canvas.height;
-    // object-fit:cover math so frames fill the canvas without distortion
-    const scale=Math.max(cw/img.naturalWidth,ch/img.naturalHeight);
-    const dw=img.naturalWidth*scale,dh=img.naturalHeight*scale;
-    ctx.clearRect(0,0,cw,ch);
-    ctx.drawImage(img,(cw-dw)/2,(ch-dh)/2,dw,dh);
-  }
-
-  // Drives both the bottom progress bar and the pinned vertical scroll rail —
-  // these stay visible and update continuously for the whole 250vh of scroll
-  // distance, so there's always a clear, high-contrast "you are here" marker
-  // even while frames are still loading.
-  function onScroll(){
-    const rect=wrap.getBoundingClientRect();
-    const total=wrap.offsetHeight-window.innerHeight;
-    let progress=total>0?(-rect.top)/total:0;
-    progress=Math.max(0,Math.min(1,progress));
-    const pct=(progress*100);
-    if(progressBar)progressBar.style.width=pct.toFixed(1)+'%';
-    if(railThumb)railThumb.style.top=(progress*86).toFixed(1)+'%';
-    if(railPct)railPct.textContent=Math.round(pct)+'%';
-    if(!ready)return;
-    const frame=Math.min(FRAME_COUNT,Math.max(1,Math.round(progress*(FRAME_COUNT-1))+1));
-    if(frame!==currentFrame||true){ currentFrame=frame; drawFrame(frame); }
-  }
-
-  let ticking=false;
-  function onScrollThrottled(){
-    if(ticking)return;
-    ticking=true;
-    requestAnimationFrame(()=>{ onScroll(); ticking=false; });
-  }
-
-  function preloadFrom(startIndex){
-    // Load sequentially so the earliest frames (visible first) are ready fast,
-    // rather than firing 200 parallel requests at once.
-    let i=startIndex;
-    function loadNext(){
-      if(i>FRAME_COUNT){
-        if(!ready){ ready=true; if(loadingEl)loadingEl.style.display='none'; drawFrame(currentFrame); }
-        return;
-      }
-      const img=new Image();
-      img.onload=img.onerror=()=>{
-        loadedCount++;
-        if(!ready && loadedCount>=Math.min(20,FRAME_COUNT)){
-          ready=true;
-          if(loadingEl)loadingEl.style.display='none';
-          resizeCanvas(); drawFrame(currentFrame);
-        }
-        i++; loadNext();
-      };
-      img.src=FRAME_PATH(i);
-      images[i]=img;
-    }
-    loadNext();
-  }
-
-  if(_reduceMotion){
-    // Respect reduced-motion: show a single static frame, no scroll animation.
-    if(loadingEl)loadingEl.style.display='none';
-    resizeCanvas();
-    const img=new Image();
-    // onerror included: if the frame fails to load, we still fall through to
-    // the CSS gradient backdrop instead of leaving the canvas permanently blank.
-    img.onload=img.onerror=()=>{ if(img.naturalWidth){ images[1]=img; } ready=true; drawFrame(1); };
-    img.src=FRAME_PATH(1);
-    if(progressBar)progressBar.style.width='100%';
-    if(railThumb)railThumb.style.top='86%';
-    if(railPct)railPct.textContent='100%';
-    window.addEventListener('resize',()=>{ resizeCanvas(); drawFrame(1); });
-    return;
-  }
-
-  const io=new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      if(entry.isIntersecting){
-        resizeCanvas();
-        preloadFrom(1);
-        io.unobserve(entry.target);
-      }
-    });
-  },{rootMargin:'400px 0px 400px 0px'});
-  io.observe(wrap);
-
-  window.addEventListener('scroll',onScrollThrottled,{passive:true});
-  window.addEventListener('resize',()=>{ resizeCanvas(); if(ready)drawFrame(currentFrame); });
-}
-
-window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); initCinematicScroll(); });
+window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); });
 
 // FIX (part of the "signed out after ~30 min" issue): mobile browsers —
 // especially in-app webviews like Instagram's — routinely suspend or fully
