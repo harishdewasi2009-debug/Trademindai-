@@ -53,7 +53,7 @@ const validateResetPassword = [
 
 // ── Payment validators ──
 const validateCreateOrder = [
-  body('planName').isIn(['pro', 'elite']).withMessage('Invalid plan. Must be pro or elite.'),
+  body('planName').isIn(['basic', 'pro', 'elite']).withMessage('Invalid plan. Must be basic, pro, or elite.'),
   handleValidationErrors,
 ];
 
@@ -61,7 +61,7 @@ const validateVerifyPayment = [
   body('razorpay_order_id').notEmpty().trim().isLength({ max: 100 }),
   body('razorpay_payment_id').notEmpty().trim().isLength({ max: 100 }),
   body('razorpay_signature').notEmpty().trim().isLength({ max: 300 }),
-  body('planName').isIn(['pro', 'elite']).withMessage('Invalid plan. Must be pro or elite.'),
+  body('planName').isIn(['basic', 'pro', 'elite']).withMessage('Invalid plan. Must be basic, pro, or elite.'),
   handleValidationErrors,
 ];
 
@@ -131,7 +131,7 @@ const validateAiAnalyze = [
 // ── Admin validators ──
 const validateUpdateUserPlan = [
   param('id').isUUID().withMessage('Invalid user ID.'),
-  body('plan').isIn(['free', 'pro', 'elite']).withMessage('Invalid plan.'),
+  body('plan').isIn(['free', 'basic', 'pro', 'elite']).withMessage('Invalid plan.'),
   handleValidationErrors,
 ];
 

@@ -9,7 +9,7 @@ const asyncHandler = require('../utils/asyncHandler');
 // ── POST /api/payment/create-order ──
 const createPaymentOrder = asyncHandler(async (req, res) => {
   const { planName } = req.body;
-  if (!['pro', 'elite'].includes(planName)) {
+  if (!['basic', 'pro', 'elite'].includes(planName)) {
     throw new AppError('Invalid plan selected.', 400);
   }
   const plan = getPlan(planName);

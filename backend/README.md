@@ -11,10 +11,11 @@ dashboards/accounts only you can create).
 - **Database**: full PostgreSQL schema (`db/schema.sql`) — users, subscriptions, payments, portfolio, watchlist, ai_requests, prediction_history, api_usage, referrals, advertisers, admin_logs, webhook_events
 - **Payments**: Razorpay order creation, signature verification (frontend callback AND webhook, both required), idempotent subscription activation, referral crediting on first payment
 - **Referrals**: `/api/referral` returns the user's real referral code (auto-generated on first request) and real referral history from the `referrals` table — crediting happens via `referralService.js` when a referred user's first payment is captured
-- **AI analysis**: `services/aiService.js` calls the Gemini API **directly** (no separate AI engine process — API key lives in this repo's `.env`, never sent to the frontend). Simplified single-model plan-based routing (replaces the old 4-tier multi-model consensus/debate system):
-  - Free → Gemini 2.5 Flash only (50k tokens/mo)
-  - Pro (₹499) → Gemini 2.5 Flash only (250k tokens/mo)
-  - Elite (₹999) → Gemini 2.5 Pro only (250k tokens/mo)
+- **AI analysis**: `services/aiService.js` calls Gemini, Claude, ChatGPT, and DeepSeek **directly** (no separate AI engine process — API keys live in this repo's `.env`, never sent to the frontend). Plan-based routing:
+  - Free → Gemini Flash only
+  - Basic → Gemini Flash, falls back to DeepSeek V3 on failure
+  - Pro → Gemini Flash + Claude Sonnet + ChatGPT called in parallel, consensus result (DeepSeek V3 fallback if all three fail)
+  - Elite → Gemini Pro + Claude Opus + ChatGPT + DeepSeek R1 called in parallel, consensus + per-model debate
 - **Per-model cost protection**: each model has its own `maxOutputTokens` (caps a single call) and its own `monthlyTokenQuota` (caps that model's total usage per user per month) — defined per plan in `config/plans.js`. `middleware/planCheck.js` enforces these in three layers: `enforceTokenQuota` (plan-wide monthly token budget), `enforceAiQueryLimit` (plan-wide monthly request count), `attachAvailableModels` (skips any individual model whose own sub-quota is exhausted, instead of calling it anyway). See the worst-case cost math in the comments at the top of `config/plans.js`.
 - **Per-model cost logging**: every `/api/ai/analyze` call writes one `ai_requests` row per model actually called (tagged with a shared `request_id` so monthly query-count limits still count it as one request), so per-model spend is exact, not approximated.
 - **Plan enforcement**: feature gating (`requireFeature`) reads from one config file (`config/plans.js`)
@@ -55,7 +56,7 @@ If you wire a route to any feature in this list before building the real integra
 5. Switch to Live keys only after KYC is approved and you've tested the full flow
 
 ### 4. AI provider API keys
-At minimum `GEMINI_API_KEY` is required (powers Free, Pro, and Elite — Claude/GPT/DeepSeek keys are no longer used by the AI analysis routes since the redesign to a single model per plan). Add `CLAUDE_API_KEY`,
+At minimum `GEMINI_API_KEY` is required (powers Free + Basic). Add `CLAUDE_API_KEY`,
 `OPENAI_API_KEY`, and `DEEPSEEK_API_KEY` to enable the Pro and Elite model stacks —
 see the comments in `.env.example` for exactly which keys gate which plan, and
 where to get each one (Google AI Studio, Anthropic Console, OpenAI Platform,
