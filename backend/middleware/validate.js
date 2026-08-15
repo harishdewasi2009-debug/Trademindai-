@@ -53,7 +53,7 @@ const validateResetPassword = [
 
 // ── Payment validators ──
 const validateCreateOrder = [
-  body('planName').isIn(['pro', 'elite']).withMessage('Invalid plan. Must be pro or elite.'),
+  body('planName').isIn(['basic', 'pro', 'elite']).withMessage('Invalid plan. Must be basic, pro, or elite.'),
   handleValidationErrors,
 ];
 
@@ -61,7 +61,7 @@ const validateVerifyPayment = [
   body('razorpay_order_id').notEmpty().trim().isLength({ max: 100 }),
   body('razorpay_payment_id').notEmpty().trim().isLength({ max: 100 }),
   body('razorpay_signature').notEmpty().trim().isLength({ max: 300 }),
-  body('planName').isIn(['pro', 'elite']).withMessage('Invalid plan. Must be pro or elite.'),
+  body('planName').isIn(['basic', 'pro', 'elite']).withMessage('Invalid plan. Must be basic, pro, or elite.'),
   handleValidationErrors,
 ];
 
@@ -123,15 +123,15 @@ const validateAiAnalyze = [
     .withMessage('timeframe must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1mo, 3mo, 6mo, 1y, 3y, 5y.'),
   body('exchange')
     .optional()
-    .isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO'])
-    .withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
+    .isIn(['NSE_EQ', 'BSE_EQ'])
+    .withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   handleValidationErrors,
 ];
 
 // ── Admin validators ──
 const validateUpdateUserPlan = [
   param('id').isUUID().withMessage('Invalid user ID.'),
-  body('plan').isIn(['free', 'pro', 'elite']).withMessage('Invalid plan.'),
+  body('plan').isIn(['free', 'basic', 'pro', 'elite']).withMessage('Invalid plan.'),
   handleValidationErrors,
 ];
 
@@ -166,7 +166,7 @@ const validateMarketQuotes = [
     .trim().notEmpty().withMessage('symbols is required (comma-separated).')
     .isLength({ max: 2000 }).withMessage('symbols list too long.')
     .matches(/^[A-Za-z0-9&_,-]+$/).withMessage('symbols contains invalid characters.'),
-  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
+  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   // FIX: /signals accepts ?period= (the Screener's Time Interval chip) but
   // it was never validated or even read by the controller — see
   // marketController.js getSignals.
@@ -179,7 +179,7 @@ const validateMarketReport = [
     .trim().notEmpty().withMessage('symbol is required.')
     .isLength({ max: 30 }).withMessage('symbol too long.')
     .matches(/^[A-Za-z0-9&_-]+$/).withMessage('symbol contains invalid characters.'),
-  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
+  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   query('period').optional().isIn(SCREENER_PERIODS).withMessage(`period must be one of: ${SCREENER_PERIODS.join(', ')}.`),
   handleValidationErrors,
 ];

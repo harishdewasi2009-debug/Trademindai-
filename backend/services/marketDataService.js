@@ -234,38 +234,12 @@ const SEED_INSTRUMENTS = {
 // Upstox publishes one instrument-master file per exchange. NSE is checked
 // first by default (better liquidity/data quality for the same company),
 // BSE is the fallback — see resolveInstrumentKey().
-//
-// MCX_FO added (commodity derivatives — Gold, Silver, Crude Oil, Natural
-// Gas, Copper, Zinc, etc). Same file-per-exchange pattern Upstox uses for
-// NSE/BSE, published at the same assets host — see loadInstrumentMaster()
-// for why MCX needs different parsing than the equity exchanges (it's
-// futures contracts with expiries, not ISIN-identified shares).
 const EXCHANGE_FILES = {
   NSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz',
   BSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/BSE.json.gz',
-  MCX_FO: 'https://assets.upstox.com/market-quote/instruments/exchange/MCX.json.gz',
 };
 
-// MCX commodities are traded as dated futures contracts (e.g.
-// "GOLD25AUGFUT"), not a single permanent symbol like an equity. To make
-// them behave like any other chartable/quotable symbol elsewhere in the
-// app (Charts, Screener, AI assistant), we resolve a plain commodity name
-// ("GOLD") to whichever real listed contract for that commodity expires
-// soonest but hasn't expired yet (the liquid "front month" / "near month"
-// contract) — the same convention trading platforms use for a commodity's
-// default quote. The list below is just what the frontend offers/searches
-// as suggestions; it is NOT a hardcoded price source — every quote/candle
-// still comes from the live Upstox instrument resolved at request time, so
-// this list only needs to be kept roughly in sync with what MCX actually
-// lists (it rarely changes).
-const MCX_COMMODITY_SYMBOLS = [
-  'GOLD', 'GOLDM', 'GOLDGUINEA', 'SILVER', 'SILVERM', 'SILVERMIC',
-  'CRUDEOIL', 'CRUDEOILM', 'NATURALGAS', 'NATGASMINI',
-  'COPPER', 'ZINC', 'ZINCMINI', 'LEAD', 'LEADMINI', 'ALUMINIUM', 'ALUMINI',
-  'NICKEL', 'MENTHAOIL', 'COTTON', 'COTTONCNDY',
-];
-
-const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...}, MCX_FO: {...} } — in-memory, process lifetime
+const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...} } — in-memory, process lifetime
 
 /**
  * Downloads and parses Upstox's equity instrument master for one exchange
@@ -288,62 +262,6 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   const buf = Buffer.from(await res.arrayBuffer());
   const json = zlib.gunzipSync(buf).toString('utf-8');
   const list = JSON.parse(json);
-
-  // MCX is commodity FUTURES (and options), not equities — an ISIN/"01"
-  // equity check makes no sense here, and there is no single permanent
-  // symbol per commodity, only dated contracts. Parsed separately from the
-  // NSE/BSE equity branch below. See MCX_COMMODITY_SYMBOLS comment above
-  // for the "front month" resolution rationale.
-  if (exchange === 'MCX_FO') {
-    const byCommodity = new Map(); // commodity name -> { instrumentKey, name, expiry, tradingSymbol }
-    const nowMs = Date.now();
-    let skipped = 0;
-    for (const row of list) {
-      const instrumentType = row.instrument_type || row.instrumentType;
-      // Futures only — options (CE/PE) aren't appropriate for a single
-      // "resolve this commodity to one quotable instrument" lookup.
-      if (instrumentType && instrumentType !== 'FUT') continue;
-      const tradingSymbol = row.trading_symbol || row.tradingsymbol || row.tradingSymbol || row.symbol;
-      const instrumentKey = row.instrument_key || row.instrumentKey;
-      const expiryRaw = row.expiry;
-      if (!tradingSymbol || !instrumentKey || !expiryRaw) { skipped++; continue; }
-
-      const expiryMs = typeof expiryRaw === 'number' ? expiryRaw : Date.parse(expiryRaw);
-      if (!expiryMs || expiryMs < nowMs) continue; // skip expired contracts
-
-      // Commodity name: prefer an explicit underlying/asset field, else
-      // derive it from the trading symbol by stripping the trailing
-      // date+"FUT" suffix (e.g. "GOLD25AUGFUT" -> "GOLD").
-      const commodityName = String(
-        row.asset_symbol || row.underlying_symbol || row.name ||
-        String(tradingSymbol).replace(/\d{2}[A-Z]{3}(FUT)?$/i, '').replace(/FUT$/i, '')
-      ).toUpperCase().trim();
-      if (!commodityName) { skipped++; continue; }
-
-      const existing = byCommodity.get(commodityName);
-      if (!existing || expiryMs < existing.expiry) {
-        byCommodity.set(commodityName, {
-          instrumentKey,
-          name: row.name || commodityName,
-          expiry: expiryMs,
-          tradingSymbol: String(tradingSymbol).toUpperCase(),
-        });
-      }
-    }
-
-    const bySymbol = new Map();
-    for (const [commodityName, info] of byCommodity) {
-      bySymbol.set(commodityName, { instrumentKey: info.instrumentKey, name: info.name, expiry: info.expiry, tradingSymbol: info.tradingSymbol });
-    }
-    if (bySymbol.size === 0) {
-      throw new AppError(
-        `Upstox MCX_FO instrument master parsed to 0 active commodity contracts (downloaded ${list.length} rows, ${skipped} skipped). The file format may have changed.`,
-        502
-      );
-    }
-    instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings: new Set(bySymbol.keys()), fetchedAt: new Date() };
-    return instrumentMasterCache[exchange];
-  }
 
   // NOTE: Upstox's NSE.json.gz and BSE.json.gz are NOT guaranteed to use
   // identical field names/values row-to-row (reported by multiple devs on
@@ -529,21 +447,17 @@ async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
     ...(failures.length ? { partialFailure: failures } : {}),
   };
 }
-// Included by default so MCX commodities (GOLD, SILVER, CRUDEOIL, etc.)
-// show up in the SAME symbol search used everywhere — Watchlist, Charts,
-// Portfolio, Screener jump-to, and the AI assistant's symbol resolution —
-// instead of needing a separate MCX-only search path.
 async function searchSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
   if (!prefix) return [];
 
   const results = [];
-  for (const exchange of ['NSE_EQ', 'BSE_EQ', 'MCX_FO']) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     let bySymbol;
     try {
       ({ bySymbol } = await loadInstrumentMaster(exchange));
     } catch (e) {
-      continue; // let the other exchanges still return results
+      continue; // let the other exchange still return results
     }
     for (const [symbol, info] of bySymbol) {
       if (symbol.startsWith(prefix)) {
@@ -553,22 +467,6 @@ async function searchSymbols(prefixRaw, limit = 20) {
     }
   }
   return results;
-}
-
-// Symbol list for the Screener's MCX tab / any UI that wants to show "all
-// MCX commodities" up front rather than requiring the user to type. Falls
-// back to the static MCX_COMMODITY_SYMBOLS names (still real, tradeable
-// commodity names — just without a live-resolved instrument_key attached)
-// if the instrument master download fails, so the tab never renders empty.
-async function listMcxSymbols() {
-  try {
-    const { bySymbol } = await loadInstrumentMaster('MCX_FO');
-    return [...bySymbol.entries()]
-      .map(([symbol, info]) => ({ symbol, exchange: 'MCX_FO', name: info.name, tradingSymbol: info.tradingSymbol, expiry: info.expiry ? new Date(info.expiry).toISOString().slice(0, 10) : null }))
-      .sort((a, b) => a.symbol.localeCompare(b.symbol));
-  } catch (e) {
-    return MCX_COMMODITY_SYMBOLS.map((symbol) => ({ symbol, exchange: 'MCX_FO', name: symbol, tradingSymbol: null, expiry: null, unresolved: true }));
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -1171,36 +1069,6 @@ async function getFullTechnicalReport(symbol, exchange, period) {
   }
 }
 
-// ── QUANT ANALYSIS (Computed Analysis page) — 35-metric statistical engine ──
-// Pulls the same real candles as the report above, plus NIFTY 50 index
-// candles as a benchmark series for beta/Treynor/Information Ratio/
-// correlation, and runs them through utils/quantEngine.js. No AI/LLM
-// involved anywhere in this path — every number is computed directly from
-// historical price/volume data.
-const { buildQuantReport } = require('../utils/quantEngine');
-const quantCache = new Map(); // "SYMBOL:EXCHANGE:PERIOD" -> { data, expiresAt }
-async function getQuantAnalysis(symbol, exchange, period) {
-  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}:${period || '1d'}`;
-  const cached = quantCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-
-  try {
-    const { unit, interval, from } = candleParamsForPeriod(period);
-    const [{ candles }, benchmark] = await Promise.all([
-      getHistoricalCandles(symbol, { unit, interval, from, exchange }),
-      getIndexHistoricalCandles('NIFTY 50', { unit, interval, from }).catch(() => null),
-    ]);
-    const report = buildQuantReport(candles, benchmark?.candles, {});
-    const data = report
-      ? { symbol: symbol.toUpperCase(), period: period || '1d', unit, interval, source: 'computed', benchmark: 'NIFTY 50', ...report }
-      : { symbol: symbol.toUpperCase(), error: 'Not enough real candle history yet to run the quant engine.' };
-    quantCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
-    return data;
-  } catch (err) {
-    return { symbol: symbol.toUpperCase(), error: err.message };
-  }
-}
-
 async function getTechnicalSignal(symbol, exchange, period) {
   // FIX: same stale-cache-across-timeframes bug as getFullTechnicalReport
   // above — the cache key must include the period, otherwise whichever
@@ -1272,8 +1140,6 @@ module.exports = {
   searchFnoSymbols,
   getFnoUnderlyings,
   listAllSymbols,
-  listMcxSymbols,
-  MCX_COMMODITY_SYMBOLS,
   getLtp,
   getLtpBatch,
   getOptionChain,
@@ -1284,6 +1150,5 @@ module.exports = {
   getSignalsBatch,
   isIndianMarketOpen,
   getFullTechnicalReport,
-  getQuantAnalysis,
   candleParamsForPeriod,
 };

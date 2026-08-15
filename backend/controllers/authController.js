@@ -202,28 +202,9 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 // ── POST /api/auth/google ──
-// ── Admin auto-promotion by email ────────────────────────────────────────
-// This app has no "invite an admin" UI — the only way anyone ever became
-// admin was db/seed.js inserting ONE row for SEED_ADMIN_EMAIL. To add a
-// second (or third) admin without a manual SQL step every time, any email
-// listed here — or in the ADMIN_EMAILS env var (comma-separated) — gets
-// is_admin flipped TRUE the moment they sign in with that exact Google
-// account, whether they're a brand-new signup or an existing user.
-// harishdewasi2009@gmail.com added as an admin per request.
-const ADMIN_EMAILS = new Set(
-  [
-    process.env.SEED_ADMIN_EMAIL,
-    'harishdewasi2009@gmail.com',
-    ...(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()),
-  ]
-    .filter(Boolean)
-    .map((e) => e.toLowerCase())
-);
-
 const googleLogin = asyncHandler(async (req, res) => {
   const { idToken, referralCode } = req.body;
   const profile = await verifyGoogleIdToken(idToken);
-  const shouldBeAdmin = ADMIN_EMAILS.has((profile.email || '').toLowerCase());
 
   const { rows: existingRows } = await query('SELECT * FROM users WHERE google_id = $1 OR email = $2', [
     profile.googleId,
@@ -240,25 +221,15 @@ const googleLogin = asyncHandler(async (req, res) => {
     }
     const myReferralCode = await generateUniqueReferralCode(profile.name);
     const { rows } = await query(
-      `INSERT INTO users (name, email, google_id, email_verified, referral_code, referred_by, is_admin, plan, subscription_status)
-       VALUES ($1, $2, $3, TRUE, $4, $5, $6, $7, $8)
+      `INSERT INTO users (name, email, google_id, email_verified, referral_code, referred_by)
+       VALUES ($1, $2, $3, TRUE, $4, $5)
        RETURNING *`,
-      [profile.name, profile.email, profile.googleId, myReferralCode, referredBy,
-       shouldBeAdmin, shouldBeAdmin ? 'elite' : 'free', shouldBeAdmin ? 'active' : 'inactive']
+      [profile.name, profile.email, profile.googleId, myReferralCode, referredBy]
     );
     user = rows[0];
-  } else {
-    if (!user.google_id) {
-      await query('UPDATE users SET google_id = $1, email_verified = TRUE WHERE id = $2', [profile.googleId, user.id]);
-      user.google_id = profile.googleId;
-    }
-    // Promote an existing (already-signed-up) user the first time their
-    // email shows up in ADMIN_EMAILS — covers harishdewasi2009@gmail.com
-    // if that account was created before being added to the admin list.
-    if (shouldBeAdmin && !user.is_admin) {
-      await query('UPDATE users SET is_admin = TRUE WHERE id = $1', [user.id]);
-      user.is_admin = true;
-    }
+  } else if (!user.google_id) {
+    await query('UPDATE users SET google_id = $1, email_verified = TRUE WHERE id = $2', [profile.googleId, user.id]);
+    user.google_id = profile.googleId;
   }
 
   const tokens = await issueTokensAndSession(user, req, res);

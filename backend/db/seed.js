@@ -9,13 +9,6 @@
 // in with Google using that exact email, it attaches to this existing row
 // (matched by email in authController.googleLogin) and you get is_admin
 // access immediately. The password below is set but unused.
-//
-// NOTE: this is no longer the only admin. authController.js's googleLogin
-// also auto-promotes any email in the ADMIN_EMAILS set (which includes
-// harishdewasi2009@gmail.com by default — see authController.js) on
-// sign-in, whether that account is brand new or already existed. Use
-// db/promoteAdmin.js to promote an existing account immediately instead
-// of waiting for their next login.
 
 require('dotenv').config();
 const bcrypt = require('bcryptjs');

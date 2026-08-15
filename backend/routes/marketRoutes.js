@@ -44,11 +44,6 @@ router.get('/signals', marketLimiter, validateMarketQuotes, ctrl.getSignals);
 // Technical Score, Conclusion) for the Screener's "full analysis" view:
 // GET /api/market/report/:symbol?exchange=BSE_EQ
 router.get('/report/:symbol', marketLimiter, validateMarketReport, ctrl.getFullReport);
-// Computed Analysis — 35-metric quant engine (volatility, VaR/CVaR, Sharpe/
-// Sortino/Calmar/Treynor/Omega, Bayesian regime probability, Monte Carlo
-// scenario fan, Kelly sizing, etc.). No AI/LLM involved — see
-// utils/quantEngine.js. GET /api/market/quant/:symbol?exchange=BSE_EQ&period=1d
-router.get('/quant/:symbol', marketLimiter, validateMarketReport, ctrl.getQuantReport);
 router.get('/indices', marketLimiter, ctrl.getIndices);
 router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
@@ -64,10 +59,6 @@ router.get('/search-fno', marketLimiter, validateMarketSearch, ctrl.searchFnoSym
 // closes, prompting them to upgrade. Basic/Pro/Elite behave exactly like
 // the plain requireFeature('screener') check used to.
 router.get('/stocks', requireAuth, requireScreenerAccess, marketLimiter, ctrl.listStocks);
-// Real MCX commodities (Gold, Silver, Crude Oil, Natural Gas, Copper,
-// Zinc, etc), each resolved to its live near-month futures contract:
-// GET /api/market/mcx — same screener access gate as /stocks.
-router.get('/mcx', requireAuth, requireScreenerAccess, marketLimiter, ctrl.listMcx);
 // Real option chain: GET /api/market/options-chain?underlying=NIFTY&expiry=2026-07-10
 // FIX: sold as Elite-only on the pricing page/comparison table but had no
 // backend gate — requireFeature('options_analysis') matches config/plans.js

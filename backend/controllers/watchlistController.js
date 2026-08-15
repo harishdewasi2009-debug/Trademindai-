@@ -4,7 +4,7 @@ const { getPlan } = require('../config/plans');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
-const WATCHLIST_LIMITS = { free: 5, pro: 50, elite: Infinity };
+const WATCHLIST_LIMITS = { free: 5, basic: 10, pro: 50, elite: Infinity };
 
 // ── GET /api/watchlist ──
 const getWatchlist = asyncHandler(async (req, res) => {

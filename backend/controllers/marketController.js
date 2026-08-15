@@ -78,11 +78,7 @@ const result = await marketDataService.storeNotifiedToken({ access_token, expire
 
 // ── GET /api/market/quote/:symbol  (any authenticated user) ─────────────
 const getQuote = asyncHandler(async (req, res) => {
-  // FIX: this never read ?exchange= at all, so a single-symbol quote for
-  // an MCX commodity (or any symbol you wanted to force to BSE) silently
-  // fell through to the NSE-then-BSE equity resolution and 404'd.
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const quote = await marketDataService.getLtp(req.params.symbol, exchange);
+  const quote = await marketDataService.getLtp(req.params.symbol);
   res.json(quote);
 });
 
@@ -141,7 +137,7 @@ const getIndexCandles = asyncHandler(async (req, res) => {
 const listStocks = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 150);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const result = await marketDataService.listAllSymbols({ exchange, page, limit });
   res.json(result);
 });
@@ -163,15 +159,6 @@ const getOptionsChain = asyncHandler(async (req, res) => {
   const chain = await marketDataService.getOptionChain(instrumentKey, expiry);
   res.json({ underlying, expiry, chain });
 });
-// ── GET /api/market/mcx  (any authenticated user) ────────────────────────
-// Real MCX commodity list (Gold, Silver, Crude Oil, Natural Gas, Copper,
-// Zinc, etc), each resolved to its live near-month futures contract on
-// Upstox — powers the Screener's MCX tab and any "commodities" picker.
-const listMcx = asyncHandler(async (req, res) => {
-  const items = await marketDataService.listMcxSymbols();
-  res.json({ items, total: items.length, exchange: 'MCX_FO' });
-});
-
 // ── GET /api/market/search?q=REL  (any authenticated user) ──────────────
 // Symbol search across NSE + BSE for autocomplete, so the frontend isn't
 // stuck picking from a hardcoded stock list.
@@ -202,26 +189,13 @@ const searchFnoSymbols = asyncHandler(async (req, res) => {
 // involved and no buy/sell/hold verdict — see utils/indicators.js
 // buildFullTechnicalReport() for the compliance rationale.
 const getFullReport = asyncHandler(async (req, res) => {
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   // FIX: same missing-param bug as getSignals — the full report (Trend,
   // RSI, MACD, Volume, etc. shown on the stock-detail "Analysis" view) was
   // always computed off hardcoded daily candles, ignoring whichever Time
   // Interval chip the Screener had selected when the user opened the stock.
   const period = typeof req.query.period === 'string' ? req.query.period : undefined;
   const report = await marketDataService.getFullTechnicalReport(req.params.symbol, exchange, period);
-  res.json(report);
-});
-
-// ── GET /api/market/quant/:symbol  (any authenticated user) ─────────────
-// Computed Analysis page — 35-metric quant engine (volatility models, VaR/
-// CVaR, Sharpe/Sortino/Calmar/Treynor/Omega, Bayesian regime probability,
-// regime classification, Monte Carlo scenario fan, Kelly sizing, etc.), all
-// derived from real Upstox candles. No AI/LLM involved — see
-// utils/quantEngine.js.
-const getQuantReport = asyncHandler(async (req, res) => {
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const period = typeof req.query.period === 'string' ? req.query.period : undefined;
-  const report = await marketDataService.getQuantAnalysis(req.params.symbol, exchange, period);
   res.json(report);
 });
 
@@ -232,7 +206,7 @@ const getQuantReport = asyncHandler(async (req, res) => {
 // symbol listed on both exchanges shows the one the trader actually picked.)
 const getCandles = asyncHandler(async (req, res) => {
   const { unit, interval, from, to } = req.query;
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const data = await marketDataService.getHistoricalCandles(req.params.symbol, {
     unit,
     interval: interval ? Number(interval) : undefined,
@@ -243,4 +217,4 @@ const getCandles = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, listMcx, getOptionsChain, getCandles, getFullReport, getQuantReport };
+module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles, getFullReport };

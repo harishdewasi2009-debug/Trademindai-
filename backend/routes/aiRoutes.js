@@ -117,7 +117,7 @@ router.post(
         // was being collected and sent by the frontend but silently dropped here —
         // every analysis was always computed on daily candles regardless of what
         // the user picked. See aiService.js fetchRealMarketContext().
-        exchange, // 'NSE_EQ' | 'BSE_EQ' | 'MCX_FO' | undefined (undefined = try NSE then BSE, same as before)
+        exchange, // 'NSE_EQ' | 'BSE_EQ' | undefined (undefined = try NSE then BSE, same as before)
         userPlan: req.user.plan,
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
       });
@@ -286,7 +286,7 @@ router.post(
     const system = `You are TradeMind AI, a knowledgeable Indian stock market data assistant. You are NOT a SEBI-registered Investment Adviser or Research Analyst, and you must never act like one.
 Give concise, practical, educational answers about markets, indicators, and concepts.
 If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
-Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and MCX commodity markets (Gold, Silver, Crude Oil, Natural Gas, Copper, Zinc, etc).`;
+Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
     const CHAT_CALLERS = { callGeminiPlain, callClaudePlain, callDeepSeekPlain };
     const cascade = insightCascadeForPlan(plan);
