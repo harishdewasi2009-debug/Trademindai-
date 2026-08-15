@@ -62,7 +62,7 @@ const listUsers = asyncHandler(async (req, res) => {
 // ── PATCH /api/admin/users/:id/plan ── (manually override a user's plan, e.g. comp account / support fix)
 const updateUserPlan = asyncHandler(async (req, res) => {
   const { plan } = req.body;
-  if (!['free', 'basic', 'pro', 'elite'].includes(plan)) throw new AppError('Invalid plan.', 400);
+  if (!['free', 'pro', 'elite'].includes(plan)) throw new AppError('Invalid plan.', 400);
 
   const { rows } = await query('UPDATE users SET plan = $1 WHERE id = $2 RETURNING id, name, email, plan', [plan, req.params.id]);
   if (!rows.length) throw new AppError('User not found.', 404);

@@ -3,19 +3,26 @@
 //  Single source of truth for plan pricing, AI query limits, token quotas,
 //  per-request token caps, and feature gates.
 //
-//   Free  ₹0     — Gemini Flash only
-//                  50,000 tokens/month | 1,500 tokens/request | 7 analyses/mo
-//   Basic ₹149   — Gemini Flash + DeepSeek
-//                  250,000 tokens/month | 2,000 tokens/request | 49 analyses/mo
-//   Pro   ₹999   — Gemini + DeepSeek + Claude Sonnet (limited) + GPT (limited)
-//                  1,000,000 tokens/month | 5,000 tokens/request | 499 analyses/mo
-//   Elite ₹3199  — GPT premium + Claude premium + Gemini advanced + DeepSeek Pro
-//                  2,015,000 tokens/month | 10,000 tokens/request | 1499 analyses/mo
+//   Free  ₹0    — Gemini 2.5 Flash only
+//                 50,000 tokens/month | 1,500 tokens/request | 7 analyses/mo
+//   Pro   ₹499  — Gemini 2.5 Flash only
+//                 250,000 tokens/month | 3,000 tokens/request | 166 analyses/mo
+//   Elite ₹999  — Gemini 2.5 Pro only
+//                 250,000 tokens/month | 4,000 tokens/request | 125 analyses/mo
 //
-//  UPDATED: Basic lowered 300k → 250k. Pro raised 800k → 1,000,000 (×1.25
-//  per-model rescale). Elite raised 1,200,000 → 3,000,000 (×2.5 per-model
-//  rescale). See per-plan comments below for the new worst-case cost math.
-//  Monthly analysis caps set to Free 7 / Basic 49 / Pro 499 / Elite 1499.
+//  REDESIGN (simplified 3-tier structure — replaces the old 4-tier
+//  Free/Basic/Pro/Elite structure): the old multi-model parallel-cascade
+//  system (Gemini + Claude + GPT + DeepSeek running together on Pro/Elite)
+//  has been removed. It was complex, expensive, and its "AI Model Debate"
+//  consensus output confused more than it helped. Basic (₹149) has been
+//  removed entirely — Pro is now the paid entry tier at ₹499. Pro and Elite
+//  now each run exactly ONE model per request:
+//    Pro   → Gemini 2.5 Flash (fast, cheap, great for high-frequency use)
+//    Elite → Gemini 2.5 Pro   (deeper reasoning, same 250k token ceiling)
+//  Both paid tiers share the same 250,000 token/month ceiling; Elite's
+//  higher price reflects Gemini Pro's higher per-token cost, plus Elite's
+//  extra platform features (Options Chain, unlimited watchlist, API
+//  access, etc. — see features[] below), not a bigger quota.
 // ══════════════════════════════════════════════════════════════════════════
 
 // FIX: Free plan's AI Stock Screener access is now a 7-day trial from
@@ -69,167 +76,62 @@ const PLANS = {
     ],
   },
 
-  basic: {
-    name: 'Basic',
-    amountInPaise: 14900,             // ₹149
-
-    // Token limits
-    monthlyTokenQuota:   250_000,     // 250,000 tokens/month
-    maxTokensPerRequest: 2_000,       // 2,000 tokens max per single request
-    monthlyAiQueries:    49,          // 49 analyses/month
-
-    // Basic calls Gemini Flash first, falls back to DeepSeek only on failure
-    // (not parallel) — so each model gets the FULL plan quota as its own
-    // ceiling, since only one of them actually runs per request.
-    // Models on this plan: Gemini Flash (primary), DeepSeek V3 (fallback).
-    // Worst case is whichever single model actually runs maxing the
-    // 250,000-token quota — DeepSeek is the pricier of the two, so ~₹16
-    // worst-case/mo (Gemini-only worst case would be ~₹4).
-    aiModels: {
-      gemini_flash: {
-        modelId:           'gemini-2.5-flash',
-        maxOutputTokens:   2_000,
-        monthlyTokenQuota: 250_000,        // ~₹4 worst-case AI cost/mo
-      },
-      deepseek_v3: {
-        modelId:           'deepseek-chat',
-        maxOutputTokens:   2_000,
-        monthlyTokenQuota: 250_000,        // ~₹16 worst-case AI cost/mo
-      },
-    },
-    features: [
-      'prediction_history',
-      'watchlist_10',
-      'screener',
-      // FIX: Basic already has a real DeepSeek V3 + Gemini Flash cascade
-      // built for it in aiService.js's insightCascadeForPlan() — this was
-      // just never reachable because /api/ai/insight required 'ai_chat'
-      // (Pro+Elite only). Adding this unlocks Deep Research's daily-vs-
-      // weekly section and the other insight-powered features for Basic.
-      'ai_insight',
-    ],
-  },
-
   pro: {
     name: 'Pro',
-    amountInPaise: 99900,             // ₹999
+    amountInPaise: 49900,             // ₹499
 
-    // Token limits
-    // UPDATED: quota raised from 800,000 → 1,000,000 (×1.25). Per-model splits
-    // below are scaled by the same 1.25 factor to preserve the original
-    // cost-weighted ratios (expensive models — Sonnet, ChatGPT — still get
-    // smaller individual ceilings than Gemini/DeepSeek). Combined worst-case
-    // (every model maxing its own quota the same month) scales from ~₹289
-    // to ~₹361 — still comfortably under the ₹999 price.
-    monthlyTokenQuota:   1_000_000,   // 1,000,000 tokens/month
-    maxTokensPerRequest: 5_000,       // 5,000 tokens max per single request
-    monthlyAiQueries:    499,         // 499 analyses/month
+    // Token limits — single-model plan, so the full quota is one model's
+    // own ceiling (no per-model splitting needed anymore).
+    monthlyTokenQuota:   250_000,     // 250,000 tokens/month
+    maxTokensPerRequest: 3_000,       // 3,000 tokens max per single request
+    monthlyAiQueries:    166,         // ~250,000 / 1,500-avg-tokens-per-analysis
 
-    // Pro calls Gemini Flash + Claude Sonnet + ChatGPT IN PARALLEL on every
-    // request (see aiService.js), with DeepSeek as a fallback if all three
-    // fail. Per-model quotas are split unevenly — Claude Sonnet and ChatGPT
-    // (the two expensive models) get smaller individual ceilings than
-    // Gemini/DeepSeek.
-    // Models on this plan: Gemini Flash, Claude Sonnet, ChatGPT (DeepSeek V3
-    // fallback only). Combined worst-case ~₹361/mo (Sonnet ~₹160 + ChatGPT
-    // ~₹179 + Gemini ~₹6 + DeepSeek ~₹16) against the ₹999 price.
+    // Pro calls Gemini 2.5 Flash only — no parallel multi-model cascade,
+    // no consensus/debate logic. Simple, fast, predictable cost.
     aiModels: {
       gemini_flash: {
         modelId:           'gemini-2.5-flash',
-        maxOutputTokens:   5_000,
-        monthlyTokenQuota: 375_000,        // ~₹6 worst-case AI cost/mo
-      },
-      claude_sonnet: {
-        modelId:           'claude-sonnet-5',
-        maxOutputTokens:   5_000,
-        monthlyTokenQuota: 187_500,        // ~₹160 worst-case AI cost/mo
-      },
-      gpt4o: {
-        modelId:           'gpt-4o',
-        maxOutputTokens:   5_000,
-        monthlyTokenQuota: 187_500,        // ~₹179 worst-case AI cost/mo
-      },
-      deepseek_v3: {
-        modelId:           'deepseek-chat',
-        maxOutputTokens:   5_000,
-        monthlyTokenQuota: 250_000,        // ~₹16 worst-case AI cost/mo
+        maxOutputTokens:   3_000,
+        monthlyTokenQuota: 250_000,        // ~₹4 worst-case AI cost/mo
       },
     },
     features: [
-      // NOTE: 'telegram_alerts', 'whatsapp_alerts' are NOT implemented in
-      // this backend yet (no route/service exists — see backend/README.md
-      // and frontend "Coming Soon" badges). They're kept here as planned
-      // features so requireFeature() checks won't break once they ARE
-      // built, but nothing currently gates on them. Don't wire a route to
-      // these without first building the actual integration.
       'prediction_history',
       'technical_score',
       'portfolio_tracker',
       'screener',
-      'telegram_alerts',
-      'whatsapp_alerts',
       'watchlist_50',
       'ai_chat',
       'ai_insight',
       'referral',
+      // NOTE: 'telegram_alerts', 'whatsapp_alerts' are NOT implemented in
+      // this backend yet (no route/service exists — see backend/README.md
+      // and frontend "Coming Soon" badges). Kept here as planned features
+      // so requireFeature() checks won't break once they ARE built.
+      'telegram_alerts',
+      'whatsapp_alerts',
     ],
   },
 
   elite: {
     name: 'Elite',
-    amountInPaise: 319900,            // ₹3,199 (raised from ₹2,999 — see quota note below)
+    amountInPaise: 99900,             // ₹999
 
-    // Token limits
-    // UPDATED (margin fix): price raised ₹2,999 → ₹3,199 and per-model quotas
-    // cut ~32% from the previous 3,000,000-token total. At the old
-    // 3,000,000-token quota, a heavy user maxing every model with a mostly-
-    // output token mix could cost ~₹4,909/mo in real AI spend — a ₹1,910
-    // LOSS against the ₹2,999 price. These new quotas total 2,015,000
-    // tokens/month:
-    //   - Typical usage (70% input / 30% output): ~₹1,481 AI cost/mo →
-    //     ~₹1,718 margin (comfortably past the ₹1,500 target).
-    //   - Worst case (every model maxed, 100% output tokens): ~₹3,282
-    //     AI cost/mo → only a ~₹83 loss, down from ~₹1,910 — nearly
-    //     eliminates the tail-risk loss instead of just improving the
-    //     average case.
-    monthlyTokenQuota:   2_015_000,   // 2,015,000 tokens/month
-    maxTokensPerRequest: 10_000,      // 10,000 tokens max per single request
-    monthlyAiQueries:    1499,        // 1499 analyses/month
+    // Token limits — same 250,000-token ceiling as Pro. Elite's higher
+    // price reflects Gemini 2.5 Pro's higher per-token cost plus the extra
+    // platform features below (Options Chain, unlimited watchlist, API
+    // access, 2FA, etc.), not a bigger quota.
+    monthlyTokenQuota:   250_000,     // 250,000 tokens/month
+    maxTokensPerRequest: 4_000,       // 4,000 tokens max per single request
+    monthlyAiQueries:    125,         // ~250,000 / 2,000-avg-tokens-per-analysis
 
-    // Elite calls ALL FOUR flagship models IN PARALLEL on every request
-    // (see aiService.js consensus + debate logic). Claude Opus is by far
-    // the most expensive model in the lineup, so it gets the smallest
-    // individual quota; Gemini Pro, ChatGPT (high), and DeepSeek R1 get
-    // proportionally more room since they're cheaper per token.
-    // Models on this plan: Gemini Pro, Claude Opus 4, ChatGPT (high),
-    // DeepSeek R1 — all four called on every request.
-    // Per-model worst-case (100% output) / realistic (70% input, 30% output)
-    // AI cost, computed from the real COST_PER_1K rates in aiService.js:
-    //   gemini_pro:   ~₹646 worst / ~₹250 realistic
-    //   claude_opus4: ~₹1,794 worst / ~₹790 realistic
-    //   gpt4o_high:   ~₹718 worst / ~₹383 realistic
-    //   deepseek_r1:  ~₹124 worst / ~₹59 realistic
-    // Combined: ~₹3,282 worst-case / ~₹1,481 realistic against the ₹3,199 price.
+    // Elite calls Gemini 2.5 Pro only — deeper reasoning per call than
+    // Flash, same simple single-model request shape as Pro.
     aiModels: {
       gemini_pro: {
         modelId:           'gemini-2.5-pro',
-        maxOutputTokens:   10_000,
-        monthlyTokenQuota: 675_000,        // ~₹646 worst-case / ~₹250 realistic AI cost/mo
-      },
-      claude_opus4: {
-        modelId:           'claude-opus-4-8',
-        maxOutputTokens:   10_000,
-        monthlyTokenQuota: 250_000,        // ~₹1,794 worst-case / ~₹790 realistic AI cost/mo
-      },
-      gpt4o_high: {
-        modelId:           'gpt-4o',
-        maxOutputTokens:   10_000,
-        monthlyTokenQuota: 500_000,        // ~₹718 worst-case / ~₹383 realistic AI cost/mo
-      },
-      deepseek_r1: {
-        modelId:           'deepseek-reasoner',
-        maxOutputTokens:   10_000,
-        monthlyTokenQuota: 590_000,        // ~₹124 worst-case / ~₹59 realistic AI cost/mo
+        maxOutputTokens:   4_000,
+        monthlyTokenQuota: 250_000,        // ~₹239 worst-case AI cost/mo
       },
     },
     features: [
@@ -243,7 +145,6 @@ const PLANS = {
       'ai_chat',
       'ai_insight',
       'referral',
-      'consensus_analysis',
       'backtesting',
       'options_analysis',
       'pdf_reports',
