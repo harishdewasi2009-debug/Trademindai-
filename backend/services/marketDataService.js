@@ -1129,10 +1129,13 @@ function candleParamsForPeriod(period) {
 // to move on every live tick like price does — this also keeps Upstox
 // request volume sane when the Screener renders 50 symbols at once.
 const { computeAllIndicators, deriveSignal, buildFullTechnicalReport } = require('../utils/indicators');
+const { computeQuantReport } = require('../utils/quantReport');
 const scannerAccuracyService = require('./scannerAccuracyService');
 const signalCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
 const SIGNAL_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
 const reportCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
+const quantReportCache = new Map(); // "SYMBOL:EXCHANGE:PERIOD:BENCHMARK" -> { data, expiresAt }
+const QUANT_REPORT_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes — matches signal/report cache
 
 // ── FULL TECHNICAL REPORT (Screener "full analysis" view) ────────────────
 // Rule-based, no AI/LLM involved — same real candles + indicators as the
@@ -1205,6 +1208,42 @@ async function getTechnicalSignal(symbol, exchange, period) {
   }
 }
 
+// ── GET-style aggregator: the full quant-analysis engine (statistics,
+// price-action structure, extra technical indicators, divergences,
+// anomalies, benchmark-relative strength, and a grouped composite score)
+// on top of the existing core technical report. See utils/quantReport.js
+// for the full breakdown and the compliance rationale for why this stays
+// descriptive rather than a buy/sell verdict.
+async function getQuantReport(symbol, exchange, period, benchmarkUnderlying) {
+  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}:${period || '1d'}:${benchmarkUnderlying || ''}`;
+  const cached = quantReportCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  try {
+    const { unit, interval, from } = candleParamsForPeriod(period);
+    const { candles } = await getHistoricalCandles(symbol, { unit, interval, from, exchange });
+
+    let benchmarkCandles;
+    if (benchmarkUnderlying) {
+      try {
+        const benchResult = await getIndexHistoricalCandles(benchmarkUnderlying, { unit, interval, from });
+        benchmarkCandles = benchResult?.candles;
+      } catch (err) {
+        // Benchmark is optional context — a failure here shouldn't break
+        // the rest of a real, otherwise-successful quant report.
+        console.warn(`[quantReport] benchmark fetch failed for ${benchmarkUnderlying}:`, err.message);
+      }
+    }
+
+    const report = computeQuantReport(candles, { benchmarkCandles });
+    const data = { symbol: symbol.toUpperCase(), period: period || '1d', unit, interval, benchmark: benchmarkUnderlying || null, ...report };
+    quantReportCache.set(cacheKey, { data, expiresAt: Date.now() + QUANT_REPORT_CACHE_TTL_MS });
+    return data;
+  } catch (err) {
+    return { symbol: symbol.toUpperCase(), period: period || '1d', error: err.message };
+  }
+}
+
 // Fetches signals for many symbols with limited concurrency (Upstox has no
 // batch historical-candle endpoint, so this is N individual requests —
 // capped at 6 in flight at a time to stay well under rate limits).
@@ -1248,5 +1287,6 @@ module.exports = {
   getSignalsBatch,
   isIndianMarketOpen,
   getFullTechnicalReport,
+  getQuantReport,
   candleParamsForPeriod,
 };

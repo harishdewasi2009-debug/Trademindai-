@@ -1,22 +1,39 @@
 // routes/aiRoutes.js
 // ══════════════════════════════════════════════════════════════════════════
 //  TradeMind AI Routes
-//  POST /api/ai/analyze   — main stock analysis (all plans)
-//  POST /api/ai/chat      — AI trading assistant chat (pro + elite)
-//  GET  /api/ai/quota     — remaining queries this month
+//  POST /api/ai/analyze      — main stock analysis (all plans)
+//  POST /api/ai/chat         — AI trading assistant chat (pro + elite)
+//  GET  /api/ai/quota        — remaining queries this month
+//  GET  /api/ai/diagnostics  — admin-only live per-provider health check
 // ══════════════════════════════════════════════════════════════════════════
 
 const express     = require('express');
 const router      = express.Router();
 const crypto      = require('crypto');
 const { requireAuth }        = require('../middleware/authMiddleware');
-const { enforceAiQueryLimit, requireFeature, enforceTokenQuota, attachAvailableModels } = require('../middleware/planCheck');
-const { aiLimiter }          = require('../middleware/rateLimit');
+const { requireAdmin }       = require('../middleware/adminCheck');
+const { enforceAiQueryLimit, requireFeature, enforceTokenQuota, attachAvailableModels, effectivePlanName } = require('../middleware/planCheck');
+const { aiLimiter, adminLimiter } = require('../middleware/rateLimit');
 const { validateAiAnalyze }  = require('../middleware/validate');
 const { query }              = require('../db/pool');
 const asyncHandler           = require('../utils/asyncHandler');
 const AppError               = require('../utils/AppError');
 const { analyzeStock }       = require('../services/aiService');
+
+// ── GET /api/ai/diagnostics — admin only ─────────────────────────────────
+// Real-time, per-provider health check: is each API key present, and does
+// a live minimal call to Gemini/Claude/OpenAI/DeepSeek actually succeed?
+// Every failure inside /analyze, /chat, /insight is intentionally reduced
+// to a generic message for end users — this is the one place the EXACT
+// reason ("CLAUDE_API_KEY not set", "Claude 401: invalid x-api-key",
+// "Gemini 429: quota exceeded", etc.) is surfaced, so "all AI analysis is
+// broken" is diagnosable from the app itself instead of only from server
+// logs. See aiService.js checkProviderHealth() for the implementation.
+router.get('/diagnostics', requireAuth, requireAdmin, adminLimiter, asyncHandler(async (req, res) => {
+  const { checkProviderHealth } = require('../services/aiService');
+  const health = await checkProviderHealth();
+  res.json(health);
+}));
 
 // ── GET /api/ai/quota — how many queries are left this month ─────────────
 router.get('/quota', requireAuth, asyncHandler(async (req, res) => {
@@ -118,7 +135,25 @@ router.post(
         // every analysis was always computed on daily candles regardless of what
         // the user picked. See aiService.js fetchRealMarketContext().
         exchange, // 'NSE_EQ' | 'BSE_EQ' | undefined (undefined = try NSE then BSE, same as before)
-        userPlan: req.user.plan,
+        // FIX ("Claude/Gemini/all AI analysis not working" during the
+        // sitewide launch trial): this used to pass req.user.plan (the
+        // user's REAL stored plan — e.g. 'free') while enforceTokenQuota/
+        // attachAvailableModels above compute the token cap and
+        // availableModelKeys from effectivePlanName(req) (which returns
+        // 'elite' for every signed-in user while isLaunchTrialActive() is
+        // true — see config/plans.js). analyzeStock() picks its free/
+        // basic/pro/elite branch off whatever userPlan it's given, so a
+        // free/basic/pro user during the trial ran the FREE/BASIC/PRO
+        // branch (checking for 'gemini_flash'/'deepseek_v3'/'claude_sonnet'
+        // etc.) against availableModelKeys computed from ELITE's model set
+        // ('gemini_pro'/'claude_opus4'/'gpt4o_high'/'deepseek_r1') — none of
+        // those keys ever matched, isAvailable() was false for every model,
+        // and every single analysis threw NO_MODELS_AVAILABLE regardless of
+        // whether the API keys/quota were actually fine. Using the same
+        // effectivePlanName(req) here that the middleware above already
+        // used keeps the branch analyzeStock() runs and the
+        // availableModelKeys it's checking against on the same plan basis.
+        userPlan: effectivePlanName(req),
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
       });
     } catch (err) {
@@ -235,6 +270,7 @@ router.post(
     res.json({
       ...result,
       stockSymbol:               stockSymbol.toUpperCase(),
+      exchange:                  exchange || null, // explicit NSE_EQ/BSE_EQ/MCX_FO if the user picked one from search, else null ("Auto" — NSE tried first, then BSE; MCX is never auto-tried)
       analysedAt:                new Date().toISOString(),
       latencyMs,
       queriesRemainingThisMonth: req.aiQuotaRemaining,
@@ -286,7 +322,7 @@ router.post(
     const system = `You are TradeMind AI, a knowledgeable Indian stock market data assistant. You are NOT a SEBI-registered Investment Adviser or Research Analyst, and you must never act like one.
 Give concise, practical, educational answers about markets, indicators, and concepts.
 If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
-Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
+Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and MCX commodity markets.`;
 
     // FIX: callGPTPlain was never added here, so on Pro/Elite whenever the
     // cascade reached a GPT-4o step, CHAT_CALLERS[fnName] was undefined and

@@ -223,4 +223,22 @@ const getCandles = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles, getFullReport };
+// ── GET /api/market/quant/:symbol  (any authenticated user) ─────────────
+// Full quant-analysis engine on top of the core report: extra momentum/
+// volume/volatility indicators, price-action structure (swing HH/HL/LH/LL,
+// breakout/breakdown/retest, gaps, extra candlestick patterns), zone-based
+// support/resistance with a strength score, statistics/risk (returns,
+// Sharpe/Sortino/Calmar, VaR, drawdown), divergences, anomaly flags, an
+// optional benchmark-relative read (correlation/beta/alpha/relative
+// strength vs an index), and a grouped/weighted composite score that
+// avoids double-counting correlated indicators. See utils/quantReport.js.
+// Optional ?benchmark=NIFTY|BANKNIFTY|SENSEX to add the benchmark-relative section.
+const getQuantReport = asyncHandler(async (req, res) => {
+  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const period = typeof req.query.period === 'string' ? req.query.period : undefined;
+  const benchmark = typeof req.query.benchmark === 'string' ? req.query.benchmark : undefined;
+  const report = await marketDataService.getQuantReport(req.params.symbol, exchange, period, benchmark);
+  res.json(report);
+});
+
+module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles, getFullReport, getQuantReport };

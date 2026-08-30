@@ -227,7 +227,7 @@ function buildPrompt(stockSymbol, horizon, riskTolerance, marketContext, timefra
   const timeframeLabel = TIMEFRAME_LABELS[timeframe] || '1 Day';
 
   const system = `You are TradeMind AI, an expert Indian stock market data analyst.
-You will be given REAL, live market data (price, volume, and computed technical indicators) for one NSE/BSE stock, fetched moments ago from Upstox. Base your entire analysis strictly on the numbers provided below — never invent, estimate, or recall a price or indicator value from your own training data or general knowledge, even if you believe you know this stock. If the provided data seems insufficient for some part of the analysis, say so in "reasoning" rather than guessing.
+You will be given REAL, live market data (price, volume, and computed technical indicators) for one Indian market instrument — an NSE/BSE-listed stock, or an MCX commodity's front-month futures contract (e.g. GOLD, SILVER, CRUDEOIL) — fetched moments ago from Upstox. Base your entire analysis strictly on the numbers provided below — never invent, estimate, or recall a price or indicator value from your own training data or general knowledge, even if you believe you know this stock. If the provided data seems insufficient for some part of the analysis, say so in "reasoning" rather than guessing.
 IMPORTANT — this is a data-description tool, not investment advice: never tell the user to buy, sell, or hold; never state or imply a future price, price target, or expected return; do not use the words "buy", "sell", or "hold" as a recommendation. Describe only what the current indicators show and what they have historically meant, in neutral, descriptive language. The user makes their own decision.
 Return ONLY a JSON object — no prose, no markdown fences, no preamble. Prices in INR. All percentage values as numbers (not strings). The "currentPrice" field in your response MUST exactly equal the currentPrice given to you below.`;
 
@@ -785,7 +785,7 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, timeframe, ex
 // describe what the data shows and explain general concepts, and NOT to
 // tell the user what action to take.
 const INSIGHT_PROMPTS = {
-  tradeIdeas: (ctx) => `You are a markets data assistant. Below are REAL scan results from a live NSE/BSE market scanner (real prices, real volume, real technical conditions — not simulated). For the 3-5 most notable entries, describe in plain language WHAT technical condition triggered the match (e.g. "RSI dropped below 30 while volume rose") and what that condition has generally meant historically. Do NOT recommend buying, selling, or entering a position, and do NOT rank them as "best" opportunities — just describe the setups factually and note the risk in each. Scan type: ${ctx.scanType}. Results:\n${JSON.stringify(ctx.matches)}`,
+  tradeIdeas: (ctx) => `You are a markets data assistant. Below are REAL scan results from a live NSE/BSE/MCX market scanner (real prices, real volume, real technical conditions — not simulated; results may include equities as well as MCX commodity futures). For the 3-5 most notable entries, describe in plain language WHAT technical condition triggered the match (e.g. "RSI dropped below 30 while volume rose") and what that condition has generally meant historically. Do NOT recommend buying, selling, or entering a position, and do NOT rank them as "best" opportunities — just describe the setups factually and note the risk in each. Scan type: ${ctx.scanType}. Results:\n${JSON.stringify(ctx.matches)}`,
 
   portfolioHealth: (ctx) => `You are a portfolio data reviewer. Below is a trader's REAL current holdings with real live prices (not simulated). Describe, using the actual numbers given: concentration levels (is any single stock or sector a large % of the total?), and any correlated positions you can identify. Flag these as observations only — do NOT tell the user to trim, add, sell, or rebalance any specific position; simply describe what the numbers show so the user can decide for themselves. Holdings:\n${JSON.stringify(ctx.holdings)}`,
 
@@ -974,6 +974,61 @@ async function getAIInsight(kind, context, plan = 'free', modelKey = null) {
   throw lastErr || new Error('AI is not configured on the server.');
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  PROVIDER DIAGNOSTICS — "why is Claude/Gemini/all AI not working?"
+//
+//  Every failure inside analyzeStock()/getAIInsight() above is deliberately
+//  swallowed into one generic "AI analysis is temporarily unavailable"
+//  message for the end user (so a stranger can't fingerprint which
+//  provider/model you use), and the REAL reason only ever reaches
+//  console.warn/console.error server logs. That makes "all AI analysis is
+//  failing" almost impossible to diagnose from the app itself — you have
+//  to already be tailing server logs to see e.g. "Claude 401: invalid
+//  x-api-key" or "GEMINI_API_KEY not set".
+//
+//  This does a real, minimal, cheap call to each configured provider (or
+//  reports "missing_key" without calling anything if the env var isn't
+//  set at all) and returns the EXACT status/error for each — so a broken
+//  key, an expired key, a zero-balance account, or a wrong model id shows
+//  up immediately instead of as a generic 503 to end users. Admin-only —
+//  see GET /api/ai/diagnostics in aiRoutes.js.
+// ─────────────────────────────────────────────────────────────────────────
+async function checkOneProvider(name, envVar, callFn, model) {
+  const start = Date.now();
+  if (!process.env[envVar]) {
+    return { provider: name, status: 'missing_key', envVar, message: `${envVar} is not set on the server.` };
+  }
+  try {
+    const { text } = await callFn(model, 'Reply with exactly one word: OK', 'You are a health-check endpoint. Reply with exactly one word and nothing else.');
+    return {
+      provider: name, status: 'ok', envVar, model,
+      latencyMs: Date.now() - start,
+      sampleReply: text.slice(0, 40),
+    };
+  } catch (err) {
+    return {
+      provider: name, status: 'error', envVar, model,
+      latencyMs: Date.now() - start,
+      message: err.message, // the exact provider error — e.g. "Claude 401: ...", "Gemini 429: ..."
+    };
+  }
+}
+
+async function checkProviderHealth() {
+  const [gemini, claude, gpt, deepseek] = await Promise.all([
+    checkOneProvider('gemini',   'GEMINI_API_KEY',   callGeminiPlain,   MODELS.GEMINI_FLASH),
+    checkOneProvider('claude',   'CLAUDE_API_KEY',   callClaudePlain,   MODELS.CLAUDE_SONNET),
+    checkOneProvider('openai',   'OPENAI_API_KEY',   callGPTPlain,      MODELS.GPT4O),
+    checkOneProvider('deepseek', 'DEEPSEEK_API_KEY', callDeepSeekPlain, MODELS.DEEPSEEK_V3),
+  ]);
+  const results = [gemini, claude, gpt, deepseek];
+  return {
+    checkedAt: new Date().toISOString(),
+    allHealthy: results.every((r) => r.status === 'ok'),
+    providers: results,
+  };
+}
+
 module.exports = {
   analyzeStock, getAIInsight, MODELS, DEFAULT_MAX_TOKENS, maxTokensFor,
   // Exported so /api/ai/chat (aiRoutes.js) can reuse the SAME per-plan model
@@ -982,4 +1037,5 @@ module.exports = {
   // aiRoutes.js's chat handler for the item this resolves — "AI Assistant
   // wasn't using DeepSeek according to plan").
   insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain, callGPTPlain,
+  checkProviderHealth,
 };
