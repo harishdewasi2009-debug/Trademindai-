@@ -139,14 +139,14 @@ async function generateAlertsForUser(userId, scope) {
   const cached = alertCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.alerts;
 
-  let symbols, usingWatchlist;
+  let entries, usingWatchlist; // entries: [{ symbol, exchange }]
 
   if (scope === 'all') {
-    symbols = ALL_MARKET_ALERT_SYMBOLS.slice(0, MAX_SYMBOLS_PER_RUN);
+    entries = ALL_MARKET_ALERT_SYMBOLS.slice(0, MAX_SYMBOLS_PER_RUN).map((symbol) => ({ symbol, exchange: null }));
     usingWatchlist = false;
   } else if (scope === 'watchlist') {
     const { rows } = await query(
-      'SELECT stock_symbol FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+      'SELECT stock_symbol, exchange FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
       [userId, MAX_SYMBOLS_PER_RUN]
     );
     if (rows.length === 0) {
@@ -154,21 +154,29 @@ async function generateAlertsForUser(userId, scope) {
       alertCache.set(cacheKey, { alerts: result, fetchedAt: Date.now() });
       return result;
     }
-    symbols = rows.map((r) => r.stock_symbol);
+    entries = rows.map((r) => ({ symbol: r.stock_symbol, exchange: r.exchange || null }));
     usingWatchlist = true;
   } else {
     const { rows } = await query(
-      'SELECT stock_symbol FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
+      'SELECT stock_symbol, exchange FROM watchlist WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2',
       [userId, MAX_SYMBOLS_PER_RUN]
     );
     usingWatchlist = rows.length > 0;
-    symbols = usingWatchlist ? rows.map((r) => r.stock_symbol) : DEFAULT_ALERT_SYMBOLS;
+    entries = usingWatchlist
+      ? rows.map((r) => ({ symbol: r.stock_symbol, exchange: r.exchange || null }))
+      : DEFAULT_ALERT_SYMBOLS.map((symbol) => ({ symbol, exchange: null }));
   }
 
-  const perSymbol = await Promise.all(symbols.map(async (symbol) => {
+  // NOTE: exchange (from the watchlist row, or null for the curated
+  // NSE lists above) is passed straight through to getHistoricalCandles —
+  // this is what lets an MCX commodity (GOLD, CRUDEOIL, ...) on a user's
+  // watchlist actually resolve here instead of silently failing NSE/BSE
+  // resolution and being dropped from the scan (the catch below would
+  // otherwise mask that as "just no alerts for this symbol").
+  const perSymbol = await Promise.all(entries.map(async ({ symbol, exchange }) => {
     try {
-      const { candles } = await marketDataService.getHistoricalCandles(symbol, { unit: 'days', interval: 1 });
-      return detectAlertsForCandles(symbol, null, candles);
+      const { candles } = await marketDataService.getHistoricalCandles(symbol, { unit: 'days', interval: 1, exchange });
+      return detectAlertsForCandles(symbol, exchange, candles);
     } catch (e) {
       return []; // one bad symbol shouldn't break the whole alert run
     }
@@ -178,7 +186,7 @@ async function generateAlertsForUser(userId, scope) {
     .sort((a, b) => new Date(b.detectedAt) - new Date(a.detectedAt))
     .slice(0, 10);
 
-  const result = { alerts, usingWatchlist, symbolsScanned: symbols.length };
+  const result = { alerts, usingWatchlist, symbolsScanned: entries.length };
   alertCache.set(cacheKey, { alerts: result, fetchedAt: Date.now() });
   return result;
 }

@@ -273,7 +273,7 @@ router.post(
     // already uses (config/plans.js is the single source of truth for
     // which models each plan gets and in what order), just with the
     // chat-specific system prompt below instead of the insight one.
-    const { MODELS, insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain } = require('../services/aiService');
+    const { MODELS, insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain, callGPTPlain } = require('../services/aiService');
 
     // COMPLIANCE: TradeMind is not a SEBI-registered Investment Adviser or
     // Research Analyst. SEBI's regulations cover "trading calls" and
@@ -288,7 +288,12 @@ Give concise, practical, educational answers about markets, indicators, and conc
 If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
 Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 
-    const CHAT_CALLERS = { callGeminiPlain, callClaudePlain, callDeepSeekPlain };
+    // FIX: callGPTPlain was never added here, so on Pro/Elite whenever the
+    // cascade reached a GPT-4o step, CHAT_CALLERS[fnName] was undefined and
+    // the step was silently skipped (treated like a missing API key) even
+    // when OPENAI_API_KEY was set — /api/ai/chat could never actually
+    // answer with GPT.
+    const CHAT_CALLERS = { callGeminiPlain, callClaudePlain, callDeepSeekPlain, callGPTPlain };
     const cascade = insightCascadeForPlan(plan);
 
     let reply, modelUsed, modelLabel, lastErr;
@@ -296,12 +301,13 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
       // Match each cascade entry's function reference back to a name so we
       // can (a) call the exported version of it and (b) skip cleanly when
       // that provider's API key isn't configured on this server.
-      const fnName = step.fn.name; // 'callGeminiPlain' | 'callClaudePlain' | 'callDeepSeekPlain'
+      const fnName = step.fn.name; // 'callGeminiPlain' | 'callClaudePlain' | 'callDeepSeekPlain' | 'callGPTPlain'
       const caller = CHAT_CALLERS[fnName];
       const keyPresent =
         (fnName === 'callGeminiPlain'   && !!process.env.GEMINI_API_KEY) ||
         (fnName === 'callClaudePlain'   && !!process.env.CLAUDE_API_KEY) ||
-        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY);
+        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY) ||
+        (fnName === 'callGPTPlain'      && !!process.env.OPENAI_API_KEY);
       if (!caller || !keyPresent) continue;
 
       try {
@@ -310,7 +316,8 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
         modelUsed = model || step.model;
         modelLabel =
           fnName === 'callGeminiPlain'   ? (step.model === MODELS.GEMINI_PRO ? 'Gemini Pro' : 'Gemini Flash') :
-          fnName === 'callClaudePlain'   ? (step.model === MODELS.CLAUDE_OPUS ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6') :
+          fnName === 'callClaudePlain'   ? (step.model === MODELS.CLAUDE_OPUS ? 'Claude Opus 5' : 'Claude Sonnet 5') :
+          fnName === 'callGPTPlain'      ? (step.model === MODELS.GPT4O_HIGH ? 'GPT-4o (high)' : 'GPT-4o') :
           (step.model === MODELS.DEEPSEEK_R1 ? 'DeepSeek R1' : 'DeepSeek V3');
 
         await query(
@@ -320,6 +327,7 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
            VALUES ($1, NULL, 'chat', $2, $3, 0, 0, 0, 0)`,
           [req.user.id, modelUsed, fnName === 'callGeminiPlain' ? (plan === 'elite' ? 'gemini_pro' : 'gemini_flash')
                                   : fnName === 'callClaudePlain' ? (plan === 'elite' ? 'claude_opus4' : 'claude_sonnet')
+                                  : fnName === 'callGPTPlain'    ? (plan === 'elite' ? 'gpt4o_high' : 'gpt4o')
                                   : (plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3')]
         );
         break;

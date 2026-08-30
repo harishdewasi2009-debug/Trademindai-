@@ -27,6 +27,37 @@
 // in their features list still means permanent access.
 const FREE_SCREENER_TRIAL_DAYS = 7;
 
+// ══════════════════════════════════════════════════════════════════════════
+//  LAUNCH TRIAL — sitewide, time-boxed promotion (separate from the
+//  Free-plan's 7-day screener trial above).
+//
+//  For LAUNCH_TRIAL_DAYS days after LAUNCH_TRIAL_START, every SIGNED-IN
+//  user gets full Elite-tier access at no charge — no card required, no
+//  charge, and no plan pricing is shown anywhere in the UI while the
+//  banner is up. Signing in (a free account) is still required to use the
+//  product during the trial; anonymous/logged-out visitors still have to
+//  sign up first. See middleware/planCheck.js (isLaunchTrialActive() /
+//  effectivePlanName()) for the enforcement point, and
+//  controllers/paymentController.js for the checkout-side guard that
+//  blocks creating a paid order while the trial is active.
+//
+//  Once the window closes, pricing reverts to the amountInPaise values
+//  configured per plan below (Pro ₹499, Elite ₹999).
+// ══════════════════════════════════════════════════════════════════════════
+const LAUNCH_TRIAL_START = new Date('2026-08-16T00:00:00Z');
+const LAUNCH_TRIAL_DAYS = 30;
+const LAUNCH_TRIAL_END = new Date(LAUNCH_TRIAL_START.getTime() + LAUNCH_TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+function isLaunchTrialActive() {
+  const now = Date.now();
+  return now >= LAUNCH_TRIAL_START.getTime() && now < LAUNCH_TRIAL_END.getTime();
+}
+
+function launchTrialDaysRemaining() {
+  if (!isLaunchTrialActive()) return 0;
+  return Math.ceil((LAUNCH_TRIAL_END.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+}
+
 const PLANS = {
   free: {
     name: 'Free',
@@ -112,7 +143,7 @@ const PLANS = {
 
   pro: {
     name: 'Pro',
-    amountInPaise: 99900,             // ₹999
+    amountInPaise: 49900,             // ₹499 (post-launch-trial price)
 
     // Token limits
     // UPDATED: quota raised from 800,000 → 1,000,000 (×1.25). Per-model splits
@@ -177,7 +208,7 @@ const PLANS = {
 
   elite: {
     name: 'Elite',
-    amountInPaise: 319900,            // ₹3,199 (raised from ₹2,999 — see quota note below)
+    amountInPaise: 99900,              // ₹999 (post-launch-trial price)
 
     // Token limits
     // UPDATED (margin fix): price raised ₹2,999 → ₹3,199 and per-model quotas
@@ -217,7 +248,7 @@ const PLANS = {
         monthlyTokenQuota: 675_000,        // ~₹646 worst-case / ~₹250 realistic AI cost/mo
       },
       claude_opus4: {
-        modelId:           'claude-opus-4-8',
+        modelId:           'claude-opus-5',
         maxOutputTokens:   10_000,
         monthlyTokenQuota: 250_000,        // ~₹1,794 worst-case / ~₹790 realistic AI cost/mo
       },
@@ -273,4 +304,7 @@ function getModelKeys(planName) {
   return Object.keys(getPlan(planName).aiModels);
 }
 
-module.exports = { PLANS, getPlan, planHasFeature, getModelConfig, getModelKeys, FREE_SCREENER_TRIAL_DAYS };
+module.exports = {
+  PLANS, getPlan, planHasFeature, getModelConfig, getModelKeys, FREE_SCREENER_TRIAL_DAYS,
+  LAUNCH_TRIAL_START, LAUNCH_TRIAL_END, LAUNCH_TRIAL_DAYS, isLaunchTrialActive, launchTrialDaysRemaining,
+};

@@ -47,7 +47,11 @@ const MODELS = {
   // to whatever came next — which for most users meant landing on Gemini
   // Flash every time regardless of plan. Updated to the current model IDs.
   CLAUDE_SONNET:  'claude-sonnet-5',
-  CLAUDE_OPUS:    'claude-opus-4-8',
+  // FIX: 'claude-opus-4-8' is not a real Anthropic model id — every Elite
+  // Claude call was 404'ing (model_not_found), so Elite always silently
+  // dropped Claude from its consensus/debate and fell back to the other
+  // 3 models. Anthropic's current Opus-tier id is 'claude-opus-5'.
+  CLAUDE_OPUS:    'claude-opus-5',
   GPT4O:          'gpt-4o',
   GPT4O_HIGH:     'gpt-4o',              // same model, higher token cap for Elite
   DEEPSEEK_V3:    'deepseek-chat',       // DeepSeek V3
