@@ -1,4 +1,47 @@
-# Fix: Chart timeframes showing the wrong range (NSE + BSE) + MCX quotes going dead over time
+# Fix: Chart timeframes showing the wrong range (NSE + BSE) + MCX quotes going dead over time + Screener/quotes silently failing for every exchange
+
+## 0. THE BIG ONE — Screener showing "No quote" for NSE, BSE, and MCX alike
+
+### Root cause
+`backend/middleware/validate.js`'s `validateMarketQuotes` (guards
+`/api/market/quotes` and `/api/market/signals`) checks the `symbols` query
+param against this regex:
+
+```js
+.matches(/^[A-Za-z0-9&_,-]+$/)
+```
+
+An earlier fix (already in the code, described in its own comments) added a
+per-entry `"SYMBOL:EXCHANGE"` override — e.g. `RELIANCE:BSE_EQ` — so a
+dual-listed symbol's NSE row and BSE row (and any MCX row) each resolve
+against their own exchange instead of colliding into one price. **But the
+regex above was never updated to allow the `:` character.** The Screener
+tags every row with its exchange unconditionally, so essentially every real
+quotes/signals request it makes has always contained a colon — and has
+always been rejected with a 400 ("symbols contains invalid characters")
+ever since that per-entry syntax was introduced.
+
+The frontend swallows that failure silently (`.catch(()=>({}))`), so it
+never showed up as a visible error — it just quietly showed "No quote yet"
+for every row, on every exchange, in the Screener, the search dropdowns,
+and the stock-detail modal. The only thing that ever looked "fine" was the
+top ticker tape, because `TICKER_SYMBOLS` are plain strings with no exchange
+tag — no colon, no rejection.
+
+This is exchange-agnostic (breaks NSE, BSE, and MCX identically), which is
+why it looked like "NSE and BSE data broken" and "MCX live quote removed"
+at the same time — it's the same one request getting rejected for all of
+them.
+
+### Fix
+Widened the regex to allow `:` — `/^[A-Za-z0-9&_,:-]+$/`. That's the whole
+fix; the actual per-exchange quote logic downstream (`getLtpBatch`,
+`getSignalsBatch`) was already correct, it just never got a chance to run.
+
+This is the fix that should visibly bring live quotes back on the Screener
+for NSE, BSE, and MCX. The two fixes below are separate, smaller issues
+found during the same pass.
+
 
 ## 1. Charts — 1M / 6M / 1Y all showed roughly the same (too-short) range
 

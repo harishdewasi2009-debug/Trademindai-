@@ -2,11 +2,13 @@
 const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const marketDataService = require('../services/marketDataService');
+const portfolioRiskEngine = require('../utils/portfolioRiskEngine');
 
 // ── GET /api/portfolio ──
 const getPortfolio = asyncHandler(async (req, res) => {
   const { rows } = await query(
-    `SELECT id, stock_symbol, stock_name, quantity, buy_price, current_price, sector, created_at
+    `SELECT id, stock_symbol, stock_name, quantity, buy_price, current_price, sector, exchange, created_at
      FROM portfolios WHERE user_id = $1 ORDER BY created_at DESC`,
     [req.user.id]
   );
@@ -57,11 +59,12 @@ const addHolding = asyncHandler(async (req, res) => {
     throw new AppError('stockSymbol, quantity, and buyPrice are required.', 400);
   }
   if (quantity <= 0 || buyPrice <= 0) throw new AppError('Quantity and buy price must be positive.', 400);
+  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.body.exchange) ? req.body.exchange : null;
 
   const { rows } = await query(
-    `INSERT INTO portfolios (user_id, stock_symbol, stock_name, quantity, buy_price, current_price, sector)
-     VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING *`,
-    [req.user.id, stockSymbol.toUpperCase(), stockName, quantity, buyPrice, sector]
+    `INSERT INTO portfolios (user_id, stock_symbol, stock_name, quantity, buy_price, current_price, sector, exchange)
+     VALUES ($1, $2, $3, $4, $5, $5, $6, $7) RETURNING *`,
+    [req.user.id, stockSymbol.toUpperCase(), stockName, quantity, buyPrice, sector, exchange]
   );
   res.status(201).json({ holding: rows[0] });
 });
@@ -136,8 +139,63 @@ const realOrders = asyncHandler(async (req, res) => {
   res.json({ orders });
 });
 
+// ── GET /api/portfolio/risk  (requireAuth, requireFeature('portfolio_tracker')) ──
+// Portfolio-level risk: correlation matrix, concentration (HHI),
+// portfolio volatility/diversification ratio, portfolio VaR/drawdown, and
+// (optional ?benchmark=NIFTY|BANKNIFTY|SENSEX) weighted portfolio beta.
+// Weights come from each holding's REAL current value in the user's own
+// portfolio — never assumed equal-weight. See utils/portfolioRiskEngine.js.
+const getPortfolioRisk = asyncHandler(async (req, res) => {
+  const { rows } = await query(
+    `SELECT stock_symbol, quantity, buy_price, current_price, exchange
+     FROM portfolios WHERE user_id = $1`,
+    [req.user.id]
+  );
+  if (!rows.length) return res.json({ error: 'No holdings yet — add holdings to your portfolio to see portfolio risk.' });
+
+  const valued = rows.map((h) => ({
+    symbol: h.stock_symbol,
+    exchange: h.exchange || undefined,
+    value: Number(h.quantity) * Number(h.current_price || h.buy_price),
+  }));
+  const totalValue = valued.reduce((s, h) => s + h.value, 0);
+
+  // Fetch each holding's real daily candle history (1 year), limited
+  // concurrency so a large portfolio doesn't fire dozens of requests at
+  // once — mirrors the pattern already used by getSignalsBatch().
+  const CONCURRENCY = 5;
+  const withCandles = new Array(valued.length);
+  let i = 0;
+  async function worker() {
+    while (i < valued.length) {
+      const idx = i++;
+      const h = valued[idx];
+      try {
+        const { candles } = await marketDataService.getHistoricalCandles(h.symbol, { unit: 'days', interval: 1, exchange: h.exchange });
+        withCandles[idx] = { symbol: h.symbol, weight: totalValue ? h.value / totalValue : 0, candles };
+      } catch (err) {
+        withCandles[idx] = { symbol: h.symbol, weight: totalValue ? h.value / totalValue : 0, candles: [], error: err.message };
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, valued.length) }, worker));
+
+  let benchmarkCandles;
+  if (req.query.benchmark) {
+    try {
+      const bench = await marketDataService.getIndexHistoricalCandles(req.query.benchmark, { unit: 'days', interval: 1 });
+      benchmarkCandles = bench?.candles;
+    } catch (err) {
+      console.warn('[portfolioRisk] benchmark fetch failed:', err.message);
+    }
+  }
+
+  const risk = portfolioRiskEngine.computePortfolioRisk(withCandles, benchmarkCandles);
+  res.json(risk);
+});
+
 module.exports = {
   getPortfolio, addHolding, updateHolding, deleteHolding,
   connectBroker, brokerStatus, disconnectBroker,
-  realHoldings, realPositions, realOrders,
+  realHoldings, realPositions, realOrders, getPortfolioRisk,
 };

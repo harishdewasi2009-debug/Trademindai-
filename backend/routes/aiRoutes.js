@@ -1,22 +1,39 @@
 // routes/aiRoutes.js
 // ══════════════════════════════════════════════════════════════════════════
 //  TradeMind AI Routes
-//  POST /api/ai/analyze   — main stock analysis (all plans)
-//  POST /api/ai/chat      — AI trading assistant chat (pro + elite)
-//  GET  /api/ai/quota     — remaining queries this month
+//  POST /api/ai/analyze      — main stock analysis (all plans)
+//  POST /api/ai/chat         — AI trading assistant chat (pro + elite)
+//  GET  /api/ai/quota        — remaining queries this month
+//  GET  /api/ai/diagnostics  — admin-only live per-provider health check
 // ══════════════════════════════════════════════════════════════════════════
 
 const express     = require('express');
 const router      = express.Router();
 const crypto      = require('crypto');
 const { requireAuth }        = require('../middleware/authMiddleware');
-const { enforceAiQueryLimit, requireFeature, enforceTokenQuota, attachAvailableModels } = require('../middleware/planCheck');
-const { aiLimiter }          = require('../middleware/rateLimit');
+const { requireAdmin }       = require('../middleware/adminCheck');
+const { enforceAiQueryLimit, requireFeature, enforceTokenQuota, attachAvailableModels, effectivePlanName } = require('../middleware/planCheck');
+const { aiLimiter, adminLimiter } = require('../middleware/rateLimit');
 const { validateAiAnalyze }  = require('../middleware/validate');
 const { query }              = require('../db/pool');
 const asyncHandler           = require('../utils/asyncHandler');
 const AppError               = require('../utils/AppError');
 const { analyzeStock }       = require('../services/aiService');
+
+// ── GET /api/ai/diagnostics — admin only ─────────────────────────────────
+// Real-time, per-provider health check: is each API key present, and does
+// a live minimal call to Gemini/Claude/OpenAI/DeepSeek actually succeed?
+// Every failure inside /analyze, /chat, /insight is intentionally reduced
+// to a generic message for end users — this is the one place the EXACT
+// reason ("CLAUDE_API_KEY not set", "Claude 401: invalid x-api-key",
+// "Gemini 429: quota exceeded", etc.) is surfaced, so "all AI analysis is
+// broken" is diagnosable from the app itself instead of only from server
+// logs. See aiService.js checkProviderHealth() for the implementation.
+router.get('/diagnostics', requireAuth, requireAdmin, adminLimiter, asyncHandler(async (req, res) => {
+  const { checkProviderHealth } = require('../services/aiService');
+  const health = await checkProviderHealth();
+  res.json(health);
+}));
 
 // ── GET /api/ai/quota — how many queries are left this month ─────────────
 router.get('/quota', requireAuth, asyncHandler(async (req, res) => {
@@ -94,6 +111,30 @@ router.get('/quota', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
+// FIX (root cause of "Claude/Gemini not working" + "selecting 2+ AI models
+// doesn't run all of them" on the Analysis page): the "Select AI models"
+// chips send each ticked chip's data-model attribute (e.g. "claude-sonnet-4.6",
+// "gemini-2.5-flash") as `models`/`model` in the /analyze request body, but
+// analyzeStock() never accepted a selection at all — it always ran a fixed,
+// hardcoded model set per plan tier (Free = Gemini only; Basic = Gemini
+// w/ DeepSeek fallback; Pro = Gemini+Claude+GPT; Elite = all 4), completely
+// ignoring which chips the user had ticked. So ticking only "Claude Sonnet"
+// never actually isolated Claude's answer (you always got the full-cascade
+// merged consensus instead — indistinguishable from "Claude isn't running"),
+// and ticking 2+ chips had no effect beyond what the plan already ran by
+// default. This map (shared with /insight below, which already had this
+// exact fix applied to it) translates each chip's data-model value to the
+// plans.js aiModels key analyzeStock() now accepts as `selectedModelKeys`.
+const CHIP_MODEL_TO_KEY = {
+  'gemini-2.5-flash':  'gemini_flash',
+  'gemini-2.5-pro':    'gemini_pro',
+  'claude-sonnet-4.6': 'claude_sonnet',
+  'claude-opus-4.7':   'claude_opus4',
+  'gpt-4o':            'gpt4o',
+  'deepseek-v3':       'deepseek_v3',
+  'deepseek-r1':       'deepseek_r1',
+};
+
 // ── POST /api/ai/analyze — main analysis endpoint ────────────────────────
 router.post(
   '/analyze',
@@ -107,6 +148,25 @@ router.post(
     const { stockSymbol, horizon, riskTolerance, timeframe, exchange } = req.body;
     const start = Date.now();
 
+    const plan = effectivePlanName(req);
+
+    // Translate the ticked chips (frontend sends `models`: string[], plus
+    // a legacy single `model` field) into plans.js model keys. Empty/absent
+    // selection means "no explicit choice" — analyzeStock() falls back to
+    // its old default-cascade behavior for that plan, so this is a no-op
+    // for any older/direct API caller that never sends the field.
+    const rawModelIds = Array.isArray(req.body.models) && req.body.models.length
+      ? req.body.models
+      : (req.body.model ? [req.body.model] : []);
+    let selectedModelKeys = [...new Set(
+      rawModelIds.map(id => CHIP_MODEL_TO_KEY[id]).filter(Boolean)
+    )];
+    // Elite gets the higher-token-cap GPT-4o slot ('gpt4o_high') rather than
+    // Pro's 'gpt4o' — same chip, same underlying model, different plan quota.
+    if (plan === 'elite') {
+      selectedModelKeys = selectedModelKeys.map(k => (k === 'gpt4o' ? 'gpt4o_high' : k));
+    }
+
     let analysisResult;
     try {
       analysisResult = await analyzeStock({
@@ -118,8 +178,27 @@ router.post(
         // every analysis was always computed on daily candles regardless of what
         // the user picked. See aiService.js fetchRealMarketContext().
         exchange, // 'NSE_EQ' | 'BSE_EQ' | undefined (undefined = try NSE then BSE, same as before)
-        userPlan: req.user.plan,
+        // FIX ("Claude/Gemini/all AI analysis not working" during the
+        // sitewide launch trial): this used to pass req.user.plan (the
+        // user's REAL stored plan — e.g. 'free') while enforceTokenQuota/
+        // attachAvailableModels above compute the token cap and
+        // availableModelKeys from effectivePlanName(req) (which returns
+        // 'elite' for every signed-in user while isLaunchTrialActive() is
+        // true — see config/plans.js). analyzeStock() picks its free/
+        // basic/pro/elite branch off whatever userPlan it's given, so a
+        // free/basic/pro user during the trial ran the FREE/BASIC/PRO
+        // branch (checking for 'gemini_flash'/'deepseek_v3'/'claude_sonnet'
+        // etc.) against availableModelKeys computed from ELITE's model set
+        // ('gemini_pro'/'claude_opus4'/'gpt4o_high'/'deepseek_r1') — none of
+        // those keys ever matched, isAvailable() was false for every model,
+        // and every single analysis threw NO_MODELS_AVAILABLE regardless of
+        // whether the API keys/quota were actually fine. Using the same
+        // effectivePlanName(req) here that the middleware above already
+        // used keeps the branch analyzeStock() runs and the
+        // availableModelKeys it's checking against on the same plan basis.
+        userPlan: plan,
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
+        selectedModelKeys, // FIX: actually honor the ticked "Select AI models" chips — see comment above.
       });
     } catch (err) {
       console.error('[/api/ai/analyze] AI call failed:', err);
@@ -235,6 +314,7 @@ router.post(
     res.json({
       ...result,
       stockSymbol:               stockSymbol.toUpperCase(),
+      exchange:                  exchange || null, // explicit NSE_EQ/BSE_EQ/MCX_FO if the user picked one from search, else null ("Auto" — NSE tried first, then BSE; MCX is never auto-tried)
       analysedAt:                new Date().toISOString(),
       latencyMs,
       queriesRemainingThisMonth: req.aiQuotaRemaining,
@@ -273,7 +353,7 @@ router.post(
     // already uses (config/plans.js is the single source of truth for
     // which models each plan gets and in what order), just with the
     // chat-specific system prompt below instead of the insight one.
-    const { MODELS, insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain } = require('../services/aiService');
+    const { MODELS, insightCascadeForPlan, callGeminiPlain, callClaudePlain, callDeepSeekPlain, callGPTPlain } = require('../services/aiService');
 
     // COMPLIANCE: TradeMind is not a SEBI-registered Investment Adviser or
     // Research Analyst. SEBI's regulations cover "trading calls" and
@@ -286,9 +366,14 @@ router.post(
     const system = `You are TradeMind AI, a knowledgeable Indian stock market data assistant. You are NOT a SEBI-registered Investment Adviser or Research Analyst, and you must never act like one.
 Give concise, practical, educational answers about markets, indicators, and concepts.
 If the user asks whether to buy, sell, or hold a specific stock, asks for a price target, entry point, or stop-loss level, or otherwise asks you to make a trading decision for them: do NOT provide one. Instead, explain what relevant data/indicators they could look at and encourage them to consult a SEBI-registered adviser for personalized recommendations. Never use the words "buy", "sell", or "hold" as an instruction, and never state or imply a future price.
-Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
+Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and MCX commodity markets.`;
 
-    const CHAT_CALLERS = { callGeminiPlain, callClaudePlain, callDeepSeekPlain };
+    // FIX: callGPTPlain was never added here, so on Pro/Elite whenever the
+    // cascade reached a GPT-4o step, CHAT_CALLERS[fnName] was undefined and
+    // the step was silently skipped (treated like a missing API key) even
+    // when OPENAI_API_KEY was set — /api/ai/chat could never actually
+    // answer with GPT.
+    const CHAT_CALLERS = { callGeminiPlain, callClaudePlain, callDeepSeekPlain, callGPTPlain };
     const cascade = insightCascadeForPlan(plan);
 
     let reply, modelUsed, modelLabel, lastErr;
@@ -296,12 +381,13 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
       // Match each cascade entry's function reference back to a name so we
       // can (a) call the exported version of it and (b) skip cleanly when
       // that provider's API key isn't configured on this server.
-      const fnName = step.fn.name; // 'callGeminiPlain' | 'callClaudePlain' | 'callDeepSeekPlain'
+      const fnName = step.fn.name; // 'callGeminiPlain' | 'callClaudePlain' | 'callDeepSeekPlain' | 'callGPTPlain'
       const caller = CHAT_CALLERS[fnName];
       const keyPresent =
         (fnName === 'callGeminiPlain'   && !!process.env.GEMINI_API_KEY) ||
         (fnName === 'callClaudePlain'   && !!process.env.CLAUDE_API_KEY) ||
-        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY);
+        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY) ||
+        (fnName === 'callGPTPlain'      && !!process.env.OPENAI_API_KEY);
       if (!caller || !keyPresent) continue;
 
       try {
@@ -310,7 +396,8 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
         modelUsed = model || step.model;
         modelLabel =
           fnName === 'callGeminiPlain'   ? (step.model === MODELS.GEMINI_PRO ? 'Gemini Pro' : 'Gemini Flash') :
-          fnName === 'callClaudePlain'   ? (step.model === MODELS.CLAUDE_OPUS ? 'Claude Opus 4.7' : 'Claude Sonnet 4.6') :
+          fnName === 'callClaudePlain'   ? (step.model === MODELS.CLAUDE_OPUS ? 'Claude Opus 5' : 'Claude Sonnet 5') :
+          fnName === 'callGPTPlain'      ? (step.model === MODELS.GPT4O_HIGH ? 'GPT-4o (high)' : 'GPT-4o') :
           (step.model === MODELS.DEEPSEEK_R1 ? 'DeepSeek R1' : 'DeepSeek V3');
 
         await query(
@@ -320,6 +407,7 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
            VALUES ($1, NULL, 'chat', $2, $3, 0, 0, 0, 0)`,
           [req.user.id, modelUsed, fnName === 'callGeminiPlain' ? (plan === 'elite' ? 'gemini_pro' : 'gemini_flash')
                                   : fnName === 'callClaudePlain' ? (plan === 'elite' ? 'claude_opus4' : 'claude_sonnet')
+                                  : fnName === 'callGPTPlain'    ? (plan === 'elite' ? 'gpt4o_high' : 'gpt4o')
                                   : (plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3')]
         );
         break;
@@ -358,28 +446,12 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE markets.`;
 // excluded, consistent with prediction_history and other Basic+ features.
 const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe'];
 
-// FIX (root cause of "AI model selection has no effect anywhere except
-// Stock Analysis"): the "Select AI models" chip strips send the chip's
-// data-model attribute (a display-facing model id like "claude-sonnet-4.6"
-// or "gpt-4o") as `model` in the request body. This route used to destructure
-// only { kind, context } and drop that field entirely, so every insight
-// call — Trade Ideas, Portfolio Health, Market Brief, Option Strategy,
-// Backtest Advisor, Multi-Timeframe — always ran whatever the plan's
-// default cascade picked, no matter which model(s) the user actually
-// ticked. This map translates each chip's data-model value to the
-// plans.js aiModels key aiService.getAIInsight() now accepts, so a
-// specific selection is actually honored (and rejected with a clear 403
-// if the user's plan doesn't include that model, instead of silently
-// swapping in a different one).
-const CHIP_MODEL_TO_KEY = {
-  'gemini-2.5-flash':  'gemini_flash',
-  'gemini-2.5-pro':    'gemini_pro',
-  'claude-sonnet-4.6': 'claude_sonnet',
-  'claude-opus-4.7':   'claude_opus4',
-  'gpt-4o':            'gpt4o',
-  'deepseek-v3':       'deepseek_v3',
-  'deepseek-r1':       'deepseek_r1',
-};
+// NOTE: the "Select AI models" chip strips send the chip's data-model
+// attribute (a display-facing model id like "claude-sonnet-4.6" or
+// "gpt-4o") as `model`/`models` in the request body. CHIP_MODEL_TO_KEY
+// (defined above, near /analyze) translates that into the plans.js
+// aiModels key aiService.getAIInsight()/analyzeStock() actually accept —
+// shared here so /analyze and /insight stay in sync.
 
 router.post(
   '/insight',
