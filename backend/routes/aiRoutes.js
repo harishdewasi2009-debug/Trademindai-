@@ -111,6 +111,30 @@ router.get('/quota', requireAuth, asyncHandler(async (req, res) => {
   });
 }));
 
+// FIX (root cause of "Claude/Gemini not working" + "selecting 2+ AI models
+// doesn't run all of them" on the Analysis page): the "Select AI models"
+// chips send each ticked chip's data-model attribute (e.g. "claude-sonnet-4.6",
+// "gemini-2.5-flash") as `models`/`model` in the /analyze request body, but
+// analyzeStock() never accepted a selection at all — it always ran a fixed,
+// hardcoded model set per plan tier (Free = Gemini only; Basic = Gemini
+// w/ DeepSeek fallback; Pro = Gemini+Claude+GPT; Elite = all 4), completely
+// ignoring which chips the user had ticked. So ticking only "Claude Sonnet"
+// never actually isolated Claude's answer (you always got the full-cascade
+// merged consensus instead — indistinguishable from "Claude isn't running"),
+// and ticking 2+ chips had no effect beyond what the plan already ran by
+// default. This map (shared with /insight below, which already had this
+// exact fix applied to it) translates each chip's data-model value to the
+// plans.js aiModels key analyzeStock() now accepts as `selectedModelKeys`.
+const CHIP_MODEL_TO_KEY = {
+  'gemini-2.5-flash':  'gemini_flash',
+  'gemini-2.5-pro':    'gemini_pro',
+  'claude-sonnet-4.6': 'claude_sonnet',
+  'claude-opus-4.7':   'claude_opus4',
+  'gpt-4o':            'gpt4o',
+  'deepseek-v3':       'deepseek_v3',
+  'deepseek-r1':       'deepseek_r1',
+};
+
 // ── POST /api/ai/analyze — main analysis endpoint ────────────────────────
 router.post(
   '/analyze',
@@ -123,6 +147,25 @@ router.post(
   asyncHandler(async (req, res) => {
     const { stockSymbol, horizon, riskTolerance, timeframe, exchange } = req.body;
     const start = Date.now();
+
+    const plan = effectivePlanName(req);
+
+    // Translate the ticked chips (frontend sends `models`: string[], plus
+    // a legacy single `model` field) into plans.js model keys. Empty/absent
+    // selection means "no explicit choice" — analyzeStock() falls back to
+    // its old default-cascade behavior for that plan, so this is a no-op
+    // for any older/direct API caller that never sends the field.
+    const rawModelIds = Array.isArray(req.body.models) && req.body.models.length
+      ? req.body.models
+      : (req.body.model ? [req.body.model] : []);
+    let selectedModelKeys = [...new Set(
+      rawModelIds.map(id => CHIP_MODEL_TO_KEY[id]).filter(Boolean)
+    )];
+    // Elite gets the higher-token-cap GPT-4o slot ('gpt4o_high') rather than
+    // Pro's 'gpt4o' — same chip, same underlying model, different plan quota.
+    if (plan === 'elite') {
+      selectedModelKeys = selectedModelKeys.map(k => (k === 'gpt4o' ? 'gpt4o_high' : k));
+    }
 
     let analysisResult;
     try {
@@ -153,8 +196,9 @@ router.post(
         // effectivePlanName(req) here that the middleware above already
         // used keeps the branch analyzeStock() runs and the
         // availableModelKeys it's checking against on the same plan basis.
-        userPlan: effectivePlanName(req),
+        userPlan: plan,
         availableModelKeys: req.availableModelKeys, // models whose own monthly quota isn't exhausted
+        selectedModelKeys, // FIX: actually honor the ticked "Select AI models" chips — see comment above.
       });
     } catch (err) {
       console.error('[/api/ai/analyze] AI call failed:', err);
@@ -402,28 +446,12 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and 
 // excluded, consistent with prediction_history and other Basic+ features.
 const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe'];
 
-// FIX (root cause of "AI model selection has no effect anywhere except
-// Stock Analysis"): the "Select AI models" chip strips send the chip's
-// data-model attribute (a display-facing model id like "claude-sonnet-4.6"
-// or "gpt-4o") as `model` in the request body. This route used to destructure
-// only { kind, context } and drop that field entirely, so every insight
-// call — Trade Ideas, Portfolio Health, Market Brief, Option Strategy,
-// Backtest Advisor, Multi-Timeframe — always ran whatever the plan's
-// default cascade picked, no matter which model(s) the user actually
-// ticked. This map translates each chip's data-model value to the
-// plans.js aiModels key aiService.getAIInsight() now accepts, so a
-// specific selection is actually honored (and rejected with a clear 403
-// if the user's plan doesn't include that model, instead of silently
-// swapping in a different one).
-const CHIP_MODEL_TO_KEY = {
-  'gemini-2.5-flash':  'gemini_flash',
-  'gemini-2.5-pro':    'gemini_pro',
-  'claude-sonnet-4.6': 'claude_sonnet',
-  'claude-opus-4.7':   'claude_opus4',
-  'gpt-4o':            'gpt4o',
-  'deepseek-v3':       'deepseek_v3',
-  'deepseek-r1':       'deepseek_r1',
-};
+// NOTE: the "Select AI models" chip strips send the chip's data-model
+// attribute (a display-facing model id like "claude-sonnet-4.6" or
+// "gpt-4o") as `model`/`models` in the request body. CHIP_MODEL_TO_KEY
+// (defined above, near /analyze) translates that into the plans.js
+// aiModels key aiService.getAIInsight()/analyzeStock() actually accept —
+// shared here so /analyze and /insight stay in sync.
 
 router.post(
   '/insight',

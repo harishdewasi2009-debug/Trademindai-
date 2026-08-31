@@ -8276,7 +8276,14 @@ async function fetchRealCandles(symbol,tf,exchange){
     const url=isIndex
       ? `/api/market/index-candles?underlying=${encodeURIComponent(symbol)}&${qs}`
       : `/api/market/candles/${encodeURIComponent(symbol)}?${qs}`;
-    const res=await apiFetch(url);
+    // FIX (chart stuck on "isn't available" — request cancelled at exactly
+    // 20.00s in DevTools Network tab): apiFetch()'s default API_TIMEOUT_MS
+    // is 20s, but the backend runs two sequential/parallel Upstox calls
+    // (historical + intraday) that can legitimately take longer, especially
+    // after a cold start or an Upstox 429 retry. Give candle requests (and
+    // the index-candle equivalent) their own longer timeout instead of
+    // inheriting the 20s default used for quotes/auth/etc.
+    const res=await apiFetch(url,{signal:AbortSignal.timeout(35000)});
     if(!res.ok){
       let reason='HTTP '+res.status;
       try{ const body=await res.json(); if(body?.error)reason=body.error; }catch(_){}
