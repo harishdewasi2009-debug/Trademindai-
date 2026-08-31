@@ -76,37 +76,23 @@ const result = await marketDataService.storeNotifiedToken({ access_token, expire
   res.json({ message: 'Token received and stored.', ...result });
 });
 
-// ── GET /api/market/quote/:symbol?exchange=BSE_EQ  (any authenticated user) ──
+// ── GET /api/market/quote/:symbol  (any authenticated user) ─────────────
 const getQuote = asyncHandler(async (req, res) => {
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const quote = await marketDataService.getLtp(req.params.symbol, exchange);
+  const quote = await marketDataService.getLtp(req.params.symbol);
   res.json(quote);
 });
 
 // ── GET /api/market/quotes?symbols=RELIANCE,TCS,530001  (any authenticated user) ──
 // Batch endpoint — fixes the "only 10 stocks" ticker/screener limitation by
 // letting the frontend request any number of symbols in one call instead
-// of hardcoding a fixed list. Add &exchange=BSE_EQ to force BSE for every
-// symbol in the request.
-//
-// FIX (screener/charts showing an identical price for a symbol's NSE row
-// and its BSE row): the global ?exchange= param above only ever applied to
-// EVERY symbol in the batch at once — there was no way to ask for RELIANCE
-// on NSE and RELIANCE on BSE in the same call. A single `symbols` entry can
-// now optionally pin its own exchange as "SYMBOL:EXCHANGE" (e.g.
-// "RELIANCE:BSE_EQ"), which wins over the global ?exchange= for that entry
-// only. A bare "SYMBOL" entry still falls back to ?exchange= if given, or
-// NSE-then-BSE auto-resolution otherwise — fully backward compatible.
+// of hardcoding a fixed list. Add &exchange=BSE_EQ to force BSE for all
+// symbols in the request; otherwise each symbol tries NSE then BSE.
 const getQuotes = asyncHandler(async (req, res) => {
-  const { symbols, exchange: globalExchange } = req.query;
+  const { symbols, exchange } = req.query;
   if (!symbols) throw new AppError('symbols query param is required (comma-separated).', 400);
 
   const list = symbols.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 100);
-  const input = list.map((entry) => {
-    const [symbol, perSymbolExchange] = entry.split(':');
-    const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(perSymbolExchange) ? perSymbolExchange : globalExchange;
-    return { symbol, exchange };
-  });
+  const input = exchange ? list.map((symbol) => ({ symbol, exchange })) : list;
 
   const result = await marketDataService.getLtpBatch(input);
   res.json(result);
@@ -119,18 +105,11 @@ const getQuotes = asyncHandler(async (req, res) => {
 // from /quotes since it's cached much longer (20 min vs 3 sec) and is a
 // heavier per-symbol computation.
 const getSignals = asyncHandler(async (req, res) => {
-  const { symbols, exchange: globalExchange, period } = req.query;
+  const { symbols, exchange, period } = req.query;
   if (!symbols) throw new AppError('symbols query param is required (comma-separated).', 400);
 
-  // Same per-entry "SYMBOL:EXCHANGE" override as /quotes (see getQuotes
-  // above) — otherwise a dual-listed symbol's NSE row and BSE row both
-  // computed their signal off the same NSE-default candles.
   const list = symbols.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 100);
-  const input = list.map((entry) => {
-    const [symbol, perSymbolExchange] = entry.split(':');
-    const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(perSymbolExchange) ? perSymbolExchange : globalExchange;
-    return { symbol, exchange };
-  });
+  const input = exchange ? list.map((symbol) => ({ symbol, exchange })) : list;
 
   // FIX: the Screener's Time Interval sidebar sends ?period= (e.g. '5m',
   // '1w', '1y') alongside symbols, but this was never read here, so every
@@ -158,7 +137,7 @@ const getIndexCandles = asyncHandler(async (req, res) => {
 const listStocks = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 150);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const result = await marketDataService.listAllSymbols({ exchange, page, limit });
   res.json(result);
 });
@@ -173,13 +152,9 @@ const INDEX_INSTRUMENT_KEYS = {
 const getOptionsChain = asyncHandler(async (req, res) => {
   const { underlying = 'NIFTY', expiry } = req.query;
   if (!expiry) throw new AppError('expiry query param is required (YYYY-MM-DD).', 400);
-  // ?exchange=MCX_FO lets the underlying be a commodity (GOLD, CRUDEOIL,
-  // SILVER, NATURALGAS, etc.) instead of a stock/index — resolved to that
-  // commodity's current front-month futures contract, same as elsewhere.
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
 
-  const instrumentKey = (!exchange && INDEX_INSTRUMENT_KEYS[underlying.toUpperCase()])
-    || await marketDataService.resolveInstrumentKey(underlying, exchange); // falls through to NSE/BSE equity, or MCX commodity, for the options chain
+  const instrumentKey = INDEX_INSTRUMENT_KEYS[underlying.toUpperCase()]
+    || await marketDataService.resolveInstrumentKey(underlying); // falls through to NSE/BSE equity for stock options
 
   const chain = await marketDataService.getOptionChain(instrumentKey, expiry);
   res.json({ underlying, expiry, chain });
@@ -190,8 +165,7 @@ const getOptionsChain = asyncHandler(async (req, res) => {
 const searchSymbols = asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q) throw new AppError('q query param is required.', 400);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const results = await marketDataService.searchSymbols(q, 20, exchange);
+  const results = await marketDataService.searchSymbols(q, 20);
   res.json({ results });
 });
 
@@ -203,8 +177,7 @@ const searchSymbols = asyncHandler(async (req, res) => {
 const searchFnoSymbols = asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q) throw new AppError('q query param is required.', 400);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const results = await marketDataService.searchFnoSymbols(q, 20, exchange);
+  const results = await marketDataService.searchFnoSymbols(q, 20);
   res.json({ results });
 });
 
@@ -216,7 +189,7 @@ const searchFnoSymbols = asyncHandler(async (req, res) => {
 // involved and no buy/sell/hold verdict — see utils/indicators.js
 // buildFullTechnicalReport() for the compliance rationale.
 const getFullReport = asyncHandler(async (req, res) => {
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   // FIX: same missing-param bug as getSignals — the full report (Trend,
   // RSI, MACD, Volume, etc. shown on the stock-detail "Analysis" view) was
   // always computed off hardcoded daily candles, ignoring whichever Time
@@ -233,7 +206,7 @@ const getFullReport = asyncHandler(async (req, res) => {
 // symbol listed on both exchanges shows the one the trader actually picked.)
 const getCandles = asyncHandler(async (req, res) => {
   const { unit, interval, from, to } = req.query;
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const data = await marketDataService.getHistoricalCandles(req.params.symbol, {
     unit,
     interval: interval ? Number(interval) : undefined,
@@ -244,22 +217,4 @@ const getCandles = asyncHandler(async (req, res) => {
   res.json(data);
 });
 
-// ── GET /api/market/quant/:symbol  (any authenticated user) ─────────────
-// Full quant-analysis engine on top of the core report: extra momentum/
-// volume/volatility indicators, price-action structure (swing HH/HL/LH/LL,
-// breakout/breakdown/retest, gaps, extra candlestick patterns), zone-based
-// support/resistance with a strength score, statistics/risk (returns,
-// Sharpe/Sortino/Calmar, VaR, drawdown), divergences, anomaly flags, an
-// optional benchmark-relative read (correlation/beta/alpha/relative
-// strength vs an index), and a grouped/weighted composite score that
-// avoids double-counting correlated indicators. See utils/quantReport.js.
-// Optional ?benchmark=NIFTY|BANKNIFTY|SENSEX to add the benchmark-relative section.
-const getQuantReport = asyncHandler(async (req, res) => {
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const period = typeof req.query.period === 'string' ? req.query.period : undefined;
-  const benchmark = typeof req.query.benchmark === 'string' ? req.query.benchmark : undefined;
-  const report = await marketDataService.getQuantReport(req.params.symbol, exchange, period, benchmark);
-  res.json(report);
-});
-
-module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles, getFullReport, getQuantReport };
+module.exports = { upstoxLogin, upstoxCallback, upstoxStatus, upstoxRequestToken, upstoxNotifier, getQuote, getQuotes, getSignals, getIndices, getIndexCandles, searchSymbols, searchFnoSymbols, listStocks, getOptionsChain, getCandles, getFullReport };

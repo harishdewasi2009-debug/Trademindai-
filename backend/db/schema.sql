@@ -106,15 +106,10 @@ CREATE TABLE IF NOT EXISTS portfolios (
   current_price   NUMERIC(12,2),
   sector          VARCHAR(60),
   notes           TEXT,
-  exchange        VARCHAR(10),   -- NSE_EQ | BSE_EQ | MCX_FO — NULL = legacy row, resolved NSE-then-BSE as before
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios(user_id);
--- MIGRATION: manually-tracked commodity holdings (MCX) need an explicit
--- exchange so getLtp()/getHistoricalCandles() resolve them via MCX_FO
--- instead of the default NSE-then-BSE equity fallback.
-ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS exchange VARCHAR(10);
 
 -- ── WATCHLIST ──
 CREATE TABLE IF NOT EXISTS watchlist (
@@ -124,14 +119,10 @@ CREATE TABLE IF NOT EXISTS watchlist (
   stock_name      VARCHAR(120),
   alert_price     NUMERIC(12,2),
   alert_direction VARCHAR(10),     -- above | below
-  exchange        VARCHAR(10),     -- NSE_EQ | BSE_EQ | MCX_FO — NULL = legacy row, resolved NSE-then-BSE as before
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE(user_id, stock_symbol)
 );
 CREATE INDEX IF NOT EXISTS idx_watchlist_user_id ON watchlist(user_id);
--- MIGRATION: lets a watched item be an MCX commodity (GOLD, CRUDEOIL, ...)
--- instead of only an NSE/BSE equity — see portfolios.exchange above.
-ALTER TABLE watchlist ADD COLUMN IF NOT EXISTS exchange VARCHAR(10);
 
 -- ── AI REQUESTS (every AI call logged for cost tracking) ──
 -- FIX: added request_id and model_key. Pro/Elite call multiple models in

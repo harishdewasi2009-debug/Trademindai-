@@ -2,7 +2,7 @@
 const { query, getClient } = require('../db/pool');
 const { createOrder, verifyPaymentSignature, verifyWebhookSignature } = require('../services/razorpayService');
 const { creditReferralIfEligible } = require('../services/referralService');
-const { getPlan, isLaunchTrialActive, launchTrialDaysRemaining } = require('../config/plans');
+const { getPlan } = require('../config/plans');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -11,15 +11,6 @@ const createPaymentOrder = asyncHandler(async (req, res) => {
   const { planName } = req.body;
   if (!['basic', 'pro', 'elite'].includes(planName)) {
     throw new AppError('Invalid plan selected.', 400);
-  }
-  // Nothing is billed while the sitewide launch trial is running — every
-  // signed-in user already has full Elite-tier access for free (see
-  // middleware/planCheck.js), so block accidental/duplicate charges here.
-  if (isLaunchTrialActive()) {
-    throw new AppError(
-      `Everything is free during our launch trial (${launchTrialDaysRemaining()} day(s) left) — no need to pay yet.`,
-      400
-    );
   }
   const plan = getPlan(planName);
 

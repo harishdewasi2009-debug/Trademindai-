@@ -72,9 +72,6 @@ const validateAddHolding = [
   body('quantity').isFloat({ gt: 0 }).withMessage('Quantity must be a positive number.'),
   body('buyPrice').isFloat({ gt: 0 }).withMessage('Buy price must be a positive number.'),
   body('sector').optional().trim().isLength({ max: 60 }),
-  // Optional — omit for a normal NSE/BSE equity holding (unchanged). Pass
-  // 'MCX_FO' for a manually-tracked commodity position (GOLD, CRUDEOIL, ...).
-  body('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
   handleValidationErrors,
 ];
 
@@ -92,9 +89,6 @@ const validateAddWatchlist = [
   body('stockName').optional().trim().isLength({ max: 120 }),
   body('alertPrice').optional().isFloat({ gt: 0 }).withMessage('Alert price must be positive.'),
   body('alertDirection').optional().isIn(['above', 'below']).withMessage('Alert direction must be above or below.'),
-  // Optional — omit for a normal NSE/BSE equity (resolved NSE-then-BSE as
-  // before). Pass 'MCX_FO' to watch a commodity (GOLD, CRUDEOIL, SILVER, ...).
-  body('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
   handleValidationErrors,
 ];
 
@@ -129,20 +123,8 @@ const validateAiAnalyze = [
     .withMessage('timeframe must be one of: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1mo, 3mo, 6mo, 1y, 3y, 5y.'),
   body('exchange')
     .optional()
-    .isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO'])
-    .withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
-  // FIX: the "Select AI models" chips send the ticked chip(s) as `models`
-  // (array) plus a legacy single `model` string — neither was validated
-  // (or read by the route — see aiRoutes.js CHIP_MODEL_TO_KEY).
-  body('models')
-    .optional()
-    .isArray({ max: 8 }).withMessage('models must be an array of at most 8 model ids.'),
-  body('models.*')
-    .optional()
-    .isString().isLength({ max: 60 }),
-  body('model')
-    .optional()
-    .isString().isLength({ max: 60 }),
+    .isIn(['NSE_EQ', 'BSE_EQ'])
+    .withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   handleValidationErrors,
 ];
 
@@ -184,7 +166,7 @@ const validateMarketQuotes = [
     .trim().notEmpty().withMessage('symbols is required (comma-separated).')
     .isLength({ max: 2000 }).withMessage('symbols list too long.')
     .matches(/^[A-Za-z0-9&_,-]+$/).withMessage('symbols contains invalid characters.'),
-  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
+  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   // FIX: /signals accepts ?period= (the Screener's Time Interval chip) but
   // it was never validated or even read by the controller — see
   // marketController.js getSignals.
@@ -197,7 +179,7 @@ const validateMarketReport = [
     .trim().notEmpty().withMessage('symbol is required.')
     .isLength({ max: 30 }).withMessage('symbol too long.')
     .matches(/^[A-Za-z0-9&_-]+$/).withMessage('symbol contains invalid characters.'),
-  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
+  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ']).withMessage('exchange must be NSE_EQ or BSE_EQ.'),
   query('period').optional().isIn(SCREENER_PERIODS).withMessage(`period must be one of: ${SCREENER_PERIODS.join(', ')}.`),
   handleValidationErrors,
 ];
@@ -207,9 +189,6 @@ const validateMarketSearch = [
     .trim().notEmpty().withMessage('q is required.')
     .isLength({ min: 1, max: 30 }).withMessage('q must be 1-30 characters.')
     .matches(/^[A-Za-z0-9&_-]+$/).withMessage('q contains invalid characters.'),
-  // Optional — omit to search across NSE + BSE + MCX together; pass
-  // exchange=MCX_FO to search commodities only (e.g. the Screener's MCX tab).
-  query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
   handleValidationErrors,
 ];
 

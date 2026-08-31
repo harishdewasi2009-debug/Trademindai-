@@ -25,13 +25,6 @@ const DEFAULT_SYMBOLS = [
   'TATAMOTORS', 'ADANIENT', 'MARUTI', 'SUNPHARMA', 'LTIM', 'TITAN', 'KOTAKBANK', 'LT', 'ITC', 'HINDUNILVR',
   'BAJAJFINSV', 'CIPLA', 'APOLLOHOSP', 'ASTRAL', 'DMART', 'POLYCAB', 'ABFRL', 'NESTLEIND', 'ULTRACEMCO', 'ONGC',
 ];
-// The handful of MCX commodities most retail traders actually watch — kept
-// small and separate from DEFAULT_SYMBOLS since each one costs an instrument-
-// master lookup (front-month contract resolution, see marketDataService's
-// parseMcxInstrumentMaster) rather than a free seeded lookup. Streamed
-// alongside the equities above so the live feed has commodity ticks ready
-// without waiting for a browser to open the MCX tab first.
-const DEFAULT_MCX_SYMBOLS = ['GOLD', 'SILVER', 'CRUDEOIL', 'NATURALGAS', 'COPPER'];
 const INDEX_INSTRUMENT_KEYS = {
   'NIFTY 50': 'NSE_INDEX|Nifty 50',
   'NIFTY BANK': 'NSE_INDEX|Nifty Bank',
@@ -44,11 +37,7 @@ const INDEX_INSTRUMENT_KEYS = {
 // which never send an exchange. An explicit BSE watch (from the Charts
 // page's NSE/BSE switch) gets its own "BSE:RELIANCE" key so its ticks never
 // get confused with — or overwritten by — the NSE feed for the same symbol.
-// MCX commodities always get an "MCX:" prefix — there's no bare/default
-// form for them the way NSE is the default for equities, since a commodity
-// symbol like "GOLD" has no equity-side meaning to collide with.
 function feedKeyFor(symbol, exchange) {
-  if (exchange === 'MCX_FO') return `MCX:${symbol}`;
   return exchange === 'BSE_EQ' ? `BSE:${symbol}` : symbol;
 }
 
@@ -77,13 +66,12 @@ function registerBrowserClient(ws) {
 /** Called when a browser asks to watch a symbol that isn't already in the
  *  live feed (e.g. searched/charted but not in DEFAULT_SYMBOLS). Resolves
  *  its instrument key and adds it to the running Upstox subscription.
- *  Pass exchange: 'BSE_EQ' to watch the BSE listing specifically, or
- *  exchange: 'MCX_FO' to watch a commodity (GOLD, CRUDEOIL, ...) — otherwise
- *  resolveInstrumentKey tries NSE first, same default as everywhere else. */
+ *  Pass exchange: 'BSE_EQ' to watch the BSE listing specifically (otherwise
+ *  resolveInstrumentKey tries NSE first, same default as everywhere else). */
 async function watchSymbol(symbolRaw, exchangeRaw) {
   if (!streamer) return; // live feed not started yet — nothing to add to
   const symbol = symbolRaw.toUpperCase();
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(exchangeRaw) ? exchangeRaw : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(exchangeRaw) ? exchangeRaw : undefined;
   const feedKey = feedKeyFor(symbol, exchange);
   if ([...instrumentKeyToSymbol.values()].some((v) => v.feedKey === feedKey)) return; // already watching
 
@@ -111,31 +99,19 @@ function extractLtpc(feed) {
  *     refresh via the notifier webhook) — tokens expire ~3:30am IST daily,
  *     so the old socket goes stale and must be replaced.
  */
-async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS, mcxSymbols = DEFAULT_MCX_SYMBOLS) {
+async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS) {
   stopLiveFeed();
 
   const resolved = await Promise.all(symbols.map(async (symbol) => {
     try {
       const instrumentKey = await resolveInstrumentKey(symbol);
-      return { symbol, instrumentKey, feedKey: symbol };
+      return { symbol, instrumentKey };
     } catch {
       return null; // symbol didn't resolve — skip it, don't kill the whole feed
     }
   }));
-  // MCX commodities resolved separately with exchange: 'MCX_FO' pinned —
-  // otherwise resolveInstrumentKey's default NSE-then-BSE lookup would just
-  // 404 on a symbol like "CRUDEOIL" that isn't an equity at all.
-  const resolvedMcx = await Promise.all(mcxSymbols.map(async (symbol) => {
-    try {
-      const instrumentKey = await resolveInstrumentKey(symbol, 'MCX_FO');
-      return { symbol, instrumentKey, feedKey: feedKeyFor(symbol, 'MCX_FO') };
-    } catch (e) {
-      console.warn(`[liveFeedService] MCX symbol ${symbol} did not resolve — skipping:`, e.message);
-      return null;
-    }
-  }));
-  const valid = [...resolved, ...resolvedMcx].filter(Boolean);
-  instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, { symbol: v.symbol, feedKey: v.feedKey }]));
+  const valid = resolved.filter(Boolean);
+  instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, { symbol: v.symbol, feedKey: v.symbol }]));
   const instrumentKeys = valid.map((v) => v.instrumentKey);
 for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     instrumentKeyToSymbol.set(instrumentKey, { symbol, feedKey: symbol });
@@ -198,4 +174,4 @@ function stopLiveFeed() {
   }
 }
 
-module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, DEFAULT_SYMBOLS, DEFAULT_MCX_SYMBOLS, INDEX_INSTRUMENT_KEYS };
+module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, DEFAULT_SYMBOLS, INDEX_INSTRUMENT_KEYS };

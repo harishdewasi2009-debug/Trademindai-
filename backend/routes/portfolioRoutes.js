@@ -8,10 +8,6 @@ const ctrl = require('../controllers/portfolioController');
 
 // FIX: added input validation + plan feature gate
 router.get('/', requireAuth, requireFeature('portfolio_tracker'), ctrl.getPortfolio);
-// Portfolio-level risk: correlation matrix, concentration, portfolio
-// volatility/VaR/drawdown, optional ?benchmark=NIFTY beta — computed from
-// real per-holding candle history and each holding's real portfolio weight.
-router.get('/risk', requireAuth, requireFeature('portfolio_tracker'), ctrl.getPortfolioRisk);
 router.post('/', requireAuth, requireFeature('portfolio_tracker'), validateAddHolding, ctrl.addHolding);
 router.put('/:id', requireAuth, requireFeature('portfolio_tracker'), validateUpdateHolding, ctrl.updateHolding);
 router.delete('/:id', requireAuth, requireFeature('portfolio_tracker'), ctrl.deleteHolding);
