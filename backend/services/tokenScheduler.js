@@ -27,6 +27,7 @@ const marketDataService = require('./marketDataService');
 const { sendUpstoxTokenAlert } = require('./emailService');
 const { evaluateDuePredictions } = require('./predictionAccuracyService');
 const { evaluateDueScannerSignals } = require('./scannerAccuracyService');
+const { runCoverageBatch } = require('./screenerCoverageService');
 
 function isUpstoxConfigured() {
   return !!(config.upstox.apiKey && config.upstox.apiSecret);
@@ -105,9 +106,23 @@ function startUpstoxTokenScheduler() {
     );
   }, { timezone: 'Asia/Kolkata' });
 
+  // Every 5 minutes during market hours (9:00–15:59 IST, Mon–Fri) — drives
+  // screenerCoverageService.runCoverageBatch(), which guarantees every
+  // symbol across NSE + BSE + MCX gets a logged '1d' Screener signal each
+  // trading day, not just whatever a user happened to view. The function
+  // itself no-ops instantly outside real market hours / on holidays (see
+  // marketDataService.isIndianMarketOpen), so this is safe to run
+  // unconditionally on this wider cron window.
+  cron.schedule('*/5 9-15 * * 1-5', () => {
+    runCoverageBatch().catch(err =>
+      console.error('[tokenScheduler] Scanner full-market coverage batch failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
   console.log('[tokenScheduler] Automatic daily Upstox token refresh scheduled (08:00 IST request, 08:45 IST follow-up check).');
   console.log('[tokenScheduler] Automatic daily AI-prediction accuracy evaluation scheduled (18:00 IST).');
   console.log('[tokenScheduler] Automatic daily Scanner-signal accuracy evaluation scheduled (18:00 IST).');
+  console.log('[tokenScheduler] Automatic full NSE+BSE+MCX Screener coverage scan scheduled (every 5 min, 9:00–15:59 IST, Mon–Fri).');
 }
 
 module.exports = { startUpstoxTokenScheduler, runDailyTokenRequest, runFollowUpCheck };

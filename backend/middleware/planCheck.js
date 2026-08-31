@@ -15,16 +15,27 @@
 //   requireAuth → enforceTokenQuota → enforceAiQueryLimit → attachAvailableModels → validateAiAnalyze → controller
 
 const { query }                              = require('../db/pool');
-const { getPlan, planHasFeature, getModelKeys, FREE_SCREENER_TRIAL_DAYS } = require('../config/plans');
+const { getPlan, planHasFeature, getModelKeys, FREE_SCREENER_TRIAL_DAYS, isLaunchTrialActive } = require('../config/plans');
 const AppError                               = require('../utils/AppError');
 const asyncHandler                           = require('../utils/asyncHandler');
+
+// During the sitewide launch trial, every SIGNED-IN user is treated as if
+// on the Elite plan for the purposes of every check below (full feature
+// access, highest quotas, every model available) — but req.user must still
+// exist, i.e. they still have to be signed in. Nothing here changes what
+// req.user.plan actually is in the database; a user's real plan only takes
+// effect again once the trial window closes (see config/plans.js).
+function effectivePlanName(req) {
+  if (req.user && isLaunchTrialActive()) return 'elite';
+  return req.user && req.user.plan;
+}
 
 // ── 1. requireFeature ────────────────────────────────────────────────────
 /** Must run after requireAuth. Usage: router.get('/backtest', requireAuth, requireFeature('backtesting'), handler) */
 function requireFeature(feature) {
   return (req, res, next) => {
     if (!req.user) return next(new AppError('Not authenticated.', 401));
-    if (!planHasFeature(req.user.plan, feature)) {
+    if (!planHasFeature(effectivePlanName(req), feature)) {
       return next(new AppError(
         `This feature requires a higher plan. Upgrade to unlock "${feature.replace(/_/g, ' ')}".`,
         403
@@ -50,6 +61,8 @@ function requireFeature(feature) {
  */
 function requireScreenerAccess(req, res, next) {
   if (!req.user) return next(new AppError('Not authenticated.', 401));
+
+  if (isLaunchTrialActive()) return next(); // full access for every signed-in user during the trial
 
   if (!planHasFeature(req.user.plan, 'screener')) {
     return next(new AppError(
@@ -83,7 +96,7 @@ function requireScreenerAccess(req, res, next) {
  * Must run AFTER requireAuth and BEFORE the controller calls the AI engine.
  */
 const enforceAiQueryLimit = asyncHandler(async (req, res, next) => {
-  const plan = getPlan(req.user.plan);
+  const plan = getPlan(effectivePlanName(req));
 
   // Elite (and any plan with -1) is unlimited on request count
   if (plan.monthlyAiQueries === -1) {
@@ -127,7 +140,7 @@ const enforceAiQueryLimit = asyncHandler(async (req, res, next) => {
  * Must run AFTER requireAuth and BEFORE the controller.
  */
 const enforceTokenQuota = asyncHandler(async (req, res, next) => {
-  const plan = getPlan(req.user.plan);
+  const plan = getPlan(effectivePlanName(req));
 
   // Attach per-request token cap so aiService can use it
   req.maxTokensPerRequest = plan.maxTokensPerRequest;
@@ -183,8 +196,9 @@ const enforceTokenQuota = asyncHandler(async (req, res, next) => {
  * controller) keeps the cheaper plan-wide checks as the first line of defense.
  */
 const attachAvailableModels = asyncHandler(async (req, res, next) => {
-  const plan = getPlan(req.user.plan);
-  const modelKeys = getModelKeys(req.user.plan); // e.g. ['gemini_flash','claude_sonnet','gpt4o','deepseek_v3']
+  const effectivePlan = effectivePlanName(req);
+  const plan = getPlan(effectivePlan);
+  const modelKeys = getModelKeys(effectivePlan); // e.g. ['gemini_flash','claude_sonnet','gpt4o','deepseek_v3']
 
   // Real per-model usage this month, keyed by model_key (added to ai_requests
   // specifically so this query doesn't have to string-match model_used).
@@ -217,4 +231,4 @@ const attachAvailableModels = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = { requireFeature, requireScreenerAccess, enforceAiQueryLimit, enforceTokenQuota, attachAvailableModels };
+module.exports = { requireFeature, requireScreenerAccess, enforceAiQueryLimit, enforceTokenQuota, attachAvailableModels, effectivePlanName };

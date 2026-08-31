@@ -154,6 +154,18 @@ async function upstoxGet(path, accessToken) {
   return json.data || [];
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  NOTE ON MCX: everything below is a pass-through of whatever Upstox
+//  returns from the user's own connected account — it already reports
+//  `exchange` as literally whatever segment the position/holding/order is
+//  on (e.g. "MCX_FO" for a commodity future), so a user's real commodity
+//  positions/holdings/orders show up here automatically, with no MCX-
+//  specific code needed in this file. Only the MANUALLY-TRACKED portfolio
+//  (portfolioController.js, backed by the `portfolios` table) needed an
+//  explicit `exchange` column added — see db/schema.sql — since there the
+//  app itself resolves the price, rather than Upstox reporting it directly.
+// ─────────────────────────────────────────────────────────────────────────
+
 /** Real long-term holdings from the user's own Upstox DEMAT account. */
 async function getRealHoldings(userId) {
   const token = await getUserAccessToken(userId);
