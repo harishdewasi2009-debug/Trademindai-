@@ -66,3 +66,35 @@ when historical hasn't produced it yet (i.e., during market hours).
 ## Files changed
 - `backend/services/marketDataService.js` (`getHistoricalCandles`,
   `getIndexHistoricalCandles`)
+
+---
+
+# Fix: homepage NIFTY 50 hero chart still wrong after the settled-close fix
+
+## Symptom
+After deploying the previous settled-close fix, the Charts page showed the
+correct last close, but the homepage hero chart (NIFTY 50) still showed the
+wrong "today" price.
+
+## Root cause
+The earlier fix (`historicalHasToday`) only helps when the requested candle
+granularity is **daily** — Upstox backfills "today" into its historical feed
+same-day at daily granularity, but generally does NOT do so same-day for
+minute/hour granularity. The homepage hero chart defaults to a 5-day /
+15-minute view (`heroTF='5D'`), so `historicalHasToday` never went true for
+it — it kept showing intraday's last pre-auction tick indefinitely, no
+matter how long after close you looked. The Charts page happened not to
+expose this because it's normally tested on daily-range views.
+
+## Fix
+Added `getSettledTodayClose()` — a small, cached, dedicated lookup that asks
+Upstox specifically for **today's daily candle** (which does settle
+same-day) regardless of what granularity the chart itself is drawn in.
+`patchSettledCloseIntoMerged()` uses it to overwrite the last candle's close
+(and extend high/low) with the officially settled price once the market is
+closed — applied uniformly in both `getHistoricalCandles()` and
+`getIndexHistoricalCandles()`, so it now works for every chart timeframe
+(1D/5D/1M/6M/1Y, any interval), not just daily views.
+
+## Files changed
+- `backend/services/marketDataService.js`
