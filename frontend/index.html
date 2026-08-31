@@ -3662,6 +3662,27 @@ liveSocket.onmessage=(evt)=>{
           : q; // no prior value either — best we can do is pass it through
         persistIndexCache();
         got=true;
+        // FIX (homepage NIFTY 50 chart lagging/mismatching the Charts
+        // section): unlike the Charts section's chartFeedKey block below,
+        // which patches the on-screen candle instantly from this same live
+        // feed, the homepage hero chart (hardcoded to NIFTY 50) only ever
+        // refreshed once per CHART_REFRESH_MS (60s) via REST. Both are
+        // ultimately sourced from Upstox, but that gap meant the homepage
+        // could sit up to a minute stale next to the Charts section's
+        // instant price. Patch it the same way here.
+        if(sym==='NIFTY 50' && heroCandles && heroCandles.length && typeof q.price==='number'){
+          const p=q.price;
+          const last=heroCandles[heroCandles.length-1];
+          last.c=p; last.h=Math.max(last.h,p); last.l=Math.min(last.l,p);
+          const slice=heroCandles.slice(-50);
+          const priceEl=document.getElementById('hc-price');
+          if(priceEl){
+            priceEl.textContent=p.toFixed(2);
+            priceEl.style.color=(p>=slice[0].o)?'var(--green2)':'var(--rose2)';
+          }
+          const canvas=document.getElementById('heroChart');
+          if(canvas)drawCandles(canvas,slice);
+        }
       }
       // Screener rows: patch in place if this tick's symbol is currently
       // rendered on screen — true tick-by-tick movement, same as Upstox,

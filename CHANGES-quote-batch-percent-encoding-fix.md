@@ -98,3 +98,29 @@ closed — applied uniformly in both `getHistoricalCandles()` and
 
 ## Files changed
 - `backend/services/marketDataService.js`
+
+---
+
+# Fix: homepage NIFTY 50 hero chart lagging/mismatching the Charts section
+
+## Symptom
+Homepage NIFTY 50 chart still didn't match the Charts section's NIFTY 50
+price, even after the settled-close fix.
+
+## Root cause
+The Charts section patches its on-screen candle **instantly** from the live
+Upstox WebSocket feed (see the `chartFeedKey` block in `liveSocket.onmessage`).
+The homepage hero chart (hardcoded to NIFTY 50) was never wired into that
+feed at all — it only ever refreshed once every `CHART_REFRESH_MS` (60s) via
+a REST poll. Both are ultimately sourced from Upstox, but the homepage could
+sit up to a minute stale next to the Charts section's live price, which is
+what looked like "different data."
+
+## Fix
+The WebSocket tick handler now also patches the homepage hero chart's last
+candle (close/high/low) and the `hc-price` display directly from live ticks,
+the same way the Charts section already does — so both update at the same
+instant instead of the homepage lagging behind on its 60s poll.
+
+## Files changed
+- `frontend/index.html`
