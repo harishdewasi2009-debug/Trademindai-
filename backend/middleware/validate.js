@@ -131,18 +131,6 @@ const validateAiAnalyze = [
     .optional()
     .isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO'])
     .withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),
-  // FIX: the "Select AI models" chips send the ticked chip(s) as `models`
-  // (array) plus a legacy single `model` string — neither was validated
-  // (or read by the route — see aiRoutes.js CHIP_MODEL_TO_KEY).
-  body('models')
-    .optional()
-    .isArray({ max: 8 }).withMessage('models must be an array of at most 8 model ids.'),
-  body('models.*')
-    .optional()
-    .isString().isLength({ max: 60 }),
-  body('model')
-    .optional()
-    .isString().isLength({ max: 60 }),
   handleValidationErrors,
 ];
 

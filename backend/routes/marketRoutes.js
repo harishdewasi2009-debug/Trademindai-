@@ -58,10 +58,6 @@ router.get('/signals', marketLimiter, validateMarketQuotes, ctrl.getSignals);
 // Technical Score, Conclusion) for the Screener's "full analysis" view:
 // GET /api/market/report/:symbol?exchange=BSE_EQ
 router.get('/report/:symbol', marketLimiter, validateMarketReport, ctrl.getFullReport);
-// Full quant-analysis engine (statistics/risk, price-action structure,
-// extra indicators, divergences, anomalies, optional benchmark-relative
-// read, grouped composite score): GET /api/market/quant/:symbol?period=&benchmark=NIFTY
-router.get('/quant/:symbol', marketLimiter, validateMarketReport, ctrl.getQuantReport);
 router.get('/indices', marketLimiter, ctrl.getIndices);
 router.get('/index-candles', marketLimiter, ctrl.getIndexCandles);
 // Search: GET /api/market/search?q=REL — autocomplete across NSE + BSE
