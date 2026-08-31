@@ -768,8 +768,20 @@ async function getLtpBatch(symbols) {
   }
 
   const data = await res.json();
+  // FIX (Reliance/NSE/BSE — and any index requested via this batch
+  // endpoint — silently showing yesterday's close instead of the live
+  // price): Upstox sometimes echoes instrument_token back with the pipe
+  // URL-encoded ("NSE_EQ%7CINE002A01018") instead of literal
+  // ("NSE_EQ|INE002A01018"). The map below used to key on the raw token,
+  // so a %7C-encoded token never matched our real "|" instrumentKey, the
+  // quote lookup silently missed, and every affected row fell through to
+  // getDailyCloseFallback() below (a real but stale price) instead of the
+  // live one. getIndexQuotes() already normalizes this same %7C quirk —
+  // this mirrors that fix here so stock and index rows fetched through
+  // /api/market/quotes get it too.
+  const normalizeToken = (t) => (typeof t === 'string' ? t.replace('%7C', '|') : t);
   const byInstrumentKey = new Map(
-    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
+    Object.values(data.data || {}).map((q) => [normalizeToken(q.instrument_token || q.instrument_key), q])
   );
 
  const quotes = await Promise.all(resolved.map(async ({ symbol, instrumentKey }) => {
@@ -777,7 +789,7 @@ async function getLtpBatch(symbols) {
     // the request instrument_key in some cases, so also try a loose match.
     const quote =
       byInstrumentKey.get(instrumentKey) ||
-      Object.values(data.data || {}).find((q) => q.instrument_token === instrumentKey);
+      Object.values(data.data || {}).find((q) => normalizeToken(q.instrument_token) === instrumentKey);
 
     // FIX (screener showing the same price for a symbol's NSE row and its
     // BSE row): instrumentKey is "EXCHANGE|ISIN" (e.g. "BSE_EQ|INE..."),
