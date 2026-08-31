@@ -1880,8 +1880,8 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="chart-panel-hdr">
         <div class="hc-sym" id="chart-panel-title">RELIANCE <span class="hc-price" id="chart-panel-price" style="color:var(--text3)">—</span></div>
         <div class="hc-tabs" style="position:relative">
-          <span class="hc-tab active" onclick="setChartTF(this,'1D')">1D</span>
-          <span class="hc-tab" onclick="setChartTF(this,'1M')">1M</span>
+          <span class="hc-tab" onclick="setChartTF(this,'1D')">1D</span>
+          <span class="hc-tab active" onclick="setChartTF(this,'1M')">1M</span>
           <span class="hc-tab" onclick="setChartTF(this,'6M')">6M</span>
           <span class="hc-tab" onclick="setChartTF(this,'1Y')">1Y</span>
           <span style="width:1px;align-self:stretch;background:var(--border2);margin:0 2px"></span>
@@ -3662,27 +3662,6 @@ liveSocket.onmessage=(evt)=>{
           : q; // no prior value either — best we can do is pass it through
         persistIndexCache();
         got=true;
-        // FIX (homepage NIFTY 50 chart lagging/mismatching the Charts
-        // section): unlike the Charts section's chartFeedKey block below,
-        // which patches the on-screen candle instantly from this same live
-        // feed, the homepage hero chart (hardcoded to NIFTY 50) only ever
-        // refreshed once per CHART_REFRESH_MS (60s) via REST. Both are
-        // ultimately sourced from Upstox, but that gap meant the homepage
-        // could sit up to a minute stale next to the Charts section's
-        // instant price. Patch it the same way here.
-        if(sym==='NIFTY 50' && heroCandles && heroCandles.length && typeof q.price==='number'){
-          const p=q.price;
-          const last=heroCandles[heroCandles.length-1];
-          last.c=p; last.h=Math.max(last.h,p); last.l=Math.min(last.l,p);
-          const slice=heroCandles.slice(-50);
-          const priceEl=document.getElementById('hc-price');
-          if(priceEl){
-            priceEl.textContent=p.toFixed(2);
-            priceEl.style.color=(p>=slice[0].o)?'var(--green2)':'var(--rose2)';
-          }
-          const canvas=document.getElementById('heroChart');
-          if(canvas)drawCandles(canvas,slice);
-        }
       }
       // Screener rows: patch in place if this tick's symbol is currently
       // rendered on screen — true tick-by-tick movement, same as Upstox,
@@ -8125,7 +8104,7 @@ window.addEventListener('resize',()=>{renderHeroChart();if(document.getElementBy
 let chartActiveIndicators={ema:true,bb:false,vwap:false,rsi:true,macd:true};
 let chartCurrentSymbol='RELIANCE';
 let chartCurrentExchange='NSE_EQ'; // 'NSE_EQ' | 'BSE_EQ' — which exchange's price/candles to show for the charted symbol
-let chartCurrentTF='1D';
+let chartCurrentTF='1M';
 function setChartExchange(ex,btn){
   if(chartCurrentExchange===ex)return;
   chartCurrentExchange=ex;
