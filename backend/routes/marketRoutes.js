@@ -7,20 +7,6 @@ const { requireFeature, requireScreenerAccess } = require('../middleware/planChe
 const { marketLimiter, adminLimiter } = require('../middleware/rateLimit');
 const { validateMarketSymbol, validateMarketCandles, validateMarketQuotes, validateMarketReport, validateMarketSearch } = require('../middleware/validate');
 const ctrl = require('../controllers/marketController');
-const { isLaunchTrialActive, launchTrialDaysRemaining, LAUNCH_TRIAL_END } = require('../config/plans');
-
-// Public (no auth) — lets the Pricing page and the top-of-app trial banner
-// show "free until <date>" / "X days left" without requiring a login first.
-// Signing in is still required to actually USE the product during the
-// trial (every other route below keeps requireAuth); this endpoint only
-// reports whether the trial is on, it doesn't grant access to anything.
-router.get('/launch-trial', (req, res) => {
-  res.json({
-    active: isLaunchTrialActive(),
-    daysRemaining: launchTrialDaysRemaining(),
-    endsAt: LAUNCH_TRIAL_END.toISOString(),
-  });
-});
 
 // ── Upstox connection management (admin only) ──
 // One-time-per-day: an admin visits /login, approves on Upstox, gets

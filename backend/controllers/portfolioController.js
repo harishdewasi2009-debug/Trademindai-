@@ -6,7 +6,7 @@ const asyncHandler = require('../utils/asyncHandler');
 // ── GET /api/portfolio ──
 const getPortfolio = asyncHandler(async (req, res) => {
   const { rows } = await query(
-    `SELECT id, stock_symbol, stock_name, quantity, buy_price, current_price, sector, exchange, created_at
+    `SELECT id, stock_symbol, stock_name, quantity, buy_price, current_price, sector, created_at
      FROM portfolios WHERE user_id = $1 ORDER BY created_at DESC`,
     [req.user.id]
   );
@@ -57,12 +57,11 @@ const addHolding = asyncHandler(async (req, res) => {
     throw new AppError('stockSymbol, quantity, and buyPrice are required.', 400);
   }
   if (quantity <= 0 || buyPrice <= 0) throw new AppError('Quantity and buy price must be positive.', 400);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.body.exchange) ? req.body.exchange : null;
 
   const { rows } = await query(
-    `INSERT INTO portfolios (user_id, stock_symbol, stock_name, quantity, buy_price, current_price, sector, exchange)
-     VALUES ($1, $2, $3, $4, $5, $5, $6, $7) RETURNING *`,
-    [req.user.id, stockSymbol.toUpperCase(), stockName, quantity, buyPrice, sector, exchange]
+    `INSERT INTO portfolios (user_id, stock_symbol, stock_name, quantity, buy_price, current_price, sector)
+     VALUES ($1, $2, $3, $4, $5, $5, $6) RETURNING *`,
+    [req.user.id, stockSymbol.toUpperCase(), stockName, quantity, buyPrice, sector]
   );
   res.status(201).json({ holding: rows[0] });
 });

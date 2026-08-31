@@ -14,8 +14,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>TradeMind AI — India's Computed Stock Market Intelligence Platform</title>
-<meta name="description" content="Live NSE & BSE market data, professional TradingView charts, and computed market insights — all in one place."/>
+<title>TradeMind AI — India's AI-Powered Stock Market Intelligence Platform</title>
+<meta name="description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
 
 <!-- Site icon / "profile picture" shown in browser tabs, bookmarks, home-screen shortcuts -->
 <link rel="icon" href="/assets/favicon.ico" sizes="any"/>
@@ -27,15 +27,15 @@
 <!-- Link-sharing preview (WhatsApp, Telegram, X, Facebook, LinkedIn, iMessage, etc.) -->
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="TradeMind AI"/>
-<meta property="og:title" content="TradeMind AI — India's Computed Stock Market Intelligence Platform"/>
-<meta property="og:description" content="Live NSE & BSE market data, professional TradingView charts, and computed market insights — all in one place."/>
+<meta property="og:title" content="TradeMind AI — India's AI-Powered Stock Market Intelligence Platform"/>
+<meta property="og:description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
 <meta property="og:url" content="https://trademindai.co.in/"/>
 <meta property="og:image" content="https://trademindai.co.in/assets/og-image.png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="TradeMind AI — India's Computed Stock Market Intelligence Platform"/>
-<meta name="twitter:description" content="Live NSE & BSE market data, professional TradingView charts, and computed market insights — all in one place."/>
+<meta name="twitter:title" content="TradeMind AI — India's AI-Powered Stock Market Intelligence Platform"/>
+<meta name="twitter:description" content="Live NSE & BSE market data, professional TradingView charts, and AI-powered market insights — all in one place."/>
 <meta name="twitter:image" content="https://trademindai.co.in/assets/og-image.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -367,6 +367,9 @@ nav{
 .screener-stock{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:all .15s}
 .screener-stock:hover{border-color:var(--border2);background:var(--bg4);transform:translateX(4px)}
 .ss-rank{width:32px;height:32px;border-radius:50%;background:rgba(124,92,252,.2);border:1px solid rgba(124,92,252,.4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#A78BFA;flex-shrink:0}
+.ss-logo{width:34px;height:34px;border-radius:9px;flex-shrink:0;margin-left:10px;overflow:hidden;position:relative;background:var(--bg4);border:1px solid var(--border)}
+.ss-logo img{width:100%;height:100%;object-fit:contain;display:block;background:#fff;padding:3px;box-sizing:border-box}
+.ss-logo .ss-logo-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;color:#fff}
 .ss-info{flex:1;padding:0 14px}
 .ss-sym{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
 .ss-name{font-size:11px;color:var(--text3)}
@@ -1229,7 +1232,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <span class="nav-link" data-page="charts" onclick="show('charts');toggleMobileSidebar(false)"><i class="ti ti-chart-candle" style="margin-right:8px"></i>Charts</span>
   <span class="nav-link" data-page="screener" onclick="show('screener');toggleMobileSidebar(false)"><i class="ti ti-list-search" style="margin-right:8px"></i>Screener</span>
   <span class="nav-link" data-page="options" onclick="show('options');toggleMobileSidebar(false)"><i class="ti ti-stack" style="margin-right:8px"></i>Options</span>
-  <span class="nav-link" onclick="show('dashboard');switchDash('chat');toggleMobileSidebar(false)"><i class="ti ti-robot" style="margin-right:8px"></i>Assistant</span>
+  <span class="nav-link" onclick="show('dashboard');switchDash('chat');toggleMobileSidebar(false)"><i class="ti ti-robot" style="margin-right:8px"></i>AI Assistant</span>
   <span class="nav-link" data-page="pricing" onclick="show('pricing');toggleMobileSidebar(false)"><i class="ti ti-tag" style="margin-right:8px"></i>Pricing</span>
   <span class="nav-link" data-page="dashboard" onclick="show('dashboard');toggleMobileSidebar(false)"><i class="ti ti-layout-dashboard" style="margin-right:8px"></i>Dashboard</span>
   <span class="nav-link" id="mobile-nav-admin-link" data-page="admin" onclick="show('admin');toggleMobileSidebar(false)" style="display:none"><i class="ti ti-shield-lock" style="margin-right:8px"></i>Admin</span>
@@ -1248,18 +1251,18 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="hero-glow3"></div>
       <div class="hero-grid"></div>
     </div>
-    <div class="hero-badge"><span class="hero-badge-dot"></span> Live NSE &amp; BSE data · 4 analysis engines · Real Upstox market feed</div>
-    <h1 class="hero-h1">India's <em>Computed-Analysis</em><br/>Stock Market Intelligence<br/>Platform</h1>
-    <p class="hero-sub">Live NSE &amp; BSE market data, professional TradingView charts, and computed market insights — all in one place. Sign in to unlock real-time analysis on 5,000+ stocks.</p>
+    <div class="hero-badge"><span class="hero-badge-dot"></span> Live NSE &amp; BSE data · 4 AI engines · Real Upstox market feed</div>
+    <h1 class="hero-h1">India's <em>AI-Powered</em><br/>Stock Market Intelligence<br/>Platform</h1>
+    <p class="hero-sub">Live NSE &amp; BSE market data, professional TradingView charts, and AI-powered market insights — all in one place. Sign in to unlock real-time analysis on 5,000+ stocks.</p>
     <div style="font-size:12px;color:var(--text3);max-width:620px;line-height:1.6;margin-bottom:20px">Educational &amp; informational analysis only — not SEBI-registered investment advice. Always consult a SEBI-registered investment adviser before making investment decisions. <span style="cursor:pointer;text-decoration:underline" onclick="show('terms')">Read our Terms</span>.</div>
     <div class="hero-btns">
       <button class="btn-lg-ghost" onclick="show('analysis')"><i class="ti ti-sparkles"></i>Start Live Analysis</button>
       <button class="btn-lg-ghost" onclick="show('charts')"><i class="ti ti-chart-candle"></i>Explore Markets</button>
-      <button class="btn-lg-ghost" onclick="show('dashboard');switchDash('chat')"><i class="ti ti-robot"></i>Open Assistant</button>
+      <button class="btn-lg-ghost" onclick="show('dashboard');switchDash('chat')"><i class="ti ti-robot"></i>Open AI Assistant</button>
     </div>
     <div class="hero-trust-strip">
       <span class="trust-pill"><i class="ti ti-broadcast"></i>Live NSE &amp; BSE Data</span>
-      <span class="trust-pill"><i class="ti ti-brain"></i>Computed Analysis</span>
+      <span class="trust-pill"><i class="ti ti-brain"></i>AI-Powered Analysis</span>
       <span class="trust-pill"><i class="ti ti-chart-candle"></i>TradingView Professional Charts</span>
       <span class="trust-pill"><i class="ti ti-shield-lock"></i>Secure Google Sign-In</span>
       <span class="trust-pill"><i class="ti ti-refresh"></i>Real-Time Market Updates</span>
@@ -1288,7 +1291,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   </div>
 
   <div class="stats-row">
-    <div class="stat-cell"><div class="stat-num">4</div><div class="stat-lbl">analysis engines active</div><div class="stat-chg">Gemini · Claude · GPT · DeepSeek</div></div>
+    <div class="stat-cell"><div class="stat-num">4</div><div class="stat-lbl">AI engines active</div><div class="stat-chg">Gemini · Claude · GPT · DeepSeek</div></div>
     <div class="stat-cell"><div class="stat-num">5,000+</div><div class="stat-lbl">Stocks covered</div><div class="stat-chg">NSE &amp; BSE</div></div>
     <div class="stat-cell"><div class="stat-num">4</div><div class="stat-lbl">Plan tiers</div><div class="stat-chg">Free to Elite</div></div>
     <div class="stat-cell"><div class="stat-num">New</div><div class="stat-lbl">Now in early access</div><div class="stat-chg">Be among our first users</div></div>
@@ -1303,13 +1306,13 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="feat-grid" style="margin-bottom:32px">
       <div class="feat-card">
         <div class="feat-icon"><i class="ti ti-brain"></i></div>
-        <div class="feat-title">Multi-Model Consensus</div>
+        <div class="feat-title">Multi-AI Consensus</div>
         <p class="feat-desc">Gemini, Claude, ChatGPT, and DeepSeek each analyse the stock independently. Results are synthesised into a consensus signal with per-model reasoning you can compare.</p>
         <span class="feat-tag tag-free">All Plans</span>
       </div>
       <div class="feat-card">
         <div class="feat-icon"><i class="ti ti-target-arrow"></i></div>
-        <div class="feat-title">Technical Score</div>
+        <div class="feat-title">AI Technical Score</div>
         <p class="feat-desc">A 0-100 technical score and bullish/bearish bias reading, built from real indicator data — not a price prediction or trading call.</p>
         <span class="feat-tag tag-pro">Pro +</span>
       </div>
@@ -1322,13 +1325,13 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="feat-card">
         <div class="feat-icon"><i class="ti ti-briefcase"></i></div>
         <div class="feat-title">Portfolio Tracker</div>
-        <p class="feat-desc">Add your holdings and track real-time P&amp;L, sector allocation, and portfolio health score. The system flags concentration risk and suggests rebalancing opportunities.</p>
+        <p class="feat-desc">Add your holdings and track real-time P&amp;L, sector allocation, and portfolio health score. AI flags concentration risk and suggests rebalancing opportunities.</p>
         <span class="feat-tag tag-pro">Pro +</span>
       </div>
       <div class="feat-card">
         <div class="feat-icon"><i class="ti ti-filter"></i></div>
-        <div class="feat-title">Computed Stock Screener</div>
-        <p class="feat-desc">Screen 5,000+ stocks by computed score, momentum, breakout potential, value, or growth. Custom filters updated nightly with fresh computed signal data.</p>
+        <div class="feat-title">AI Stock Screener</div>
+        <p class="feat-desc">Screen 5,000+ stocks by AI score, momentum, breakout potential, value, or growth. Custom filters updated nightly with fresh AI signal data.</p>
         <span class="feat-tag tag-elite">7-Day Free Trial</span>
       </div>
     </div>
@@ -1367,7 +1370,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <div class="section">
     <div class="sec-eyebrow">Platform preview</div>
     <h2 class="sec-h2">A real trading terminal</h2>
-    <p class="sec-sub">Chart, market structure, computed trade plan and watchlist — in one unified interface. No tab-switching between five different apps.</p>
+    <p class="sec-sub">Chart, market structure, AI trade plan and watchlist — in one unified interface. No tab-switching between five different apps.</p>
 
     <div class="tm-window">
       <div class="tm-window-bar"><span class="tm-dot r"></span><span class="tm-dot y"></span><span class="tm-dot g"></span><span class="tm-window-url">app.trademindai.com/analysis/RELIANCE</span></div>
@@ -1379,7 +1382,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           </div>
           <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
             <span class="tm-term-price">₹2,847.65</span><span class="tm-term-chg">▲ +1.2%</span>
-            <button class="tm-run-btn" style="margin-left:auto"><i class="ti ti-player-play-filled"></i> Run Analysis</button>
+            <button class="tm-run-btn" style="margin-left:auto"><i class="ti ti-player-play-filled"></i> Run AI Analysis</button>
           </div>
           <svg class="tm-chart-svg" viewBox="0 0 620 180" preserveAspectRatio="none">
             <polyline points="0,150 40,148 70,140 100,142 130,128 160,132 190,118 220,122 250,108 280,112 310,96 340,100 370,86 400,90 430,74 460,78 490,62 520,58 550,44 580,38 620,26" fill="none" stroke="#373B6A" stroke-width="1.5"/>
@@ -1403,11 +1406,11 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div style="text-align:center;font-size:11px;color:var(--text3)">Illustrative preview — prices &amp; levels shown are sample data, not live quotes or a trade recommendation.</div>
   </div>
 
-  <!-- MARKET INTELLIGENCE -->
+  <!-- AI MARKET INTELLIGENCE -->
   <div class="section section-alt">
     <div class="sec-eyebrow">Market intelligence</div>
-    <h2 class="sec-h2">computed market intelligence</h2>
-    <p class="sec-sub">Real-time market news with impact tagging, undervalued opportunities the crowd hasn't priced in yet, and the day's top movers — so you never miss what's moving.</p>
+    <h2 class="sec-h2">AI-powered market intelligence</h2>
+    <p class="sec-sub">Real-time market news with AI impact tagging, undervalued opportunities the crowd hasn't priced in yet, and the day's top movers — so you never miss what's moving.</p>
     <div class="tm-intel-grid">
       <div class="tm-intel-card">
         <div class="tm-intel-hdr"><span class="tm-intel-hdr-l"><i class="ti ti-news"></i>Real-Time News</span><span class="tm-live-tag">LIVE</span></div>
@@ -1439,11 +1442,11 @@ img,svg,video,canvas,iframe{max-width:100%}
     </div>
   </div>
 
-  <!-- SCREENER PROMO -->
+  <!-- AI SCREENER PROMO -->
   <div class="section">
     <div class="tm-screener-wrap">
       <div>
-        <div class="sec-eyebrow" style="margin-bottom:10px">Computed screener</div>
+        <div class="sec-eyebrow" style="margin-bottom:10px">AI screener</div>
         <h2 class="sec-h2" style="margin-bottom:0">Find what to analyse before the market moves</h2>
         <div class="tm-screener-bullets">
           <div class="tm-screener-bullet"><span class="tm-sb-icon"><i class="ti ti-radar-2"></i></span><span class="tm-sb-text"><b>NIFTY 50 scanning</b><span>Scan leaders automatically instead of checking one chart at a time.</span></span></div>
@@ -1470,8 +1473,8 @@ img,svg,video,canvas,iframe{max-width:100%}
   <!-- SAMPLE REPORT -->
   <div class="section section-alt">
     <div class="sec-eyebrow">Sample output</div>
-    <h2 class="sec-h2">See a sample analysis report</h2>
-    <p class="sec-sub">Full institutional-grade analysis, generated in seconds — this is exactly what you get after clicking "Run Analysis" on any stock.</p>
+    <h2 class="sec-h2">See a sample AI report</h2>
+    <p class="sec-sub">Full institutional-grade analysis, generated in seconds — this is exactly what you get after clicking "Run AI Analysis" on any stock.</p>
     <div class="tm-report">
       <div class="tm-report-hdr">
         <div class="tm-report-title"><b>RELIANCE</b><span class="feat-tag tag-free" style="margin:0">Bullish</span><span style="font-size:11px;color:var(--text3)">1H Timeframe</span></div>
@@ -1525,7 +1528,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <div class="tm-verdict-tags"><span class="tm-vtag"><i class="ti ti-alert-triangle" style="font-size:11px"></i>No-trade zone: ₹2,850–₹2,870</span><span class="tm-vtag"><i class="ti ti-shield" style="font-size:11px"></i>Risk max 1-2% per trade</span><span class="tm-vtag"><i class="ti ti-calendar-event" style="font-size:11px"></i>Next catalyst: Q4 earnings</span></div>
         </div>
 
-        <div class="tm-locked"><i class="ti ti-lock"></i><div class="tm-locked-title">Expert Chat — Pro</div><div class="tm-locked-sub">Ask unlimited follow-up questions about any analysis, in plain English</div></div>
+        <div class="tm-locked"><i class="ti ti-lock"></i><div class="tm-locked-title">AI Expert Chat — Pro</div><div class="tm-locked-sub">Ask unlimited follow-up questions about any analysis, in plain English</div></div>
       </div>
     </div>
   </div>
@@ -1540,7 +1543,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-stack-2"></i></div><div class="tm-iconfeat-title">Market Structure &amp; Liquidity</div><div class="tm-iconfeat-desc">SMC-based order blocks, fair value gaps, and liquidity zones auto-detected.</div></div>
       <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-scale"></i></div><div class="tm-iconfeat-title">Risk-Reward Trade Plans</div><div class="tm-iconfeat-desc">Precise entry, stop-loss and extension targets with calculated R:R ratios.</div></div>
       <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-hand-stop"></i></div><div class="tm-iconfeat-title">"No Trade" Discipline</div><div class="tm-iconfeat-desc">When structure is unclear, the system says no — protecting you from low-quality setups.</div></div>
-      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-radar-2"></i></div><div class="tm-iconfeat-title">Computed Opportunity Screener</div><div class="tm-iconfeat-desc">Scan the NIFTY universe, rank actionable stocks, and open the best candidates for full analysis.</div></div>
+      <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-radar-2"></i></div><div class="tm-iconfeat-title">AI Opportunity Screener</div><div class="tm-iconfeat-desc">Scan the NIFTY universe, rank actionable stocks, and open the best candidates for full analysis.</div></div>
       <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-refresh"></i></div><div class="tm-iconfeat-title">Real-Time Price Sync</div><div class="tm-iconfeat-desc">Live market data integration keeps every analysis current with price movement.</div></div>
       <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-file-description"></i></div><div class="tm-iconfeat-title">PDF Export &amp; Reports</div><div class="tm-iconfeat-desc">Turn any analysis into a shareable, print-ready PDF report in one click.</div></div>
       <div class="tm-iconfeat"><div class="tm-iconfeat-icon"><i class="ti ti-bell-ringing"></i></div><div class="tm-iconfeat-title">Price Alerts &amp; Watchlist</div><div class="tm-iconfeat-desc">Get notified the moment a watchlist stock hits a key level or condition.</div></div>
@@ -1553,13 +1556,13 @@ img,svg,video,canvas,iframe{max-width:100%}
   <!-- ACCURACY PROOF -->
   <div class="section section-alt">
     <div class="sec-eyebrow">Accuracy & trust</div>
-    <h2 class="sec-h2">Every computed reading is logged and tracked, from day one</h2>
-    <p class="sec-sub">We're just launching, so there's no track record to show you yet — but every bullish/bearish bias reading our system generates is timestamped, logged, and checked against what actually happens next. Nothing gets hidden after the fact. This is an accuracy audit, not investment advice.</p>
+    <h2 class="sec-h2">Every AI reading is logged and tracked, from day one</h2>
+    <p class="sec-sub">We're just launching, so there's no track record to show you yet — but every bullish/bearish bias reading our AI generates is timestamped, logged, and checked against what actually happens next. Nothing gets hidden after the fact. This is an accuracy audit, not investment advice.</p>
     <div class="feat-grid">
       <div class="feat-card" style="text-align:center">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--green)">Logged automatically</div>
         <div style="font-size:14px;font-weight:600;color:var(--text);margin-top:8px">Every Reading</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:6px">Each analysis call, bias reading, and analysis timeframe is recorded the moment it's generated</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Each AI call, bias reading, and analysis timeframe is recorded the moment it's generated</div>
       </div>
       <div class="feat-card" style="text-align:center">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--violet-light)">Checked against outcomes</div>
@@ -1590,7 +1593,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       </div>
       <div class="testi-card">
         <div class="testi-text" style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px"><i class="ti ti-rocket" style="color:var(--gold)"></i>&nbsp; Free to start</div>
-        <p class="testi-text">The Free plan runs real computed analysis with no credit card required — upgrade only if you want deeper multi-model consensus or more monthly analysis.</p>
+        <p class="testi-text">The Free plan runs real AI analysis with no credit card required — upgrade only if you want deeper multi-model consensus or more monthly analysis.</p>
       </div>
     </div>
   </div>
@@ -1607,12 +1610,12 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="logo"><div class="logo-mark">TM</div><span class="logo-text">Trade<span>Mind</span> AI</span></div>
-        <p class="footer-desc">India's most advanced computed stock intelligence platform. Institutional-grade signals for retail traders.</p>
-        <div style="font-size:11px;color:var(--text3)">Not SEBI registered · Computed analysis is not financial advice</div>
+        <p class="footer-desc">India's most advanced AI stock intelligence platform. Institutional-grade signals for retail traders.</p>
+        <div style="font-size:11px;color:var(--text3)">Not SEBI registered · AI analysis is not financial advice</div>
       </div>
       <div>
         <div class="footer-col-title">Platform</div>
-        <span class="footer-link" onclick="show('analysis')">Computed Analysis</span>
+        <span class="footer-link" onclick="show('analysis')">AI Analysis</span>
         <span class="footer-link" onclick="show('charts')">Live Charts</span>
         <span class="footer-link" onclick="show('screener')">Stock Screener</span>
         <span class="footer-link" onclick="show('options')">Options Analysis</span>
@@ -1631,7 +1634,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       </div>
     </div>
     <div class="footer-bottom">
-      <div class="footer-disclaimer">© 2025 TradeMind AI · Not SEBI registered · Computed analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
+      <div class="footer-disclaimer">© 2025 TradeMind AI · Not SEBI registered · AI-generated analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
       <div class="social-links">
         <a class="social-link" href="https://instagram.com/_trademind.ai" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
         <a class="social-link" href="https://www.linkedin.com/in/harish-dewasi-98a75a367?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11v5"/><path d="M8 8v.01"/><path d="M12 16v-5"/><path d="M16 16v-3a2 2 0 1 0 -4 0"/><path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10"/></svg></a>
@@ -1643,9 +1646,9 @@ img,svg,video,canvas,iframe{max-width:100%}
 <!-- ══════════════ ANALYSIS ══════════════ -->
 <div id="page-analysis" class="page">
   <div class="section">
-    <div class="sec-eyebrow">Computed Stock Analysis</div>
+    <div class="sec-eyebrow">AI Stock Analysis</div>
     <h2 class="sec-h2">Get your technical analysis</h2>
-    <p class="sec-sub">Enter any NSE or BSE stock. Gemini 2.5 Flash returns a bullish/bearish bias reading with full reasoning, technical score, risk scoring, and technical breakdown — with Claude, GPT-4o, and DeepSeek on higher plans for a per-model debate. This is data-driven analysis, not investment advice.</p>
+    <p class="sec-sub">Enter any NSE or BSE stock. Gemini 2.5 Flash returns a bullish/bearish bias reading with full reasoning, technical score, risk scoring, and technical breakdown — with Claude, GPT-4o, and DeepSeek on higher plans for a per-AI debate. This is data-driven analysis, not investment advice.</p>
     <div class="analysis-outer">
       <div class="analysis-wrap">
         <div class="analysis-tabs">
@@ -1689,7 +1692,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           </div>
         </div>
         <div class="inp-group" style="margin-bottom:16px">
-          <label class="inp-lbl" style="margin-bottom:10px">Select analysis models</label>
+          <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
           <div class="ai-chips" id="ai-model-chips">
             <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
             <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
@@ -1744,12 +1747,12 @@ img,svg,video,canvas,iframe{max-width:100%}
             </select>
           </div>
         </div>
-        <button class="btn-analyse" id="btn-analyse" onclick="handleAnalyseClick()"><i class="ti ti-sparkles"></i> Run Analysis</button>
+        <button class="btn-analyse" id="btn-analyse" onclick="handleAnalyseClick()"><i class="ti ti-sparkles"></i> Analyse with AI</button>
         <div class="load-wrap" id="load-wrap">
           <div class="load-bar"><div class="load-fill"></div></div>
           <div class="load-steps" id="load-steps">
             <span class="load-step" id="ls1"><i class="ti ti-clock"></i> Fetching data</span>
-            <span class="load-step" id="ls2"><i class="ti ti-clock"></i> Running technical scan</span>
+            <span class="load-step" id="ls2"><i class="ti ti-clock"></i> Running Gemini AI</span>
             <span class="load-step" id="ls3"><i class="ti ti-clock"></i> Technical scan</span>
             <span class="load-step" id="ls4"><i class="ti ti-clock"></i> Compiling analysis</span>
           </div>
@@ -1765,9 +1768,9 @@ img,svg,video,canvas,iframe{max-width:100%}
 <!-- ══════════════ SCREENER ══════════════ -->
 <div id="page-screener" class="page">
   <div class="section">
-    <div class="sec-eyebrow">Computed Stock Screener</div>
+    <div class="sec-eyebrow">AI Stock Screener</div>
     <h2 class="sec-h2">Discover winning stocks</h2>
-    <p class="sec-sub">Curated picks below are updated with computed signals. Use the search box to look up live price data for any of the 5,000+ NSE and BSE listed stocks.</p>
+    <p class="sec-sub">Curated picks below are updated with AI signals. Use the search box to look up live price data for any of the 5,000+ NSE and BSE listed stocks.</p>
     <div id="screener-trial-banner" style="display:none"></div>
     <div style="position:relative;margin-bottom:16px">
       <input class="tm-inp" id="screener-search-inp" placeholder="Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…" style="width:100%;height:44px;padding-left:40px" oninput="onScreenerSearchInput(this.value)"/>
@@ -1847,7 +1850,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <div class="section">
     <div class="sec-eyebrow">Live Charts</div>
     <h2 class="sec-h2">TradingView-style technical charts</h2>
-    <p class="sec-sub">Candlestick price action with overlay indicators. Toggle RSI, MACD, EMA, Bollinger Bands and VWAP — same data feed used in stock analysis.</p>
+    <p class="sec-sub">Candlestick price action with overlay indicators. Toggle RSI, MACD, EMA, Bollinger Bands and VWAP — same data feed used in AI analysis.</p>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <span class="ind-chip sel" id="chart-idx-nifty50" onclick="loadChartIndex('NIFTY 50',this)">NIFTY 50</span>
       <span class="ind-chip" id="chart-idx-sensex" onclick="loadChartIndex('SENSEX',this)">SENSEX</span>
@@ -1948,9 +1951,9 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div id="opt-verdict" style="font-size:13px;color:var(--text2);line-height:1.8"></div>
     </div>
     <div class="admin-panel" style="margin-top:20px">
-      <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Option Strategy Advisor</div>
+      <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Option Strategy Advisor</div>
       <div class="inp-group" style="margin:14px 0 16px">
-        <label class="inp-lbl" style="margin-bottom:10px">Select analysis models</label>
+        <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
         <div class="ai-chips" id="ai-model-chips-fno">
           <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
           <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
@@ -1963,7 +1966,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <span style="font-size:11px;color:var(--text3)">Tap a model to include it (at least one stays selected) · Selecting 2+ models asks each one for a strategy suggestion; selecting 1 asks just that model.</span>
       </div>
       <button class="btn-analyse" style="padding:8px 18px;font-size:12px;margin-bottom:12px" onclick="getOptionStrategyAdvice()"><i class="ti ti-bulb"></i> Suggest a strategy</button>
-      <div id="option-strategy-advice" style="font-size:13px;color:var(--text2);line-height:1.7">Load the option chain above, then click for a strategy suggestion grounded in the real PCR/Max Pain/OI shown.</div>
+      <div id="option-strategy-advice" style="font-size:13px;color:var(--text2);line-height:1.7">Load the option chain above, then click for an AI strategy suggestion grounded in the real PCR/Max Pain/OI shown.</div>
     </div>
     <div style="text-align:center;margin-top:24px"></div>
   </div>
@@ -2017,18 +2020,14 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="sec-eyebrow">Subscription plans</div>
     <h2 class="sec-h2">Choose your intelligence tier</h2>
     <p class="sec-sub">Monthly rolling subscriptions. Payments processed securely by Razorpay.</p>
-    <div class="disclaimer" style="max-width:680px;margin:-24px 0 32px">Subscribing pays for compute, data, and platform access — it does not purchase investment advice. TradeMind AI is not SEBI registered; please consult a SEBI-registered investment adviser before making investment decisions. See our <span style="cursor:pointer;text-decoration:underline" onclick="show('terms')">Terms</span>.</div>
-    <div id="pricing-trial-banner" style="display:none;max-width:680px;margin:0 0 24px;padding:14px 18px;border:1px solid rgba(0,194,168,.35);background:rgba(0,194,168,.1);border-radius:var(--radius-lg);font-size:13px;color:var(--text)">
-      <i class="ti ti-gift" style="margin-right:6px;color:var(--teal)"></i><strong>Everything is free for your first month.</strong>
-      <span id="pricing-trial-days"></span> Sign in with Google to start — no card required. Regular pricing shown below applies once the trial ends.
-    </div>
+    <div class="disclaimer" style="max-width:680px;margin:-24px 0 32px">Subscribing pays for AI compute, data, and platform access — it does not purchase investment advice. TradeMind AI is not SEBI registered; please consult a SEBI-registered investment adviser before making investment decisions. See our <span style="cursor:pointer;text-decoration:underline" onclick="show('terms')">Terms</span>.</div>
     <div class="pricing-grid">
       <!-- FREE PLAN -->
       <div class="plan">
         <div class="plan-badge plan-badge-free">Always Free</div>
         <div class="plan-tier">Free</div>
-        <div class="plan-desc">Try real computed stock analysis with no credit card — great for exploring how TradeMind AI works.</div>
-        <div class="plan-price" id="price-free"><sup>₹</sup>0</div>
+        <div class="plan-desc">Try real AI stock analysis with no credit card — great for exploring how TradeMind AI works.</div>
+        <div class="plan-price"><sup>₹</sup>0</div>
         <div class="plan-mo">forever</div>
         <div class="plan-limit"><strong>7</strong> analysis / month · 50,000 tokens/mo</div>
         <div class="plan-hr"></div>
@@ -2036,9 +2035,9 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash analysis · 50,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Bullish / Bearish / Neutral bias signals</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Basic risk scoring</span></li>
-          <li class="plan-li"><i class="ti ti-clock chk" style="color:var(--amber)"></i><span>Computed Stock Screener <span class="soon-badge" style="background:rgba(245,158,11,.12);color:var(--amber);border-color:rgba(245,158,11,.3)">7-Day Trial</span></span></li>
+          <li class="plan-li"><i class="ti ti-clock chk" style="color:var(--amber)"></i><span>AI Stock Screener <span class="soon-badge" style="background:rgba(245,158,11,.12);color:var(--amber);border-color:rgba(245,158,11,.3)">7-Day Trial</span></span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>News sentiment analysis <span class="soon-badge">Coming Soon</span></span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Watchlist (5 stocks)</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (5 stocks)</span></li>
         </ul>
         <button class="btn-plan" onclick="show('login')">Get Started Free</button>
       </div>
@@ -2047,9 +2046,9 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="plan">
         <div class="plan-badge plan-badge-basic">Best Starter</div>
         <div class="plan-tier">Basic</div>
-        <div class="plan-desc">A dual-model analysis cascade with more monthly analysis, prediction tracking, and the screener — built for regular use.</div>
-        <div class="plan-price" id="price-basic"><sup>₹</sup>149</div>
-        <div class="plan-mo" id="mo-basic">per month</div>
+        <div class="plan-desc">A dual-AI model cascade with more monthly analysis, prediction tracking, and the AI screener — built for regular use.</div>
+        <div class="plan-price"><sup>₹</sup>149</div>
+        <div class="plan-mo">per month</div>
         <div class="plan-limit"><strong>49</strong> analysis / month · 250,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
@@ -2057,19 +2056,19 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Gemini 2.5 Flash (primary) · 250,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>DeepSeek V3 (secondary) · 250,000 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Prediction history tracking</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Computed Stock Screener</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Watchlist (10 stocks)</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (10 stocks)</span></li>
         </ul>
-        <button class="btn-plan" id="btn-basic" onclick="openPay('Basic','149')">Get Basic</button>
+        <button class="btn-plan" onclick="openPay('Basic','149')">Get Basic</button>
       </div>
 
       <!-- PRO PLAN -->
       <div class="plan featured">
         <div class="plan-badge plan-badge-pro">Most Popular · Best Value</div>
         <div class="plan-tier">Pro</div>
-        <div class="plan-desc">A 4-model analysis stack, Portfolio Tracker, unlimited-feel monthly analysis, and a Trading Assistant Chat — built for active traders.</div>
-        <div class="plan-price" id="price-pro"><sup>₹</sup>499</div>
-        <div class="plan-mo" id="mo-pro">per month</div>
+        <div class="plan-desc">A 4-model AI stack, Portfolio Tracker, unlimited-feel monthly analysis, and an AI Trading Assistant — built for active traders.</div>
+        <div class="plan-price"><sup>₹</sup>999</div>
+        <div class="plan-mo">per month</div>
         <div class="plan-limit"><strong>499</strong> analysis / month · 1,000,000 tokens/mo</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
@@ -2078,24 +2077,24 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Claude Sonnet 4.6 (reasoning) · 187,500 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>GPT-4o (deep analysis) · 187,500 tokens/mo</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>DeepSeek V3 (fallback) · 250,000 tokens/mo</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Technical Score</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Technical Score</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Portfolio Tracker + P&amp;L</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Computed Stock Screener</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Stock Screener</span></li>
           <li class="plan-li is-soon"><i class="ti ti-clock chk chk-soon"></i><span>Telegram/WhatsApp Alerts <span class="soon-badge">Coming Soon</span></span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Watchlist (50 stocks)</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Trading Assistant Chat</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Watchlist (50 stocks)</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>AI Trading Assistant Chat</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Referral program access</span></li>
         </ul>
-        <button class="btn-plan p" id="btn-pro" onclick="openPay('Pro','499')">Get Pro</button>
+        <button class="btn-plan p" onclick="openPay('Pro','999')">Get Pro</button>
       </div>
 
       <!-- ELITE PLAN -->
       <div class="plan elite-plan">
         <div class="plan-badge plan-badge-elite">🏆 Institutional Grade</div>
         <div class="plan-tier">Elite</div>
-        <div class="plan-desc">Institutional-grade 4-model consensus, backtesting, options analysis, and a Portfolio Advisor — built for serious traders.</div>
-        <div class="plan-price" id="price-elite"><sup>₹</sup>999</div>
-        <div class="plan-mo" id="mo-elite">per month</div>
+        <div class="plan-desc">Institutional-grade 4-model consensus, backtesting, options analysis, and an AI Portfolio Advisor — built for serious traders.</div>
+        <div class="plan-price"><sup>₹</sup>3,199</div>
+        <div class="plan-mo">per month</div>
         <div class="plan-limit"><strong>1,499</strong> analysis / month · 2,015,000 tokens/mo fair-use cap</div>
         <div class="plan-hr"></div>
         <ul class="plan-list">
@@ -2107,12 +2106,12 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>4-model consensus analysis</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Backtesting Engine (5yr history)</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Options Analysis (CE/PE + Max Pain)</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Portfolio Advisor</span></li>
-          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Unlimited Watchlists</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>AI Portfolio Advisor</span></li>
+          <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Unlimited AI Watchlists</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Priority processing + support</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>2FA + Device management</span></li>
         </ul>
-        <button class="btn-plan elite" id="btn-elite" onclick="openPay('Elite','999')">Get Elite</button>
+        <button class="btn-plan elite" onclick="openPay('Elite','3,199')">Get Elite</button>
       </div>
     </div>
     <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:28px">Payments by <strong style="color:var(--text2)">Razorpay</strong> · UPI · Netbanking · Credit &amp; Debit Cards · Auto-debit · All payments in INR</p>
@@ -2125,21 +2124,21 @@ img,svg,video,canvas,iframe{max-width:100%}
         <thead>
           <tr>
             <th>Feature</th>
-            <th>Free<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-free">₹0</span></th>
-            <th>Basic<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-basic">₹149</span></th>
-            <th>Pro<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-pro">₹499</span></th>
-            <th>Elite<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--amber)" id="comp-price-elite">₹999</span></th>
+            <th>Free<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)">₹0</span></th>
+            <th>Basic<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)">₹149</span></th>
+            <th>Pro<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)">₹999</span></th>
+            <th>Elite<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--amber)">₹3,199</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Analysis Models</td><td class="comp-partial">Gemini Flash + DeepSeek</td><td class="comp-partial">Gemini + DeepSeek + Claude Sonnet</td><td class="comp-partial">Gemini + Claude Sonnet 4.6 + GPT-4o + DeepSeek</td><td class="comp-partial">Gemini 2.5 Pro + Claude Opus 4.7 + GPT-4o + DeepSeek R1</td></tr>
+          <tr><td>AI Models</td><td class="comp-partial">Gemini Flash + DeepSeek</td><td class="comp-partial">Gemini + DeepSeek + Claude Sonnet</td><td class="comp-partial">Gemini + Claude Sonnet 4.6 + GPT-4o + DeepSeek</td><td class="comp-partial">Gemini 2.5 Pro + Claude Opus 4.7 + GPT-4o + DeepSeek R1</td></tr>
           <tr><td>Monthly Analysis</td><td class="comp-partial">7</td><td class="comp-partial">49</td><td class="comp-partial">499</td><td class="comp-partial">1,499</td></tr>
-          <tr><td>Morning Market Brief</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
-          <tr><td>Technical Score</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Brief (Morning Market Brief)</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Technical Score</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Portfolio Tracker</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
-          <tr><td>Computed Stock Screener</td><td style="color:var(--amber);font-size:12px;font-weight:600">7-day trial</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Stock Screener</td><td style="color:var(--amber);font-size:12px;font-weight:600">7-day trial</td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Telegram / WhatsApp Alerts</td><td colspan="4" class="comp-soon" style="text-align:center">Coming Soon — Pro &amp; Elite</td></tr>
-          <tr><td>Trading Assistant Chat</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
+          <tr><td>AI Trading Assistant Chat</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>4-Model Consensus Analysis</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Backtesting Engine</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
           <tr><td>Options Analysis</td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-x comp-cross"></i></td><td><i class="ti ti-check comp-check"></i></td></tr>
@@ -2170,7 +2169,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="side-nav-item" onclick="switchDash('watchlist')"><i class="ti ti-star side-icon"></i> Watchlist <span class="side-badge" id="side-badge-watchlist">0</span></div>
       <div class="side-nav-item" onclick="switchDash('portfolio')"><i class="ti ti-briefcase side-icon"></i> Portfolio</div>
       <div class="side-nav-item" onclick="switchDash('alerts')"><i class="ti ti-bell side-icon"></i> Alerts</div>
-      <div class="side-nav-item" onclick="switchDash('chat')"><i class="ti ti-robot side-icon"></i> Assistant</div>
+      <div class="side-nav-item" onclick="switchDash('chat')"><i class="ti ti-robot side-icon"></i> AI Assistant</div>
       <div class="side-section-label">Tools</div>
       <div class="side-nav-item" onclick="show('charts')"><i class="ti ti-chart-candle side-icon"></i> Live Charts</div>
       <div class="side-nav-item" onclick="show('options')"><i class="ti ti-stack-2 side-icon"></i> Options Analysis</div>
@@ -2217,8 +2216,8 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="adm"><div class="adm-lbl">Total users</div><div class="adm-val" id="adm-total-users">—</div><div class="adm-chg up" id="adm-new-users">—</div></div>
       <div class="adm"><div class="adm-lbl">Active subscribers</div><div class="adm-val" id="adm-active-subs">—</div><div class="adm-chg up" id="adm-active-subs-note">By plan, see below</div></div>
       <div class="adm"><div class="adm-lbl">Monthly revenue</div><div class="adm-val" id="adm-revenue">—</div><div class="adm-chg up">This calendar month</div></div>
-      <div class="adm"><div class="adm-lbl">Analysis runs today</div><div class="adm-val" id="adm-ai-today">—</div><div class="adm-chg up">Across all plans</div></div>
-      <div class="adm"><div class="adm-lbl">Compute cost (30d)</div><div class="adm-val" id="adm-ai-cost">—</div><div class="adm-chg up">All providers combined</div></div>
+      <div class="adm"><div class="adm-lbl">AI analysis today</div><div class="adm-val" id="adm-ai-today">—</div><div class="adm-chg up">Across all plans</div></div>
+      <div class="adm"><div class="adm-lbl">AI cost (30d)</div><div class="adm-val" id="adm-ai-cost">—</div><div class="adm-chg up">All providers combined</div></div>
     </div>
     <div class="two-col" style="margin-bottom:20px">
       <div class="admin-panel">
@@ -2233,7 +2232,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="sec-title">Risk flags &amp; alerts</div>
         <div id="adm-risk-flags"><div style="font-size:12px;color:var(--text3)">Loading…</div></div>
         <div class="risk-flag rf-med" id="adm-advertiser-flag" style="display:none"><i class="ti ti-alert-triangle" style="color:var(--amber)"></i><div><div style="font-size:12px;font-weight:600;color:var(--text)" id="adm-advertiser-flag-title">New advertiser enquiry pending</div><div style="font-size:11px;color:var(--text3)" id="adm-advertiser-flag-sub">Loading…</div></div></div>
-        <div class="sec-title" style="margin-top:20px">Model costs</div>
+        <div class="sec-title" style="margin-top:20px">AI model costs</div>
         <div id="ai-usage-bars"></div>
       </div>
     </div>
@@ -2264,7 +2263,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <span>Avg rating: <strong id="adm-fb-avg" style="color:var(--text)">—</strong></span>
           <select class="tm-inp" id="adm-fb-category" style="height:32px;font-size:11px;cursor:pointer" onchange="loadAdminFeedback(1)">
             <option value="">All categories</option>
-            <option>Bug Report</option><option>Feature Request</option><option>Analysis Quality</option><option>Pricing &amp; Billing</option><option>General Feedback</option><option>Other</option>
+            <option>Bug Report</option><option>Feature Request</option><option>AI Analysis Quality</option><option>Pricing &amp; Billing</option><option>General Feedback</option><option>Other</option>
           </select>
         </div>
       </div>
@@ -2312,7 +2311,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="sec-title" style="margin-bottom:0">Prediction accuracy (internal only)</div>
         <button class="btn-ghost" style="font-size:11px" onclick="runAiAccuracyEvaluationNow()"><i class="ti ti-refresh"></i> Evaluate now</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:14px"><i class="ti ti-lock" style="margin-right:4px"></i>Admin-only. Never shown to users or published — checks the model's past sentiment reads against real price outcomes, purely for internal quality tracking.</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px"><i class="ti ti-lock" style="margin-right:4px"></i>Admin-only. Never shown to users or published — checks the AI's past sentiment reads against real price outcomes, purely for internal quality tracking.</div>
       <div class="admin-metrics" style="margin-bottom:16px">
         <div class="adm"><div class="adm-lbl">Overall accuracy</div><div class="adm-val" id="acc-overall-pct">—</div><div class="adm-chg up" id="acc-overall-count">—</div></div>
         <div class="adm"><div class="adm-lbl">Correct</div><div class="adm-val" id="acc-correct">—</div><div class="adm-chg up">Evaluated calls</div></div>
@@ -2365,32 +2364,12 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="sec-title" style="margin-bottom:0">Scanner signal accuracy — all stocks, all timeframes</div>
         <button class="btn-ghost" style="font-size:11px" onclick="runScannerAccuracyEvaluationNow()"><i class="ti ti-refresh"></i> Evaluate now</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:14px"><i class="ti ti-lock" style="margin-right:4px"></i>Admin-only. Every technical signal the Screener computes for every stock it scans (RSI/EMA/MACD/Supertrend/VWAP), on every Time Interval chip, while the market is open — checked against real price outcomes. Separate from the analysis accuracy above, which only covers manual single-stock "Analyze" runs.</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px"><i class="ti ti-lock" style="margin-right:4px"></i>Admin-only. Every technical signal the Screener computes for every stock it scans (RSI/EMA/MACD/Supertrend/VWAP), on every Time Interval chip, while the market is open — checked against real price outcomes. Separate from the AI-analysis accuracy above, which only covers manual single-stock "AI Analyze" runs.</div>
       <div class="admin-metrics" style="margin-bottom:16px">
         <div class="adm"><div class="adm-lbl">Overall accuracy</div><div class="adm-val" id="sacc-overall-pct">—</div><div class="adm-chg up" id="sacc-overall-count">—</div></div>
         <div class="adm"><div class="adm-lbl">Correct</div><div class="adm-val" id="sacc-correct">—</div><div class="adm-chg up">Evaluated signals</div></div>
         <div class="adm"><div class="adm-lbl">Incorrect</div><div class="adm-val" id="sacc-incorrect">—</div><div class="adm-chg down">Evaluated signals</div></div>
         <div class="adm"><div class="adm-lbl">Pending evaluation</div><div class="adm-val" id="sacc-pending">—</div><div class="adm-chg up">Horizon not reached yet</div></div>
-      </div>
-      <div style="margin-bottom:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-bottom:6px">
-          <div class="sec-title" style="margin-bottom:0;padding-bottom:0">Everyday accuracy calendar</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn-ghost" id="sacc-cal-prev" style="font-size:11px;padding:6px 10px" onclick="shiftScannerCalendar(-1)"><i class="ti ti-chevron-left"></i></button>
-            <div id="sacc-cal-label" style="font-size:12px;font-weight:600;color:var(--text);min-width:110px;text-align:center">—</div>
-            <button class="btn-ghost" id="sacc-cal-next" style="font-size:11px;padding:6px 10px" onclick="shiftScannerCalendar(1)"><i class="ti ti-chevron-right"></i></button>
-            <button class="btn-ghost" style="font-size:11px" onclick="loadScannerCoverageStatus()"><i class="ti ti-refresh"></i> Today's coverage</button>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">One cell per calendar day. Green shades show that day's evaluated accuracy; grey days are weekends/exchange holidays (market never opened); amber-outlined days are trading days still waiting on evaluation. Click a day for its NSE/BSE/MCX breakdown.</div>
-        <div id="sacc-coverage-strip" style="display:none;gap:14px;flex-wrap:wrap;margin-bottom:12px;font-size:11px;color:var(--text2)"></div>
-        <div id="sacc-cal-weekdays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center">
-          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-        </div>
-        <div id="sacc-cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">
-          <div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:12px;padding:16px">Loading…</div>
-        </div>
-        <div id="sacc-cal-detail" style="display:none;margin-top:14px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)"></div>
       </div>
       <div class="two-col">
         <div>
@@ -2654,7 +2633,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         </div>
       </div>
       <div class="login-h2">Sign in to continue</div>
-      <p class="login-sub">Access institutional-grade computed stock analysis across NSE &amp; BSE.</p>
+      <p class="login-sub">Access institutional-grade AI stock analysis across NSE &amp; BSE.</p>
       <!-- FIX (Instagram-bio-link login issue): Google actively blocks its
            Sign-In button/One Tap flow inside in-app browsers (Instagram,
            Facebook, TikTok, etc. — detected via UA sniffing in
@@ -2743,13 +2722,13 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div style="padding:30px;text-align:center;color:var(--text3)">Loading…</div>
     </div>
     <div style="display:flex;gap:10px;margin-top:18px">
-      <button class="btn-analyse" style="flex:1" id="sd-analysis-btn"><i class="ti ti-sparkles"></i> Open Full Analysis</button>
+      <button class="btn-analyse" style="flex:1" id="sd-analysis-btn"><i class="ti ti-sparkles"></i> Open Full AI Analysis</button>
       <button class="btn-lg-ghost" style="flex:1" id="sd-chart-btn"><i class="ti ti-chart-candle"></i> Open Full Chart</button>
     </div>
   </div>
 </div>
 
-<button id="ai-fab" class="ai-fab" onclick="show('dashboard');switchDash('chat')" title="Open Assistant">
+<button id="ai-fab" class="ai-fab" onclick="show('dashboard');switchDash('chat')" title="Open AI Assistant">
   <i class="ti ti-robot"></i>
 </button>
 
@@ -2797,7 +2776,7 @@ function setText(id,text){ const el=document.getElementById(id); if(el)el.textCo
 // string is required for the actual API call to work) — this only affects
 // what label the person sees, per request to show "ChatGPT" everywhere.
 function modelDisplayName(raw){
-  if(!raw)return 'Model';
+  if(!raw)return 'AI';
   const r=raw.toLowerCase();
   if(r.includes('gpt'))return 'ChatGPT';
   if(r.includes('gemini'))return 'Gemini';
@@ -3293,7 +3272,6 @@ function show(id){
   document.querySelectorAll('.nav-link[data-page="'+id+'"]').forEach(l=>l.classList.add('active'));
   stopScreenerAutoRefresh(); // leaving/entering any page: reset, then re-arm below only if we're on Screener
   if(id==='dashboard')renderDashboard('overview');
-  if(id==='pricing')applyLaunchTrialUI();
   if(id==='screener'){
     // FIX: renderScreener() deliberately skips the loading spinner when
     // screener-results.dataset.loaded is already 'true' — needed so the
@@ -3337,16 +3315,6 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape')toggleMobileSidebar
 // ══════════════ LIVE MARKET DATA ENGINE ══════════════
 // UPDATED: real quotes now come from our own backend (Upstox-backed),
 // fetched in ONE batched call per refresh instead of one call per symbol.
-// Shared exchange -> display-label mapping. Used everywhere a symbol's
-// exchange badge is shown (search results, watchlist, scanner, charts) so
-// an MCX commodity shows "MCX" instead of silently falling into the old
-// BSE/NSE-only ternary and being mislabeled "NSE".
-function exchangeLabel(exchange){
-  if(exchange==='BSE_EQ')return 'BSE';
-  if(exchange==='MCX_FO')return 'MCX';
-  return 'NSE';
-}
-
 // TICKER_SYMBOLS below is still a curated display list (a ticker tape
 // can't scroll 5000 stocks meaningfully) but it now spans NSE *and* BSE —
 // the backend resolves each symbol on NSE first, then BSE automatically.
@@ -3795,9 +3763,9 @@ setInterval(()=>{ if(!liveSocket||liveSocket.readyState!==1) refreshLiveMarket()
 
 // ══════════════ FAQ ══════════════
 const faqs=[
-  {q:'Is TradeMind AI SEBI registered?',a:'No. TradeMind AI provides computed market analysis for informational and educational purposes only — not SEBI-regulated financial advice. Always consult a registered advisor before making investment decisions.'},
-  {q:'How accurate are the computed signals?',a:'We just launched, so there is no public track record yet. Every signal is logged the moment it is generated and scored against actual outcomes after the recommended holding period — as real usage builds up, the full accuracy report (wins and misses both) will be visible right in the platform.'},
-  {q:'Which analysis models are included in each plan?',a:'Free uses Gemini 2.5 Flash only — completely free, no credit card needed. Basic adds DeepSeek V3 alongside Gemini Flash for higher daily limits (₹149/mo). Pro brings a balanced multi-model stack: Gemini 2.5 Flash for speed, Claude Sonnet 4.6 for reasoning, GPT-4o for deep analysis, and DeepSeek V3 as fallback (₹999/mo). Elite runs all four flagship models — Gemini 2.5 Pro, Claude Opus 4.7, GPT-4o (high token), and DeepSeek R1 — simultaneously in consensus mode for the highest-confidence signals (₹3,199/mo). All plans are subject to a monthly token quota; see the Pricing page for current limits.'},
+  {q:'Is TradeMind AI SEBI registered?',a:'No. TradeMind AI provides AI-generated market analysis for informational and educational purposes only — not SEBI-regulated financial advice. Always consult a registered advisor before making investment decisions.'},
+  {q:'How accurate are the AI signals?',a:'We just launched, so there is no public track record yet. Every signal is logged the moment it is generated and scored against actual outcomes after the recommended holding period — as real usage builds up, the full accuracy report (wins and misses both) will be visible right in the platform.'},
+  {q:'Which AI models are included in each plan?',a:'Free uses Gemini 2.5 Flash only — completely free, no credit card needed. Basic adds DeepSeek V3 alongside Gemini Flash for higher daily limits (₹149/mo). Pro brings a balanced multi-model stack: Gemini 2.5 Flash for speed, Claude Sonnet 4.6 for reasoning, GPT-4o for deep analysis, and DeepSeek V3 as fallback (₹999/mo). Elite runs all four flagship models — Gemini 2.5 Pro, Claude Opus 4.7, GPT-4o (high token), and DeepSeek R1 — simultaneously in consensus mode for the highest-confidence signals (₹3,199/mo). All plans are subject to a monthly token quota; see the Pricing page for current limits.'},
   {q:'How does payment work?',a:'Payments are processed securely by Razorpay — supports UPI, cards, netbanking, and wallets. Monthly rolling subscriptions. GST invoice provided for all payments.'},
   {q:'Can I cancel my subscription?',a:'No, subscriptions can\'t be self-cancelled at this time. Please contact support to cancel or change your plan.'},
   {q:'Is there a referral programme?',a:'Yes. Pro and Elite plan members earn ₹500 credit for every user they refer who subscribes to a paid plan. Credits auto-apply to your next billing cycle with no limit on earnings.'},
@@ -3859,7 +3827,7 @@ function getAnalysisHorizonRisk(){
 function friendlyAiError(status,rawMsg){
   const isPlanOrQuota = status===403 || status===429;
   return {
-    message: (isPlanOrQuota && rawMsg) ? rawMsg : 'The insights engine is temporarily unavailable right now. Please try again shortly.',
+    message: (isPlanOrQuota && rawMsg) ? rawMsg : 'Insights AI is temporarily unavailable right now. Please try again shortly.',
     showUpgrade: isPlanOrQuota,
   };
 }
@@ -3891,7 +3859,7 @@ function toggleChip(el){
     // plan, it's not "locked behind an upgrade" — it's simply not part of
     // this plan's lineup (e.g. an Elite user tapping Gemini Flash).
     if(allowed && allowed.every(p=>(PLAN_RANK[p]??0)<currentRank)){
-      alert(`This model isn't part of your current plan's model lineup — your plan already runs its own set of flagship models automatically on every analysis.`);
+      alert(`This model isn't part of your current plan's AI lineup — your plan already runs its own set of flagship models automatically on every analysis.`);
       return;
     }
     const need=el.dataset.plan||(allowed?allowed[0]:'elite');
@@ -3967,14 +3935,14 @@ function ensureChipToolbar(container){
     <button type="button" style="background:none;border:none;padding:0;font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline" onclick="clearAllChips('${container.id}')">Clear all</button>`;
   container.insertAdjacentElement('afterend',bar);
 }
-// Builds one "Select analysis models" chip strip + toolbar as an HTML string, for
+// Builds one "Select AI models" chip strip + toolbar as an HTML string, for
 // features that render their chips dynamically (Market Brief, Trade Ideas)
 // rather than as static markup. Kept in the same visual language (same
 // classes, same 4 models + plan-gated extras) as the existing static strips
 // on Stock Analysis / Portfolio Health / Option Strategy.
 function modelChipsHtml(containerId){
   return `<div class="inp-group" style="margin:14px 0 16px">
-    <label class="inp-lbl" style="margin-bottom:10px">Select analysis models</label>
+    <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
     <div class="ai-chips" id="${containerId}">
       <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
       <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
@@ -3988,7 +3956,7 @@ function modelChipsHtml(containerId){
   </div>`;
 }
 // Reads the model ids (data-model) the user has actually ticked in a given
-// "Select analysis models" strip — only unlocked+selected chips count. Falls back
+// "Select AI models" strip — only unlocked+selected chips count. Falls back
 // to the first unlocked chip if, somehow, nothing is selected.
 function getSelectedModelIds(containerId){
   const group=document.getElementById(containerId);
@@ -4007,7 +3975,7 @@ function getSelectedModelIds(containerId){
 // clears any stale "ran this time" highlighting from a previous analysis.
 // Called on load and whenever the Analysis page is shown.
 // FIX: this used to only look inside #ai-model-chips, which was the single
-// chip strip on the Analysis page. Now that the same "Select analysis models"
+// chip strip on the Analysis page. Now that the same "Select AI models"
 // strip is reused on Screener (via stock detail → Analysis), F&O (Option
 // Strategy Advisor) and Portfolio (Health Check + Portfolio Scan), this
 // refreshes every ".ai-chips" group on the page — whichever ones exist —
@@ -4030,7 +3998,7 @@ function refreshModelChipLocks(){
     chip.classList.toggle('locked',locked);
     if(locked)chip.classList.remove('sel'); // never show a locked model as "selected"
   });
-  // Every "Select analysis models" strip on the page gets a Select all/Clear all
+  // Every "Select AI models" strip on the page gets a Select all/Clear all
   // toolbar and has its last saved selection restored (falls back to
   // whatever's already ticked by default if nothing was saved, or if a
   // previously-saved model is no longer available on this plan).
@@ -4052,7 +4020,7 @@ function refreshModelChipLocks(){
 // (from result.modelDebate on Elite, or the single result.model on lower
 // plans) instead of leaving the pre-request selection state, which was
 // never actually sent to the backend — model choice is plan-driven.
-// containerId lets every "Select analysis models" strip (Analysis, F&O, Portfolio)
+// containerId lets every "Select AI models" strip (Analysis, F&O, Portfolio)
 // sync independently after its own AI call finishes.
 function syncModelChipsWithResult(result,containerId){
   const ran=new Set();
@@ -4242,7 +4210,7 @@ async function runAnalysis(){
   const tfValue=document.getElementById('inp-timeframe')?.value||'1d';
 
   if(!currentUser){
-    alert('Please sign in first — Analysis runs server-side and is tied to your plan\'s usage quota.');
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
     show('login');
     return;
   }
@@ -4273,7 +4241,7 @@ async function runAnalysis(){
     });
     const data=await res.json();
     if(!res.ok){
-      const err=new Error(data.error || 'Analysis failed. Please try again.');
+      const err=new Error(data.error || 'AI analysis failed. Please try again.');
       err.status=res.status;
       throw err;
     }
@@ -4352,7 +4320,7 @@ async function runAnalysis(){
           </div>
 
           ${debate?`<div class="tm-report-block">
-            <div class="tm-report-block-title"><i class="ti ti-users-group" style="font-size:12px"></i>Model debate</div>
+            <div class="tm-report-block-title"><i class="ti ti-users-group" style="font-size:12px"></i>AI model debate</div>
             <div class="ai-debate">
               ${debate.map(m=>`<div class="debate-card">
                 <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
@@ -4379,13 +4347,13 @@ async function runAnalysis(){
 
           <div class="tm-report-block" style="background:var(--bg3);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border)">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div class="tm-report-block-title" style="margin-bottom:0"><i class="ti ti-sparkles" style="font-size:12px"></i>Multi-timeframe view</div>
+              <div class="tm-report-block-title" style="margin-bottom:0"><i class="ti ti-sparkles" style="font-size:12px"></i>Multi-timeframe AI view</div>
               <button class="btn-sm" onclick="getMultiTimeframeView('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-layers-intersect"></i> Check daily vs weekly</button>
             </div>
             <div id="mtf-view" style="font-size:13px;color:var(--text2);line-height:1.7">Compares real daily and weekly indicator readings for this stock — click to check if the timeframes agree.</div>
           </div>
 
-          <div class="disclaimer"><strong>Disclaimer:</strong> This is computed analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>
+          <div class="disclaimer"><strong>Disclaimer:</strong> This is AI-generated analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>
         </div>
       </div>`;
     rw.style.display='block';
@@ -4406,7 +4374,7 @@ async function runDeepResearch(){
   if(!name&&!sym){alert('Please enter a stock name or symbol.');return;}
   const tfValue=document.getElementById('inp-timeframe')?.value||'1d';
   if(!currentUser){
-    alert('Please sign in first — Analysis runs server-side and is tied to your plan\'s usage quota.');
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
     show('login');
     return;
   }
@@ -4429,7 +4397,7 @@ async function runDeepResearch(){
     });
     const data=await res.json();
     if(!res.ok){
-      const err=new Error(data.error || 'Analysis failed. Please try again.');
+      const err=new Error(data.error || 'AI analysis failed. Please try again.');
       err.status=res.status;
       throw err;
     }
@@ -4488,7 +4456,7 @@ async function runDeepResearch(){
     const debateShortfall=wantsDebate&&!debate;
 
     rw.innerHTML=`
-      <div class="disclaimer" style="margin-bottom:10px"><i class="ti ti-telescope" style="margin-right:4px"></i><strong>Deep Research Report</strong> — core computed signal + real daily-vs-weekly technical read, combined.</div>
+      <div class="disclaimer" style="margin-bottom:10px"><i class="ti ti-telescope" style="margin-right:4px"></i><strong>Deep Research Report</strong> — core AI signal + real daily-vs-weekly technical read, combined.</div>
       <div class="accuracy-banner">
         <div><span class="acc-num">${result.technicalScore??'—'}/100</span>Technical score${result.consensusFrom>1?` · ${result.consensusFrom}-model consensus`:''}</div>
         <div style="display:flex;gap:6px">
@@ -4513,7 +4481,7 @@ async function runDeepResearch(){
         <div class="mc"><div class="mc-lbl">RSI</div><div class="mc-val">${tech.rsi??'—'} ${tech.rsiSignal?`(${tech.rsiSignal})`:''}</div></div>
         <div class="mc"><div class="mc-lbl">MACD</div><div class="mc-val">${tech.macd??'—'}</div></div>
       </div>
-      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">Model Debate</div>
+      ${debate?`<div class="res-block-title" style="padding:8px 0 8px">AI Model Debate</div>
       <div class="ai-debate" style="margin-bottom:10px">
         ${debate.map(m=>`<div class="debate-card">
           <div class="debate-header"><div class="debate-ai">${modelDisplayName(m.model)}</div><span class="debate-signal ${(m.sentiment||'').includes('bullish')?'signal-bull':(m.sentiment||'').includes('bearish')?'signal-bear':'signal-neutral'}">${sentimentLabel}</span></div>
@@ -4521,7 +4489,7 @@ async function runDeepResearch(){
         </div>`).join('')}
       </div>`:''}
       ${debateShortfall?`<div style="font-size:11px;color:var(--text3);margin-bottom:10px">You selected ${selectedModels.length} models, but only <strong style="color:var(--text2)">${modelDisplayName(result.model)}</strong> ran this time — the other selected models may be temporarily unavailable or out of monthly quota on your plan.${(currentUser?.plan||'free').toLowerCase()!=='elite'?' Upgrade for a higher per-model quota and access to more flagship models.':''}</div>`:''}
-      <div class="res-block"><div class="res-block-title">What the analysis notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
+      <div class="res-block"><div class="res-block-title">What the AI notes</div><div class="res-block-text">${result.reasoning||'—'}</div></div>
       ${(result.risks&&result.risks.length)?`<div class="res-block"><div class="res-block-title">Key Risks</div><div class="res-block-text">${result.risks.map(r=>'• '+r).join('<br/>')}</div></div>`:''}
       ${(result.watchPoints&&result.watchPoints.length)?`<div class="res-block"><div class="res-block-title">Levels/Events To Watch</div><div class="res-block-text">${result.watchPoints.map(c=>'• '+c).join('<br/>')}</div></div>`:''}
       ${renderFullReportHtml(result.fullReport)}
@@ -4529,9 +4497,9 @@ async function runDeepResearch(){
         <div class="sec-title"><i class="ti ti-layers-intersect"></i> Daily vs Weekly (Multi-Timeframe)</div>
         ${mtfTimeframes?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${mtfTimeframes.daily.rsi}, ${mtfTimeframes.daily.trend} · Weekly: RSI ${mtfTimeframes.weekly.rsi}, ${mtfTimeframes.weekly.trend}</div>`:''}
         <div style="font-size:13px;color:var(--text2);line-height:1.7">${mtfText?mtfText.replace(/\n/g,'<br/>'):'Real daily/weekly candle history wasn\'t available for this symbol right now — core signal above still reflects real current data.'}</div>
-        ${mtfModel?`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(mtfModel)||'Model'}</div>`:''}
+        ${mtfModel?`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(mtfModel)||'AI'}</div>`:''}
       </div>
-      <div class="disclaimer"><strong>Disclaimer:</strong> This is computed analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>`;
+      <div class="disclaimer"><strong>Disclaimer:</strong> This is AI-generated analysis for educational purposes only. Not financial advice. Consult a SEBI-registered advisor before investing. Signal accuracy is tracked but past accuracy does not guarantee future results.</div>`;
     rw.style.display='block';
     rw.scrollIntoView({behavior:'smooth',block:'nearest'});
   },2400);
@@ -4562,7 +4530,7 @@ async function getMultiTimeframeView(sym){
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'multiTimeframe',context:{symbol:sym,timeframes}})});
     const data=await res.json();
     if(!res.ok){ const err=new Error(data.error||'HTTP '+res.status); err.status=res.status; throw err; }
-    el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${timeframes.daily.rsi}, ${timeframes.daily.trend} · Weekly: RSI ${timeframes.weekly.rsi}, ${timeframes.weekly.trend}</div>${data.text.replace(/\n/g,'<br/>')}<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'Model'}</div>`;
+    el.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Daily: RSI ${timeframes.daily.rsi}, ${timeframes.daily.trend} · Weekly: RSI ${timeframes.weekly.rsi}, ${timeframes.weekly.trend}</div>${data.text.replace(/\n/g,'<br/>')}<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
     // FIX: this used to always show a generic "please try again shortly"
     // line, even when the real reason was permanent (e.g. plan doesn't
@@ -4594,7 +4562,7 @@ async function quickAddToWatchlist(sym){
 // paginated across the full NSE+BSE instrument list via /api/market/stocks.
 let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDirection=undefined, screenerSignal=undefined, screenerPeriod='1d';
 
-// FIX: Free plan's Computed Stock Screener is now a 7-day trial from signup
+// FIX: Free plan's AI Stock Screener is now a 7-day trial from signup
 // (backend/config/plans.js FREE_SCREENER_TRIAL_DAYS, enforced server-side
 // by requireScreenerAccess() — this client-side copy is purely a courtesy
 // heads-up, the backend is the real gate). Shows a small countdown banner
@@ -4603,49 +4571,6 @@ let screenerPage=1, screenerExchange=undefined, screenerTotalPages=1, screenerDi
 // below will 403 and its existing e.isPlanGate branch already renders a
 // full lock screen with the backend's exact "trial has ended" message and
 // an upgrade button, so this banner just hides itself in that case.
-// ── Sitewide launch trial (separate from the Free plan's 7-day Screener
-// trial above) — GET /api/market/launch-trial is public (no auth needed)
-// so this can run for logged-out visitors too. While active, every plan
-// card shows "Free" instead of its real price and the paid-plan buttons
-// prompt sign-in instead of opening Razorpay checkout; the backend
-// (middleware/planCheck.js + paymentController.js) is the real source of
-// truth and enforces this independently of whatever the UI shows.
-let launchTrialInfo=null;
-async function fetchLaunchTrialInfo(){
-  try{
-    const res=await fetch(API_BASE_URL+'/api/market/launch-trial');
-    launchTrialInfo=await res.json();
-  }catch(e){
-    launchTrialInfo=null;
-  }
-  return launchTrialInfo;
-}
-function startTrialSignup(){
-  show('login');
-}
-async function applyLaunchTrialUI(){
-  const info=launchTrialInfo||await fetchLaunchTrialInfo();
-  const banner=document.getElementById('pricing-trial-banner');
-  const daysEl=document.getElementById('pricing-trial-days');
-  if(!info || !info.active){
-    if(banner)banner.style.display='none';
-    return;
-  }
-  if(banner)banner.style.display='block';
-  if(daysEl)daysEl.textContent=`${info.daysRemaining} day${info.daysRemaining===1?'':'s'} left.`;
-  [['basic','Basic'],['pro','Pro'],['elite','Elite']].forEach(([key,label])=>{
-    const priceEl=document.getElementById('price-'+key);
-    const moEl=document.getElementById('mo-'+key);
-    const btnEl=document.getElementById('btn-'+key);
-    if(priceEl)priceEl.innerHTML='Free';
-    if(moEl)moEl.textContent='for your first month';
-    if(btnEl){ btnEl.textContent=`Start ${label} Free`; btnEl.onclick=startTrialSignup; }
-  });
-  ['free','basic','pro','elite'].forEach(key=>{
-    const compEl=document.getElementById('comp-price-'+key);
-    if(compEl)compEl.textContent='Free';
-  });
-}
 function renderScreenerTrialBanner(){
   const el=document.getElementById('screener-trial-banner');
   if(!el)return;
@@ -4664,9 +4589,41 @@ function renderScreenerTrialBanner(){
   const daysLeft=Math.max(1,Math.ceil(msLeft/(24*60*60*1000)));
   el.style.display='block';
   el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 16px;margin-bottom:16px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:var(--radius-lg)">
-    <span style="font-size:12px;color:var(--text2)"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i><strong style="color:var(--amber)">${daysLeft} day${daysLeft===1?'':'s'} left</strong> in your free Computed Stock Screener trial. Upgrade to keep unlimited access after it ends.</span>
+    <span style="font-size:12px;color:var(--text2)"><i class="ti ti-clock" style="margin-right:6px;color:var(--amber)"></i><strong style="color:var(--amber)">${daysLeft} day${daysLeft===1?'':'s'} left</strong> in your free AI Stock Screener trial. Upgrade to keep unlimited access after it ends.</span>
     <button class="btn-lg-ghost" style="padding:6px 16px;font-size:11px;white-space:nowrap" onclick="show('pricing')">View plans</button>
   </div>`;
+}
+
+// Stock logos for the Screener. There's no single free, key-less logo CDN
+// that reliably covers the full NSE/BSE universe (5000+ symbols) with
+// India-specific tickers, so real logo images would mostly 404 and flicker
+// broken-image icons across the list. Instead we render a deterministic
+// "avatar" per symbol: fixed accent color (hashed from the symbol, so the
+// same stock always gets the same color) + up to 2-letter initials pulled
+// from the company name. If a real logo image URL is ever wired in later
+// (e.g. via a paid logo API key), stockLogoHtml() already has the <img>
+// markup + onerror fallback wired up — just set STOCK_LOGO_BASE_URL below.
+const STOCK_LOGO_BASE_URL=''; // e.g. 'https://img.logo.dev/ticker/' — leave blank to always use initials
+const SS_LOGO_PALETTE=['#5B8CFF','#7C5CFC','#2EECD4','#F0A500','#FF7A91','#00C2A8','#A78BFA','#38BDF8','#F472B6','#34D399'];
+function ssLogoColor(symbol){
+  let h=0;
+  for(let i=0;i<symbol.length;i++)h=(h*31+symbol.charCodeAt(i))>>>0;
+  return SS_LOGO_PALETTE[h%SS_LOGO_PALETTE.length];
+}
+function ssLogoInitials(name,symbol){
+  const src=(name||symbol||'').trim();
+  if(!src)return '?';
+  const words=src.replace(/\(.*?\)/g,'').split(/[\s.&-]+/).filter(Boolean);
+  if(words.length>=2)return (words[0][0]+words[1][0]).toUpperCase();
+  return src.slice(0,2).toUpperCase();
+}
+function stockLogoHtml(symbol,name){
+  const color=ssLogoColor(symbol);
+  const initials=ssLogoInitials(name,symbol);
+  const fallback=`<div class="ss-logo-fallback" style="background:${color}">${initials}</div>`;
+  if(!STOCK_LOGO_BASE_URL)return `<div class="ss-logo">${fallback}</div>`;
+  const imgUrl=STOCK_LOGO_BASE_URL+encodeURIComponent(symbol)+'.png';
+  return `<div class="ss-logo"><img src="${imgUrl}" alt="" loading="lazy" onerror="this.outerHTML=\`${fallback.replace(/`/g,'\\`')}\`"/></div>`;
 }
 
 async function renderScreener(){
@@ -4771,10 +4728,11 @@ async function renderScreener(){
       const sigHtml=s&&sigStyle[s.strength]
         ?`<span style="margin-left:8px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:${sigStyle[s.strength].c};background:${sigStyle[s.strength].bg}" title="Computed technical reading, not AI, not a recommendation — ${s.bullishVotes}/${s.totalVotes} bullish votes">${s.strength} · ${s.bullishVotes}/${s.totalVotes}</span>`
         :'';
-      const exLabel=exchangeLabel(it.exchange);
+      const exLabel=it.exchange==='BSE_EQ'?'BSE':'NSE';
       return `
       <div class="screener-stock" onclick="openStockDetail('${it.symbol}','${it.exchange}','${(it.name||'').replace(/'/g,"\\'")}')">
         <div class="ss-rank">${(screenerPage-1)*50+i+1}</div>
+        ${stockLogoHtml(it.symbol,it.name)}
         <div class="ss-info">
           <div class="ss-sym">${it.symbol} <span style="font-size:11px;color:var(--text3);font-weight:400">· ${exLabel}</span>${sigHtml}</div>
           <div class="ss-name">${it.name||''}</div>
@@ -4857,9 +4815,12 @@ async function runScreenerSearch(q){
     dropdown.innerHTML=results.map(r=>{
       const q2=quotes[r.symbol];
       const priceHtml=q2?`<span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:${q2.up?'var(--green2)':'var(--rose2)'}">₹${fmtINR(q2.price)}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>';
-      const exLabel=exchangeLabel(r.exchange);
+      const exLabel=r.exchange==='BSE_EQ'?'BSE':'NSE';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="openStockDetail('${r.symbol}','${r.exchange}','${(r.name||'').replace(/'/g,"\\'")}')">
-        <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div style="width:26px;height:26px;border-radius:7px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:#fff;background:${ssLogoColor(r.symbol)}">${ssLogoInitials(r.name,r.symbol)}</div>
+          <div style="min-width:0"><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
+        </div>
         ${priceHtml}
       </div>`;
     }).join('');
@@ -4939,7 +4900,7 @@ async function runGenericStockSearch(inputId,q){
     dropdown.innerHTML=results.map(r=>{
       const q2=quotes[r.symbol];
       const priceHtml=q2?`<span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:${q2.up?'var(--green2)':'var(--rose2)'}">₹${fmtINR(q2.price)}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>';
-      const exLabel=exchangeLabel(r.exchange);
+      const exLabel=r.exchange==='BSE_EQ'?'BSE':'NSE';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectGenericStockSearchResult('${inputId}','${r.symbol}','${(r.name||'').replace(/'/g,"\\'")}','${r.exchange}')">
         <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
         ${priceHtml}
@@ -5003,12 +4964,12 @@ function renderDashboard(section){
     el.innerHTML=`
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
         <div><div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text)">Welcome back, ${firstName} 👋</div>
-        <div style="font-size:13px;color:var(--text2);margin-top:3px">Your computed trading intelligence for today · ${planLabel} Plan</div></div>
+        <div style="font-size:13px;color:var(--text2);margin-top:3px">Your AI trading intelligence for today · ${planLabel} Plan</div></div>
         <div class="live-pill" id="dash-market-pill"><span class="live-dot"></span>${globalMarketOpen===false?'Market Closed':(globalMarketOpen===true?'Market Open':'Checking…')}</div>
       </div>
       <div class="admin-panel" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Morning Market Brief</div>
+          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Morning Market Brief</div>
           <button class="btn-sm" onclick="generateMarketBrief()"><i class="ti ti-refresh"></i> Refresh</button>
         </div>
         ${modelChipsHtml('ai-model-chips-marketbrief')}
@@ -5021,7 +4982,7 @@ function renderDashboard(section){
         <button class="qa-btn" onclick="switchDash('portfolio')"><i class="ti ti-briefcase"></i> Portfolio</button>
         <button class="qa-btn" onclick="show('screener')"><i class="ti ti-filter"></i> Screener</button>
         <button class="qa-btn" onclick="show('options')"><i class="ti ti-stack-2"></i> Options</button>
-        <button class="qa-btn" onclick="switchDash('chat')"><i class="ti ti-robot"></i> Chat</button>
+        <button class="qa-btn" onclick="switchDash('chat')"><i class="ti ti-robot"></i> AI Chat</button>
         <button class="qa-btn" onclick="switchDash('allfeatures')" style="border-color:var(--violet);color:var(--violet-light)"><i class="ti ti-apps"></i> All 35 Tools</button>
       </div>
       <div class="dash-metric-grid" id="overview-metric-grid">
@@ -5029,14 +4990,14 @@ function renderDashboard(section){
       </div>
       <div class="alerts-panel" style="margin-bottom:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="sec-title" style="margin-bottom:0">Today's alerts</div>
+          <div class="sec-title" style="margin-bottom:0">Today's AI alerts</div>
           <button class="btn-sm" onclick="switchDash('watchlist')"><i class="ti ti-settings"></i> Manage</button>
         </div>
         <div id="today-ai-alerts"><div style="text-align:center;padding:20px;color:var(--text3)"><i class="ti ti-loader-2"></i> Scanning real candles for alerts…</div></div>
       </div>
-      <div class="sec-title">Want a full analysis on a specific stock?</div>
+      <div class="sec-title">Want a full AI verdict on a specific stock?</div>
       <div style="display:flex;gap:10px">
-        <button class="qa-btn" onclick="show('analysis')" style="border-color:var(--teal);color:var(--teal)"><i class="ti ti-sparkles"></i> Go to Analysis</button>
+        <button class="qa-btn" onclick="show('analysis')" style="border-color:var(--teal);color:var(--teal)"><i class="ti ti-sparkles"></i> Go to AI Analysis</button>
       </div>`;
     refreshModelChipLocks();
     loadOverviewPnl();
@@ -5061,7 +5022,7 @@ function renderDashboard(section){
   else if(section==='watchlist'){
     el.innerHTML=`
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">Watchlist</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">AI Watchlist</div>
         <div style="display:flex;gap:8px">
           <button class="btn-sm"><i class="ti ti-bell"></i> Manage alerts</button>
         </div>
@@ -5074,15 +5035,15 @@ function renderDashboard(section){
 
   else if(section==='chat'){
     el.innerHTML=`
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">Trading Assistant</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">AI Trading Assistant</div>
       <div class="chat-wrap">
         <div class="chat-header">
           <div class="chat-ai-avatar">🤖</div>
-          <div><div class="chat-ai-name">TradeMind Assistant</div><div class="chat-ai-status">● Online · Model used shown per reply</div></div>
+          <div><div class="chat-ai-name">TradeMind AI Assistant</div><div class="chat-ai-status">● Online · Model used shown per reply</div></div>
         </div>
         <div class="disclaimer" style="margin:0;border-radius:0;font-size:11px;padding:10px 16px"><i class="ti ti-info-circle" style="margin-right:4px"></i>Educational tool only. TradeMind AI is not SEBI-registered and does not give buy, sell, or hold recommendations — it explains concepts and data so you can make your own decision.</div>
         <div class="chat-messages" id="chat-msgs">
-          <div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">Hello Rahul! I'm your markets learning assistant. I can explain technical indicators, describe what a chart or option chain is showing, walk through trading concepts, and help you understand your portfolio's real numbers.<br/><br/>I'm not a SEBI-registered adviser, so I won't tell you to buy, sell, or hold a stock, or give price targets — but I'm happy to explain what any indicator or data point actually means. Try asking: <em>"What does RSI below 30 usually indicate?"</em> or <em>"Explain what PCR tells us about an option chain."</em></div><div class="msg-time">Just now</div></div>
+          <div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">Hello Rahul! I'm your AI markets learning assistant. I can explain technical indicators, describe what a chart or option chain is showing, walk through trading concepts, and help you understand your portfolio's real numbers.<br/><br/>I'm not a SEBI-registered adviser, so I won't tell you to buy, sell, or hold a stock, or give price targets — but I'm happy to explain what any indicator or data point actually means. Try asking: <em>"What does RSI below 30 usually indicate?"</em> or <em>"Explain what PCR tells us about an option chain."</em></div><div class="msg-time">Just now</div></div>
         </div>
         <div class="chat-input-wrap">
           <textarea class="chat-inp" id="chat-inp" placeholder="Ask about a concept, indicator, or how something works..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
@@ -5142,7 +5103,7 @@ function renderDashboard(section){
 
   else if(section==='alerts'){
     el.innerHTML=`
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Alerts</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">AI Alerts</div>
       <div class="disclaimer" style="margin-bottom:20px">These are technical pattern signals computed from real candle data, for <strong>educational purposes only</strong>. They are not buy/sell recommendations — always do your own research or consult a SEBI-registered investment adviser before making investment decisions.</div>
 
       <div class="alerts-panel" style="margin-bottom:20px">
@@ -5186,13 +5147,13 @@ function renderDashboard(section){
         ['Fibonacci Retracement','ruler-2','indicators'],
         ['Divergence Detection (RSI/MACD)','arrows-diff','indicators'],['Volatility Analysis (ATR)','wave-square','indicators'],
       ]},
-      {title:'Computed Technical Reading (6)',icon:'brain',items:[
-        ['Bullish/Bearish Bias','sparkles','analysis'],['Technical Score','gauge','analysis'],
-        ['Explainability','message-circle','analysis'],['Volatility Risk Score','shield-x','riskmgmt'],
-        ['Multi-Model Consensus & Debate','chart-infographic','analysis'],
+      {title:'AI Technical Reading (6)',icon:'brain',items:[
+        ['AI Bullish/Bearish Bias','sparkles','analysis'],['AI Technical Score','gauge','analysis'],
+        ['AI Explainability','message-circle','analysis'],['Volatility Risk Score','shield-x','riskmgmt'],
+        ['Multi-AI Consensus & Debate','chart-infographic','analysis'],
       ]},
       {title:'Options Traders (7)',icon:'stack-2',items:[
-        ['Option Chain Analysis','stack-2','options'],['Open Interest Analysis','chart-bar','options'],
+        ['Option Chain AI Analysis','stack-2','options'],['Open Interest Analysis','chart-bar','options'],
         ['Put Call Ratio Analyzer','arrows-vertical','options'],['Max Pain Calculator','target','options'],
         ['Implied Volatility Tracker','wave-sine','optionstools'],['Option Greeks Dashboard','math-symbols','optionstools'],
         ['Unusual Options Activity Detector','alert-circle','optionstools'],
@@ -5200,7 +5161,7 @@ function renderDashboard(section){
       {title:'Portfolio / Risk Management (4)',icon:'shield-check',items:[
         ['Position Size Calculator','calculator','riskmgmt'],
         ['Risk/Reward Calculator','scale','riskmgmt'],
-        ['Portfolio Review','briefcase','portfolio'],
+        ['Portfolio AI Review','briefcase','portfolio'],
         ['Backtesting Engine','history-toggle','backtest'],
       ]},
       {title:'Trust / Performance (1)',icon:'certificate',items:[
@@ -5209,7 +5170,7 @@ function renderDashboard(section){
     ];
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Trader features</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Everything below runs on real Upstox data and real analysis models — no placeholders. Click any tile to open it.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Everything below runs on real Upstox data and real AI models — no placeholders. Click any tile to open it.</div>
       <input class="tm-inp fn-search" id="fn-search-inp" placeholder="Search features... e.g. RSI, Max Pain, Scanner" oninput="filterFeatureNav()"/>
       <div id="fn-results">
         ${cats.map(c=>`
@@ -5227,24 +5188,23 @@ function renderDashboard(section){
   else if(section==='scanner'){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Live Market Scanner</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE + MCX universe to scan, then pick a scan type below. Or search any stock to see its full breakout-scanner breakdown across every scan type.</div>
-      ${stockSearchBarHtml('scanner-search-inp','Search any NSE, BSE stock, or MCX commodity (e.g. RELIANCE, TATASTEEL, GOLD)…')}
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE universe to scan, then pick a scan type below. Or search any stock to see its full breakout-scanner breakdown across every scan type.</div>
+      ${stockSearchBarHtml('scanner-search-inp','Search any NSE or BSE stock (e.g. RELIANCE, TATASTEEL, 500325)…')}
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span class="ind-chip sel" id="scan-uni-30" onclick="setScanUniverse('curated30',this)">Curated 30 (fastest)</span>
         <span class="ind-chip" id="scan-uni-nse" onclick="setScanUniverse('NSE_EQ',this)">NSE — top 150</span>
         <span class="ind-chip" id="scan-uni-bse" onclick="setScanUniverse('BSE_EQ',this)">BSE — top 150</span>
         <span class="ind-chip" id="scan-uni-all" onclick="setScanUniverse('ALL',this)">NSE + BSE — top 150 each</span>
-        <span class="ind-chip" id="scan-uni-mcx" onclick="setScanUniverse('MCX_FO',this)" title="Gold, Silver, Crude Oil, Natural Gas, and other live commodity futures">MCX — commodities</span>
       </div>
       <div class="scanner-grid" id="scanner-cards"></div>
       <div class="scan-results" id="scanner-results"></div>
       <div class="admin-panel" style="margin-top:20px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Trade Ideas</div>
-          <button class="btn-analyse" style="padding:8px 18px;font-size:12px" onclick="generateAITradeIdeas()"><i class="ti ti-bulb"></i> Get analysis on these results</button>
+          <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Trade Ideas</div>
+          <button class="btn-analyse" style="padding:8px 18px;font-size:12px" onclick="generateAITradeIdeas()"><i class="ti ti-bulb"></i> Get AI take on these results</button>
         </div>
         ${modelChipsHtml('ai-model-chips-tradeideas')}
-        <div id="ai-trade-ideas" style="font-size:13px;color:var(--text2);line-height:1.7">Run a scan above, then click the button for analysis commentary on the real matches — grounded in the actual scan data, not invented.</div>
+        <div id="ai-trade-ideas" style="font-size:13px;color:var(--text2);line-height:1.7">Run a scan above, then click the button for AI commentary on the real matches — grounded in the actual scan data, not invented.</div>
       </div>`;
     registerStockSearch('scanner-search-inp',(sym,name)=>{ renderSingleStockScan(sym,name); });
     renderScannerCards('breakout');
@@ -5346,7 +5306,7 @@ function renderDashboard(section){
   else if(section==='trust'){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Trust &amp; Performance</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">We just launched, so there's no track record yet. Every prediction is logged from here on — once enough signals have played out, your full history (wins and misses both) will appear below instead of this example layout.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">We just launched, so there's no track record yet. Every AI prediction is logged from here on — once enough signals have played out, your full history (wins and misses both) will appear below instead of this example layout.</div>
       <div class="dash-metric-grid">
         <div class="dm"><i class="ti ti-percentage dm-icon"></i><div class="dm-lbl">Overall accuracy</div><div class="dm-val">—</div><div class="dm-chg">Not enough data yet</div></div>
         <div class="dm"><i class="ti ti-target-arrow dm-icon"></i><div class="dm-lbl">Win rate (30d)</div><div class="dm-val">—</div><div class="dm-chg">Not enough data yet</div></div>
@@ -5354,9 +5314,9 @@ function renderDashboard(section){
         <div class="dm"><i class="ti ti-chart-line dm-icon"></i><div class="dm-lbl">Avg return / Buy signal</div><div class="dm-val" style="color:var(--green)">—</div><div class="dm-chg">Not enough data yet</div></div>
       </div>
       <div class="admin-panel" style="margin-bottom:20px">
-        <div class="sec-title">Backtest predictions — historical success rate</div>
+        <div class="sec-title">Backtest AI predictions — historical success rate</div>
         <canvas id="trustChart" style="width:100%;height:160px;display:block;margin:12px 0"></canvas>
-        <div style="font-size:11px;color:var(--text3)">No signal history yet — this equity curve will populate once real predictions have been logged and settled.</div>
+        <div style="font-size:11px;color:var(--text3)">No signal history yet — this equity curve will populate once real AI predictions have been logged and settled.</div>
       </div>
       <div class="admin-panel">
         <div class="sec-title">Past signal performance — last 12 signals</div>
@@ -5374,9 +5334,9 @@ function renderDashboard(section){
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">Trade Journal</div>
         <button class="btn-lg" style="font-size:12px;padding:8px 18px" onclick="addJournalEntry()"><i class="ti ti-plus"></i> Log trade</button>
       </div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Track why you entered, what you learned, and let the system flag your recurring mistakes.</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Track why you entered, what you learned, and let AI flag your recurring mistakes.</div>
       <div class="admin-panel" style="margin-bottom:20px">
-        <div class="sec-title">Mistake pattern analysis</div>
+        <div class="sec-title">AI mistake pattern analysis</div>
         <div id="journal-ai-insight" style="font-size:13px;color:var(--text2);line-height:1.8"></div>
       </div>
       <div id="journal-entries"></div>`;
@@ -5433,7 +5393,7 @@ function renderDashboard(section){
             <select class="tm-inp" id="feedback-category">
               <option>Bug Report</option>
               <option>Feature Request</option>
-              <option>Analysis Quality</option>
+              <option>AI Analysis Quality</option>
               <option>Pricing &amp; Billing</option>
               <option selected>General Feedback</option>
               <option>Other</option>
@@ -5590,7 +5550,7 @@ function shareReferral(channel){
 }
 
 
-// ── Today's alerts — real, on-demand technical signals from
+// ── Today's AI alerts — real, on-demand technical signals from
 // /api/alerts (breakout/RSI/MACD/gap arithmetic on real candles, run
 // against the user's watchlist or a small curated list if it's empty).
 // Educational, purely arithmetic technical signals — never a buy/sell
@@ -5779,9 +5739,9 @@ async function loadPortfolioSection(){
         </table>
       </div>
       ${holdings.length?`<div class="admin-panel" style="margin-top:20px">
-        <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Portfolio Health Check</div>
+        <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Portfolio Health Check</div>
         <div class="inp-group" style="margin:14px 0 16px">
-          <label class="inp-lbl" style="margin-bottom:10px">Select analysis models</label>
+          <label class="inp-lbl" style="margin-bottom:10px">Select AI models</label>
           <div class="ai-chips" id="ai-model-chips-portfolio">
             <button class="ai-chip sel" data-model="gemini-2.5-flash" onclick="toggleChip(this)"><span class="chip-dot chip-gemini"></span> Gemini 2.5 Flash</button>
             <button class="ai-chip" data-plan="basic" data-model="deepseek-v3" onclick="toggleChip(this)"><span class="chip-dot chip-deepseek"></span> DeepSeek V3 <i class="ti ti-lock" style="font-size:11px"></i></button>
@@ -5794,7 +5754,7 @@ async function loadPortfolioSection(){
           <span style="font-size:11px;color:var(--text3)">Tap a model to include it (at least one stays selected) · Selecting 2+ models asks each one for a health check; selecting 1 asks just that model.</span>
         </div>
         <button class="btn-analyse" style="padding:8px 18px;font-size:12px;margin-bottom:12px" onclick="runPortfolioHealthCheck()"><i class="ti ti-heart-rate-monitor"></i> Run check</button>
-        <div id="portfolio-health" style="font-size:13px;color:var(--text2);line-height:1.7">Click "Run check" for commentary on concentration risk and diversification, based on your real holdings above.</div>
+        <div id="portfolio-health" style="font-size:13px;color:var(--text2);line-height:1.7">Click "Run check" for AI commentary on concentration risk and diversification, based on your real holdings above.</div>
       </div>`:''}`;
     refreshModelChipLocks();
   }catch(e){
@@ -6002,7 +5962,7 @@ const SCAN_TYPES=[
 let scanUniverseMode='curated30';
 function setScanUniverse(mode,el){
   scanUniverseMode=mode;
-  document.querySelectorAll('#scan-uni-30,#scan-uni-nse,#scan-uni-bse,#scan-uni-all,#scan-uni-mcx').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('#scan-uni-30,#scan-uni-nse,#scan-uni-bse,#scan-uni-all').forEach(c=>c.classList.remove('sel'));
   if(el)el.classList.add('sel');
   scannerCache=null; scannerCacheAt=0; // force refetch under the new universe
   if(lastScanType)renderScannerCards(lastScanType);
@@ -6098,8 +6058,8 @@ async function generateAITradeIdeas(){
   }
   await runMultiModelInsight(
     'ai-trade-ideas','tradeIdeas',{scanType:lastScanType,matches:lastScanMatches},'ai-model-chips-tradeideas',
-    `Analyzing ${lastScanMatches.length} real matches…`,
-    'Could not get commentary right now — please try again shortly.'
+    `Asking AI to review ${lastScanMatches.length} real matches…`,
+    'Could not get AI commentary right now — please try again shortly.'
   );
 }
 
@@ -6191,7 +6151,7 @@ async function renderSingleStockScan(sym,name){
         ${r.hit?`<span class="scan-tag tag-${r.tag}">match</span>`:`<span style="font-size:11px;color:var(--text3)">no match</span>`}
         <span style="font-size:12px;color:${r.hit?'var(--text2)':'var(--text3)'};flex:1">${r.detail}</span>
       </div>`).join('')+`<div style="display:flex;justify-content:center;margin-top:14px">
-        <button class="btn-lg-ghost" onclick="show('analysis');document.getElementById('inp-sym').value='${sym}'">Run full analysis on ${sym} →</button>
+        <button class="btn-lg-ghost" onclick="show('analysis');document.getElementById('inp-sym').value='${sym}'">Run full AI analysis on ${sym} →</button>
       </div>`;
   }catch(e){
     resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load scan data for ${sym} right now. Please try again shortly.</div>`;
@@ -6441,7 +6401,7 @@ function calcRiskReward(){
     <div class="calc-result-row"><span>Total risk</span><span class="calc-result-val" style="color:var(--rose2)">₹${risk.toLocaleString('en-IN')}</span></div>
     <div class="calc-result-row"><span>Total reward</span><span class="calc-result-val" style="color:var(--green2)">₹${reward.toLocaleString('en-IN')}</span></div>
     <div class="calc-result-row"><span>Risk : Reward ratio</span><span class="calc-result-val">1 : ${ratio}</span></div>
-    <div class="calc-result-row"><span>Verdict</span><span class="calc-result-val" style="color:${ratio>=2?'var(--green2)':ratio>=1?'var(--amber)':'var(--rose2)'}">${ratio>=2?'Favourable setup':ratio>=1?'Acceptable':'Poor — reconsider'}</span></div>`;
+    <div class="calc-result-row"><span>AI verdict</span><span class="calc-result-val" style="color:${ratio>=2?'var(--green2)':ratio>=1?'var(--amber)':'var(--rose2)'}">${ratio>=2?'Favourable setup':ratio>=1?'Acceptable':'Poor — reconsider'}</span></div>`;
 }
 
 // ══════════════ CUSTOM ALERTS ══════════════
@@ -6492,7 +6452,7 @@ function addJournalEntry(){
 }
 function renderJournal(){
   const mistakeCount=journalEntries.filter(e=>e.tags.includes('Mistake')||e.tags.includes('FOMO')).length;
-  document.getElementById('journal-ai-insight').innerHTML=mistakeCount?`You have <strong style="color:var(--rose2)">${mistakeCount} trade(s)</strong> tagged with emotional or impulsive entries. Pattern detected: losses cluster around trades entered without volume confirmation. Consider adding a pre-trade checklist before your next entry.`:`No recurring mistake pattern detected yet — keep logging trades so the system has enough data to find patterns.`;
+  document.getElementById('journal-ai-insight').innerHTML=mistakeCount?`You have <strong style="color:var(--rose2)">${mistakeCount} trade(s)</strong> tagged with emotional or impulsive entries. Pattern detected: losses cluster around trades entered without volume confirmation. Consider adding a pre-trade checklist before your next entry.`:`No recurring mistake pattern detected yet — keep logging trades so the AI has enough data to find patterns.`;
   document.getElementById('journal-entries').innerHTML=journalEntries.length?journalEntries.map(e=>`
     <div class="journal-entry">
       <div class="je-header"><span class="je-sym">${e.sym}</span><span class="je-date">${e.date}</span><span class="je-pl" style="color:${e.pl>=0?'var(--green2)':e.pl<0?'var(--rose2)':'var(--text3)'};margin-left:auto">${e.pl>0?'+':''}${e.pl?'₹'+Math.abs(e.pl).toLocaleString('en-IN'):'—'}</span></div>
@@ -6561,7 +6521,7 @@ function renderPaperLeaderboard(){
 }
 
 // ══════════════ AI CHAT ══════════════
-let chatHistory=[{role:'assistant',content:'Hello! I\'m your trading assistant. Ask me about any stock, sector, or trading strategy.'}];
+let chatHistory=[{role:'assistant',content:'Hello! I\'m your AI trading assistant. Ask me about any stock, sector, or trading strategy.'}];
 async function sendChat(){
   const inp=document.getElementById('chat-inp');
   const msgs=document.getElementById('chat-msgs');
@@ -6570,7 +6530,7 @@ async function sendChat(){
   if(!msg)return;
 
   if(!currentUser){
-    alert('Please sign in to use the chat assistant.');
+    alert('Please sign in to use the AI chat assistant.');
     show('login');
     return;
   }
@@ -6588,12 +6548,12 @@ async function sendChat(){
   try{
     const res=await apiFetch('/api/ai/chat',{method:'POST',body:JSON.stringify({message:msg.slice(0,500)})});
     const data=await res.json();
-    if(!res.ok){ const err=new Error(data.error||'Chat is temporarily unavailable.'); err.status=res.status; throw err; }
+    if(!res.ok){ const err=new Error(data.error||'AI chat is temporarily unavailable.'); err.status=res.status; throw err; }
     const reply=data.reply||'Sorry, I could not generate a response.';
     chatHistory.push({role:'assistant',content:reply});
 
     document.getElementById('typing-indicator')?.remove();
-    const aiBubble=`<div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">${reply.replace(/\n/g,'<br/>')}</div><div class="msg-time">${modelDisplayName(data.model)||'Model'} · Just now</div></div>`;
+    const aiBubble=`<div class="chat-msg chat-msg-ai"><div class="ai-bubble msg-bubble">${reply.replace(/\n/g,'<br/>')}</div><div class="msg-time">${modelDisplayName(data.model)||'AI'} · Just now</div></div>`;
     msgs.insertAdjacentHTML('beforeend',aiBubble);
   }catch(e){
     document.getElementById('typing-indicator')?.remove();
@@ -6662,8 +6622,6 @@ async function loadAdminPanel(){
     loadAdminFeedback(1); // user feedback submissions — loaded separately since it paginates on its own
     loadAdminReferrals(1); // referral history — loaded separately since it paginates on its own
     loadScannerSignalLog(1); // full raw scanner signal log (every stock, every timeframe) — loaded separately since it paginates on its own
-    loadScannerAccuracyCalendar(); // everyday accuracy calendar for the current month — loaded separately since it navigates month-to-month on its own
-    loadScannerCoverageStatus(); // today's NSE+BSE+MCX coverage progress
 
     setText('adm-total-users', (stats.totalUsers ?? 0).toLocaleString('en-IN'));
     setText('adm-new-users', `↑ +${stats.newUsersThisWeek ?? 0} this week`);
@@ -6701,7 +6659,7 @@ async function loadAdminPanel(){
             const pct = Math.round((Number(u.calls||0)/maxCalls)*100);
             return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px"><span style="color:var(--text);font-weight:600">${u.model_used}</span><span style="color:var(--text2)">${u.calls} calls · ₹${Number(u.costInr??(Number(u.cost||0)*(stats.usdToInrRate||95.7))).toLocaleString('en-IN',{maximumFractionDigits:2})}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:var(--blue)"></div></div></div>`;
           }).join('')
-        : '<div style="font-size:12px;color:var(--text3)">No analysis usage in the last 30 days.</div>';
+        : '<div style="font-size:12px;color:var(--text3)">No AI usage in the last 30 days.</div>';
     }
 
     // Risk flags & platform health — real, computed from usage/payment data
@@ -6937,123 +6895,6 @@ async function loadScannerSignalLog(page){
     if(nextBtn) nextBtn.disabled = data.page >= data.totalPages;
   }catch(e){
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--rose2);padding:16px">Could not load scanner signal log right now.</td></tr>';
-  }
-}
-
-// Everyday accuracy calendar — one cell per calendar day, showing the
-// Screener's evaluated accuracy for that trading day across NSE+BSE+MCX.
-// Backed by GET /api/admin/scanner-accuracy/calendar (see
-// scannerAccuracyService.getScannerAccuracyCalendar). Weekends/exchange
-// holidays are greyed out using the same trading calendar the backend
-// scanner coverage job uses, so a "no data" day is never confused with a
-// "market was actually closed" day.
-let saccCalState = { year: null, month: null, days: [] };
-function saccCellStyle(day, todayStr){
-  const base = 'border-radius:8px;padding:6px 4px;min-height:52px;display:flex;flex-direction:column;justify-content:space-between;font-size:11px;cursor:default;transition:transform .1s';
-  if(!day.isTradingDay){
-    const label = day.isHoliday ? 'Holiday' : 'Weekend';
-    return { style:`${base};background:var(--bg3);color:var(--text3);border:1px solid var(--border);opacity:.6`, sub:label, clickable:false };
-  }
-  const evaluated = day.correct + day.incorrect;
-  if(day.total === 0){
-    const isFuture = day.date > todayStr;
-    return { style:`${base};background:transparent;border:1px dashed var(--border);color:var(--text3)`, sub: isFuture ? '' : 'No data', clickable:false };
-  }
-  if(evaluated === 0){
-    return { style:`${base};background:rgba(240,165,0,.10);border:1px solid rgba(240,165,0,.35);color:var(--amber)`, sub:`${day.total} pending`, clickable:true };
-  }
-  const pct = day.accuracyPct;
-  let bg, border, color;
-  if(pct >= 70){ bg='rgba(0,194,168,.30)'; border='rgba(0,194,168,.55)'; color='var(--text)'; }
-  else if(pct >= 50){ bg='rgba(0,194,168,.15)'; border='rgba(0,194,168,.35)'; color='var(--text)'; }
-  else if(pct >= 30){ bg='rgba(255,77,106,.15)'; border='rgba(255,77,106,.35)'; color='var(--text)'; }
-  else { bg='rgba(255,77,106,.30)'; border='rgba(255,77,106,.55)'; color='var(--text)'; }
-  return { style:`${base};background:${bg};border:1px solid ${border};color:${color}`, sub:`${pct}%`, clickable:true };
-}
-function renderScannerCalendar(data){
-  const grid = document.getElementById('sacc-cal-grid');
-  const label = document.getElementById('sacc-cal-label');
-  if(!grid) return;
-  saccCalState = data;
-  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  if(label) label.textContent = `${monthNames[data.month-1]} ${data.year}`;
-
-  const firstDow = new Date(Date.UTC(data.year, data.month-1, 1)).getUTCDay();
-  const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
-  const cells = [];
-  for(let i=0;i<firstDow;i++) cells.push('<div></div>');
-  data.days.forEach(day=>{
-    const d = Number(day.date.slice(8,10));
-    const { style, sub, clickable } = saccCellStyle(day, todayStr);
-    const isToday = day.date === todayStr;
-    const ring = isToday ? ';box-shadow:0 0 0 2px var(--blue) inset' : '';
-    cells.push(`<div style="${style}${ring}" ${clickable?`onclick='showScannerCalendarDay(${JSON.stringify(day)})'`:''}>
-      <div style="font-weight:700">${d}</div>
-      <div style="font-size:10px;opacity:.85">${sub}</div>
-    </div>`);
-  });
-  grid.innerHTML = cells.join('');
-}
-async function loadScannerAccuracyCalendar(year, month){
-  const grid = document.getElementById('sacc-cal-grid');
-  if(!currentUser || !currentUser.is_admin) return;
-  const now = new Date();
-  const y = year || saccCalState.year || now.getFullYear();
-  const m = month || saccCalState.month || (now.getMonth()+1);
-  try{
-    const res = await apiFetch(`/api/admin/scanner-accuracy/calendar?year=${y}&month=${m}`);
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error||'Failed to load accuracy calendar.');
-    renderScannerCalendar(data);
-  }catch(e){
-    if(grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--rose2);font-size:12px;padding:16px">Could not load the accuracy calendar right now.</div>';
-  }
-}
-function shiftScannerCalendar(delta){
-  let m = (saccCalState.month||new Date().getMonth()+1) + delta;
-  let y = saccCalState.year||new Date().getFullYear();
-  if(m<1){ m=12; y--; } else if(m>12){ m=1; y++; }
-  document.getElementById('sacc-cal-detail').style.display='none';
-  loadScannerAccuracyCalendar(y, m);
-}
-function showScannerCalendarDay(day){
-  const box = document.getElementById('sacc-cal-detail');
-  if(!box) return;
-  const dateStr = new Date(day.date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  const ex = day.byExchange||{};
-  box.style.display='block';
-  box.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-      <div style="font-weight:700;color:var(--text)">${dateStr}</div>
-      <div style="font-size:12px;color:var(--text2)">${day.accuracyPct!=null ? day.accuracyPct+'% accuracy · ' : ''}${day.symbolsScanned} symbols scanned</div>
-    </div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--text2)">
-      <span><span style="color:var(--teal);font-weight:700">${day.correct}</span> correct</span>
-      <span><span style="color:var(--rose2);font-weight:700">${day.incorrect}</span> incorrect</span>
-      <span><span style="color:var(--amber);font-weight:700">${day.pending}</span> pending</span>
-      <span style="margin-left:auto">NSE ${ex.NSE_EQ||0} · BSE ${ex.BSE_EQ||0} · MCX ${ex.MCX_FO||0}</span>
-    </div>`;
-}
-// Today's live coverage progress toward scanning every NSE+BSE+MCX symbol
-// (independent of user traffic) — see screenerCoverageService.js.
-async function loadScannerCoverageStatus(){
-  const strip = document.getElementById('sacc-coverage-strip');
-  if(!strip || !currentUser || !currentUser.is_admin) return;
-  strip.style.display='flex';
-  strip.innerHTML = 'Loading today\'s coverage…';
-  try{
-    const res = await apiFetch('/api/admin/scanner-accuracy/coverage');
-    const data = await res.json();
-    if(!res.ok) throw new Error(data.error||'Failed to load coverage status.');
-    const names = { NSE_EQ:'NSE', BSE_EQ:'BSE', MCX_FO:'MCX' };
-    const parts = Object.entries(data.perExchange||{}).map(([ex,v])=>{
-      if(v.error) return `<span>${names[ex]||ex}: <span style="color:var(--rose2)">unavailable</span></span>`;
-      const pct = v.totalSymbols ? Math.round((v.scannedToday/v.totalSymbols)*100) : 0;
-      return `<span>${names[ex]||ex}: <span style="color:var(--text);font-weight:600">${v.scannedToday.toLocaleString('en-IN')}/${v.totalSymbols.toLocaleString('en-IN')}</span> (${pct}%)</span>`;
-    });
-    const statusNote = !data.isTradingDay ? 'Market closed today (weekend/holiday) — no new coverage scans running.' : (!data.isMarketOpen ? 'Outside market hours (9:15–15:30 IST) — coverage resumes when the market opens.' : 'Scanning live.');
-    strip.innerHTML = parts.join('') + `<span style="color:var(--text3)">${statusNote}</span>`;
-  }catch(e){
-    strip.innerHTML = '<span style="color:var(--rose2)">Could not load today\'s coverage right now.</span>';
   }
 }
 
@@ -7425,28 +7266,14 @@ function tradeSignalCardHtml(sig,sym,periodLabel){
 // Interval the user picked in the Screener sidebar, instead of always
 // requesting unit=days&interval=1 like it did before regardless of
 // screenerPeriod.
-// FIX: the 3mo/6mo/1y/3y/5y chips carried unit:'days' with no lookback,
-// so the stock-detail mini chart silently fell back to getHistoricalCandles'
-// generic 6-month default 'from' date no matter which of those five chips
-// was picked — a 5 Year selection quietly rendered the same ~6-month chart
-// as 3 Month. lookbackDays here mirrors the backend's identical mapping in
-// marketDataService.js's PERIOD_CANDLE_PARAMS so the mini chart and the
-// full report next to it are always built from the same real window.
 const SCREENER_PERIOD_CANDLE_PARAMS={
   '1m':{unit:'minutes',interval:1},'5m':{unit:'minutes',interval:5},'15m':{unit:'minutes',interval:15},
   '30m':{unit:'minutes',interval:30},'1h':{unit:'hours',interval:1},'4h':{unit:'hours',interval:4},
   '1d':{unit:'days',interval:1},'1w':{unit:'weeks',interval:1},'1mo':{unit:'months',interval:1},
-  '3mo':{unit:'days',interval:1,lookbackDays:90},'6mo':{unit:'days',interval:1,lookbackDays:182},
-  '1y':{unit:'days',interval:1,lookbackDays:365},
-  '3y':{unit:'days',interval:1,lookbackDays:365*3},'5y':{unit:'days',interval:1,lookbackDays:365*5},
+  '3mo':{unit:'days',interval:1},'6mo':{unit:'days',interval:1},'1y':{unit:'days',interval:1},
+  '3y':{unit:'days',interval:1},'5y':{unit:'days',interval:1},
 };
-function screenerCandleParams(period){
-  const entry=SCREENER_PERIOD_CANDLE_PARAMS[period]||{unit:'days',interval:1};
-  if(!entry.lookbackDays)return {unit:entry.unit,interval:entry.interval};
-  const from=new Date();
-  from.setDate(from.getDate()-entry.lookbackDays);
-  return {unit:entry.unit,interval:entry.interval,from:from.toISOString().slice(0,10)};
-}
+function screenerCandleParams(period){ return SCREENER_PERIOD_CANDLE_PARAMS[period]||{unit:'days',interval:1}; }
 
 // ══════════════ STOCK DETAIL MODAL (Screener → click any stock) ══════════════
 // Shows a real quote + mini price chart + day range for any NSE/BSE stock
@@ -7457,7 +7284,7 @@ async function openStockDetail(symbol,exchange,name){
   document.getElementById('screener-search-dropdown')?.style&&(document.getElementById('screener-search-dropdown').style.display='none');
   stockDetailCurrent={symbol,exchange,name};
   const modal=document.getElementById('stock-detail-modal');
-  const exLabel=exchangeLabel(exchange);
+  const exLabel=exchange==='BSE_EQ'?'BSE':'NSE';
   document.getElementById('sd-symbol').textContent=symbol+' · '+exLabel;
   document.getElementById('sd-name').textContent=name||'';
   // FIX: the modal used to always say "quote & chart" with no mention of
@@ -7469,22 +7296,7 @@ async function openStockDetail(symbol,exchange,name){
   const activePeriodLabel=TIMEFRAME_LABELS[activePeriod]||'1 Day';
   const tfBadgeEl=document.getElementById('sd-timeframe-badge');
   if(tfBadgeEl)tfBadgeEl.innerHTML=`<i class="ti ti-clock-hour-4" style="margin-right:3px"></i>Analysis timeframe: <strong style="color:var(--text)">${activePeriodLabel}</strong>`;
-  // Same step-loader look as the main Analysis page (.load-wrap/.load-steps),
-  // reused here so the Screener's inline "open a stock → see its analysis"
-  // flow feels consistent with the standalone Analysis page. This report is
-  // 100% computed from real indicators server-side (see renderFullReportHtml
-  // / /api/market/report) — the steps below describe what's actually being
-  // computed, not a marketing animation for an LLM call.
-  document.getElementById('sd-body').innerHTML=`
-    <div class="load-wrap" id="sd-load-wrap" style="display:block;margin-top:4px">
-      <div class="load-bar"><div class="load-fill"></div></div>
-      <div class="load-steps" id="sd-load-steps">
-        <span class="load-step" id="sdls1"><i class="ti ti-clock"></i> Fetching data</span>
-        <span class="load-step" id="sdls2"><i class="ti ti-clock"></i> Computing indicators</span>
-        <span class="load-step" id="sdls3"><i class="ti ti-clock"></i> Scoring technicals</span>
-        <span class="load-step" id="sdls4"><i class="ti ti-clock"></i> Compiling analysis</span>
-      </div>
-    </div>`;
+  document.getElementById('sd-body').innerHTML=`<div style="padding:30px;text-align:center;color:var(--text3)">Loading real quote &amp; ${activePeriodLabel} analysis for ${symbol}…</div>`;
   document.getElementById('sd-analysis-btn').onclick=()=>{
     closeStockDetail();
     show('analysis');
@@ -7500,33 +7312,14 @@ async function openStockDetail(symbol,exchange,name){
   };
   modal.classList.add('open');
 
-  // Step the loader forward on a fixed cadence, and make sure the whole
-  // modal spends a real 3–5s "computing" before the report appears — even
-  // if the API responds faster than that — so the animation always reads
-  // as genuine work being done rather than a flash of content.
-  const sdStartedAt=Date.now();
-  const sdMinDelayMs=3000+Math.random()*2000; // 3–5s
-  const sdSteps=['sdls1','sdls2','sdls3','sdls4'];
-  const sdStepDelays=[0,sdMinDelayMs*0.35,sdMinDelayMs*0.65,sdMinDelayMs*0.9];
-  const sdStepTimers=sdSteps.map((id,i)=>setTimeout(()=>{
-    if(stockDetailCurrent?.symbol!==symbol)return;
-    if(i>0)document.getElementById(sdSteps[i-1])?.classList.add('done');
-    document.getElementById(id)?.classList.add('active');
-  },sdStepDelays[i]));
-
   try{
-    const {unit,interval,from}=screenerCandleParams(activePeriod);
+    const {unit,interval}=screenerCandleParams(activePeriod);
     const [quoteRes,candlesRes,reportRes]=await Promise.all([
       fetchBackendQuotesBatch([symbol]).catch(()=>({})),
-      apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=${unit}&interval=${interval}${from?('&from='+from):''}${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
+      apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=${unit}&interval=${interval}${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
       apiFetch(`/api/market/report/${encodeURIComponent(symbol)}?period=${encodeURIComponent(activePeriod)}${exchange?('&exchange='+exchange):''}`,{cache:'no-store'}).then(r=>r.json()).catch(()=>null),
     ]);
     if(stockDetailCurrent?.symbol!==symbol)return; // user opened a different stock while this was in flight
-    const elapsed=Date.now()-sdStartedAt;
-    if(elapsed<sdMinDelayMs) await new Promise(r=>setTimeout(r,sdMinDelayMs-elapsed));
-    if(stockDetailCurrent?.symbol!==symbol)return; // still the same stock after the wait
-    sdStepTimers.forEach(clearTimeout);
-    document.getElementById('sdls4')?.classList.add('done');
     const q=quoteRes[symbol];
     const candles=(candlesRes&&Array.isArray(candlesRes.candles)&&candlesRes.candles.length)?candlesRes.candles:null;
     const bodyEl=document.getElementById('sd-body');
@@ -7567,7 +7360,6 @@ async function openStockDetail(symbol,exchange,name){
       if(canvas)drawLineChart(canvas,[{data:candles.slice(-30).map(c=>c.c),color:'#7C5CFC',width:1.6}]);
     }
   }catch(e){
-    sdStepTimers.forEach(clearTimeout);
     document.getElementById('sd-body').innerHTML=`<div style="padding:24px;text-align:center;color:var(--rose2)">Could not load details right now — please try again shortly.</div>`;
   }
 }
@@ -7707,7 +7499,7 @@ function setAnalysisTab(mode){
   }
   analysisMode=mode;
   row2.style.display=mode==='compare'?'grid':'none';
-  btn.innerHTML=mode==='compare'?'<i class="ti ti-arrows-diff"></i> Compare':'<i class="ti ti-sparkles"></i> Run Analysis';
+  btn.innerHTML=mode==='compare'?'<i class="ti ti-arrows-diff"></i> Compare with AI':'<i class="ti ti-sparkles"></i> Analyse with AI';
   rw.style.display='none'; rw.innerHTML='';
 }
 function handleAnalyseClick(){
@@ -7723,7 +7515,7 @@ function handleAnalyseClick(){
 async function runPortfolioScan(){
   if(isAnalysing)return;
   if(!currentUser){
-    alert('Please sign in first — Analysis runs server-side and is tied to your plan\'s usage quota.');
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
     show('login');
     return;
   }
@@ -7766,7 +7558,7 @@ async function runCompareAnalysis(){
   if(!symA||!symB){alert('Enter both stock symbols to compare.');return;}
   const tfValue=document.getElementById('inp-timeframe')?.value||'1d';
   if(!currentUser){
-    alert('Please sign in first — Analysis runs server-side and is tied to your plan\'s usage quota.');
+    alert('Please sign in first — AI analysis runs server-side and is tied to your plan\'s usage quota.');
     show('login');
     return;
   }
@@ -7785,7 +7577,7 @@ async function runCompareAnalysis(){
         body:JSON.stringify({stockSymbol:sym,...getAnalysisHorizonRisk(),...(analysisExchange?{exchange:analysisExchange}:{}),models:selectedModels,model:selectedModels[0]}),
       });
       const data=await res.json();
-      if(!res.ok){ const err=new Error(data.error||'Analysis failed.'); err.status=res.status; throw err; }
+      if(!res.ok){ const err=new Error(data.error||'AI analysis failed.'); err.status=res.status; throw err; }
       return {ok:true,data};
     }catch(e){
       const friendly=friendlyAiError(e.status,e.message);
@@ -8175,7 +7967,7 @@ async function runChartSearch(q){
       return;
     }
     dropdown.innerHTML=results.map(r=>{
-      const exLabel=exchangeLabel(r.exchange);
+      const exLabel=r.exchange==='BSE_EQ'?'BSE':'NSE';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectChartSearchResult('${r.symbol}','${r.exchange}')">
         <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
       </div>`;
@@ -8687,7 +8479,7 @@ async function runOptUnderlyingSearch(q){
       return;
     }
     dropdown.innerHTML=results.map(r=>{
-      const exLabel=exchangeLabel(r.exchange);
+      const exLabel=r.exchange==='BSE_EQ'?'BSE':'NSE';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectOptUnderlying('${r.symbol}')">
         <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
       </div>`;
@@ -8796,7 +8588,7 @@ async function renderOptionsChain(){
     <br/><br/><span style="font-size:11px;color:var(--text3)">PCR and Max Pain are computed directly from real Upstox open interest data — this is arithmetic, not an AI model. Not financial advice.</span>`;
 }
 
-// Shared by Option Strategy Advisor & Portfolio Health Check: with one
+// Shared by AI Option Strategy Advisor & AI Portfolio Health Check: with one
 // model selected it behaves exactly as before (single call, single answer).
 // With 2+ models selected it asks each one separately (one /api/ai/insight
 // call per model — this endpoint isn't part of the metered "analyses/month"
@@ -8812,7 +8604,7 @@ async function runMultiModelInsight(elId,kind,context,chipsContainerId,loadingTe
       const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind,context,model:selectedModels[0]})});
       const data=await res.json();
       if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-      el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'Model'}</div>`;
+      el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
       syncModelChipsWithResult(data,chipsContainerId);
     }else{
       const results=await Promise.all(selectedModels.map(async(m)=>{
@@ -8850,8 +8642,8 @@ async function getOptionStrategyAdvice(){
     'option-strategy-advice','optionStrategy',
     {underlying:lastOptionChainSummary.underlying,expiry:lastOptionChainSummary.expiry,chainSummary:lastOptionChainSummary},
     'ai-model-chips-fno',
-    'Computing a strategy suggestion…',
-    'Could not get a suggestion right now — please try again shortly.'
+    'Asking AI for a strategy suggestion…',
+    'Could not get AI suggestion right now — please try again shortly.'
   );
 }
 
@@ -8930,10 +8722,10 @@ async function runBacktest(){
     </div>
     <div class="admin-panel" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> Backtest Advisor</div>
+        <div class="sec-title" style="margin-bottom:0"><i class="ti ti-sparkles"></i> AI Backtest Advisor</div>
         <button class="btn-analyse" style="padding:8px 18px;font-size:12px" onclick="getBacktestAdvice('${sym}','${strategyNames[strategy]}',${totalReturn},${buyHoldReturn},${winRate},${maxDD.toFixed(1)},${avgRet},${trades.length})"><i class="ti ti-bulb"></i> Critique this strategy</button>
       </div>
-      <div id="backtest-advice" style="font-size:13px;color:var(--text2);line-height:1.7">Click for a critique of these real backtest results — what the numbers actually mean and the biggest weakness to know before trading this live.</div>
+      <div id="backtest-advice" style="font-size:13px;color:var(--text2);line-height:1.7">Click for an AI critique of these real backtest results — what the numbers actually mean and the biggest weakness to know before trading this live.</div>
     </div>`;
   drawLineChart(document.getElementById('btEquityChart'),[{data:equityCurve,color:totalReturn>=0?'#34d399':'#f87171',width:1.6}]);
 }
@@ -8946,9 +8738,9 @@ async function getBacktestAdvice(symbol,strategy,totalReturn,buyHoldReturn,winRa
     const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'backtestAdvisor',context:{symbol,strategy,results:{totalReturn,buyHoldReturn,winRate,maxDrawdown:maxDD,avgTradeReturn:avgRet,tradeCount}}})});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
-    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'Model'}</div>`;
+    el.innerHTML=data.text.replace(/\n/g,'<br/>')+`<div style="font-size:11px;color:var(--text3);margin-top:10px">Model: ${modelDisplayName(data.model)||'AI'}</div>`;
   }catch(e){
-    el.innerHTML=`<span style="color:var(--rose2)">Could not get a critique right now — please try again shortly.</span>`;
+    el.innerHTML=`<span style="color:var(--rose2)">Could not get AI critique right now — please try again shortly.</span>`;
   }
 }
 

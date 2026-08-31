@@ -22,7 +22,6 @@
 const { config } = require('../config');
 const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
-const { isTradingDay } = require('../utils/tradingCalendar');
 
 const BASE_V2 = 'https://api.upstox.com/v2';
 const BASE_V3 = 'https://api.upstox.com/v3';
@@ -234,34 +233,18 @@ const SEED_INSTRUMENTS = {
 
 // Upstox publishes one instrument-master file per exchange. NSE is checked
 // first by default (better liquidity/data quality for the same company),
-// BSE is the fallback — see resolveInstrumentKey(). MCX_FO is the
-// commodity-derivatives segment (Gold, Silver, Crude Oil, Natural Gas,
-// base metals, etc.) — unlike NSE/BSE it carries no cash-equity segment at
-// all, so every row in MCX.json.gz is itself a future/option contract; see
-// the MCX branch inside loadInstrumentMaster() below for how that's turned
-// into one "front month" instrument_key per commodity.
+// BSE is the fallback — see resolveInstrumentKey().
 const EXCHANGE_FILES = {
   NSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz',
   BSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/BSE.json.gz',
-  MCX_FO: 'https://assets.upstox.com/market-quote/instruments/exchange/MCX.json.gz',
 };
 
-// Every exchange the app knows how to browse/search across by default (the
-// "give me everything" loops: searchSymbols, searchFnoSymbols, listAllSymbols,
-// getFnoUnderlyings). resolveInstrumentKey() intentionally does NOT default
-// to this list — an ambiguous plain symbol (watchlist add, quote lookup)
-// still only auto-resolves against NSE then BSE, exactly as before, so an
-// equity ticker can never accidentally resolve to a commodity contract.
-// Callers that specifically want MCX must pass exchange: 'MCX_FO'.
-const ALL_BROWSABLE_EXCHANGES = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'];
-
-const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...}, MCX_FO: {...} } — in-memory, process lifetime
+const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...} } — in-memory, process lifetime
 
 /**
  * Downloads and parses Upstox's equity instrument master for one exchange
  * (gzipped JSON, ~30MB uncompressed for NSE). Cache miss only — cached in
- * memory for the life of the process per exchange. For MCX_FO this instead
- * parses the commodity-derivatives file — see the branch below.
+ * memory for the life of the process per exchange.
  */
 async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   const INSTRUMENT_MASTER_TTL_MS = 24 * 60 * 60 * 1000; // refresh once a day — Upstox republishes this file daily
@@ -279,11 +262,6 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   const buf = Buffer.from(await res.arrayBuffer());
   const json = zlib.gunzipSync(buf).toString('utf-8');
   const list = JSON.parse(json);
-
-  if (exchange === 'MCX_FO') {
-    instrumentMasterCache.MCX_FO = parseMcxInstrumentMaster(list);
-    return instrumentMasterCache.MCX_FO;
-  }
 
   // NOTE: Upstox's NSE.json.gz and BSE.json.gz are NOT guaranteed to use
   // identical field names/values row-to-row (reported by multiple devs on
@@ -347,79 +325,13 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   return instrumentMasterCache[exchange];
 }
 
-// ── MCX (commodity derivatives) instrument-master parsing ────────────────
-// MCX has no cash-equity segment — every row in MCX.json.gz is itself a
-// futures or options contract on a commodity (GOLD, SILVER, CRUDEOIL,
-// NATURALGAS, COPPER, ZINC, ALUMINIUM, LEAD, MENTHAOIL, COTTON, etc.), and
-// the same commodity has several rows at once (one per expiry month, plus
-// CE/PE option rows). So unlike NSE/BSE there is no single "the equity
-// row" to key on — instead, for each commodity we pick the FUTURES
-// contract with the nearest expiry that hasn't already lapsed (the "front
-// month"/"near month" contract, the one carrying most of the trading
-// volume) and use that as the one instrument_key the rest of the app
-// treats as "this commodity's price" — the same role NIFTY 50's single
-// index instrument_key plays for INDEX_INSTRUMENT_KEYS above. This re-picks
-// itself automatically as contracts expire and roll, with no manual
-// updates needed when MCX opens a new expiry each month.
-function parseMcxInstrumentMaster(list) {
-  const nearestFutureByUnderlying = new Map(); // UNDERLYING -> { instrumentKey, name, expiry }
-  const fnoUnderlyings = new Set(); // commodities that have a listed CE/PE options chain
-  const todayMs = Date.now();
-  let skippedNoSymbol = 0;
-
-  for (const row of list) {
-    const instrumentType = (row.instrument_type || '').toUpperCase();
-    const instrumentKey = row.instrument_key || row.instrumentKey;
-    const underlying = String(row.underlying_symbol || row.asset_symbol || row.trading_symbol || row.name || '')
-      .toUpperCase()
-      .replace(/\s+(FUT|CE|PE)$/, '')
-      .trim();
-    if (!instrumentKey || !underlying) { skippedNoSymbol++; continue; }
-
-    if (instrumentType === 'CE' || instrumentType === 'PE') {
-      fnoUnderlyings.add(underlying);
-      continue;
-    }
-    if (instrumentType !== 'FUT') continue; // ignore anything else (spreads, indices, etc.)
-
-    const expiryMs = row.expiry ? Number(row.expiry) : NaN;
-    if (!Number.isFinite(expiryMs) || expiryMs < todayMs) continue; // already-expired contract
-
-    const existing = nearestFutureByUnderlying.get(underlying);
-    if (!existing || expiryMs < existing.expiry) {
-      nearestFutureByUnderlying.set(underlying, {
-        instrumentKey,
-        name: row.name || underlying,
-        expiry: expiryMs,
-      });
-    }
-  }
-
-  const bySymbol = new Map();
-  for (const [underlying, info] of nearestFutureByUnderlying) {
-    bySymbol.set(underlying, { instrumentKey: info.instrumentKey, name: info.name });
-    fnoUnderlyings.add(underlying); // every commodity with a live future is a valid F&O underlying
-  }
-
-  if (bySymbol.size === 0) {
-    throw new AppError(
-      `Upstox MCX instrument master parsed to 0 active commodity contracts (downloaded ${list.length} rows, ${skippedNoSymbol} missing symbol/key). The file format may have changed.`,
-      502
-    );
-  }
-
-  return { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
-}
-
 // Every stock symbol (across NSE + BSE) that actually has listed options,
-// plus the tradeable indices (NIFTY, BANKNIFTY, SENSEX, etc) and every MCX
-// commodity with a live futures/options contract (GOLD, SILVER, CRUDEOIL,
-// NATURALGAS, etc). Backs the Options page's search bar so it only ever
-// suggests underlyings that will actually return a real option chain,
-// instead of all 5,000+ equities.
+// plus the tradeable indices (NIFTY, BANKNIFTY, SENSEX, etc). Backs the
+// Options page's search bar so it only ever suggests underlyings that will
+// actually return a real option chain, instead of all 5,000+ equities.
 async function getFnoUnderlyings() {
   const symbols = new Set();
-  for (const exchange of ALL_BROWSABLE_EXCHANGES) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     try {
       const { fnoUnderlyings } = await loadInstrumentMaster(exchange);
       fnoUnderlyings.forEach((s) => symbols.add(s));
@@ -432,13 +344,13 @@ async function getFnoUnderlyings() {
 
 // Same as searchSymbols() but filtered down to only F&O-enabled
 // underlyings — used by the Options page's underlying search bar.
-async function searchFnoSymbols(prefixRaw, limit = 20, exchangeFilter) {
+async function searchFnoSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
   if (!prefix) return [];
 
   const fnoSet = await getFnoUnderlyings();
   const results = [];
-  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     let bySymbol;
     try {
       ({ bySymbol } = await loadInstrumentMaster(exchange));
@@ -458,10 +370,7 @@ async function searchFnoSymbols(prefixRaw, limit = 20, exchangeFilter) {
 /**
  * Resolves a plain trading symbol to an Upstox instrument_key, caching the
  * result in Postgres. Tries NSE first (default), falls back to BSE if the
- * symbol isn't listed on NSE. Pass exchange: 'BSE_EQ' to force BSE only, or
- * exchange: 'MCX_FO' to resolve a commodity (e.g. "GOLD", "CRUDEOIL") to
- * its current front-month contract — MCX is never tried automatically, an
- * equity lookup with no exchange given stays NSE-then-BSE only.
+ * symbol isn't listed on NSE. Pass exchange: 'BSE_EQ' to force BSE only.
  */
 async function resolveInstrumentKey(symbolRaw, exchange) {
   const symbol = (symbolRaw || '').trim().toUpperCase();
@@ -505,13 +414,12 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
 }
 
 /**
- * Returns a page of ALL equities/commodities on one exchange (or all of
- * them), for a full stock/contract browser — as opposed to searchSymbols()
- * which is prefix-matching for a search box. Sorted alphabetically for
- * stable pagination. Pass exchange: 'MCX_FO' to browse commodities only.
+ * Returns a page of ALL equities on one exchange (or both), for a full
+ * stock browser — as opposed to searchSymbols() which is prefix-matching
+ * for a search box. Sorted alphabetically for stable pagination.
  */
 async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
-  const exchanges = exchange ? [exchange] : ALL_BROWSABLE_EXCHANGES;
+  const exchanges = exchange ? [exchange] : ['NSE_EQ', 'BSE_EQ'];
   let all = [];
   const failures = [];
   for (const ex of exchanges) {
@@ -539,17 +447,17 @@ async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
     ...(failures.length ? { partialFailure: failures } : {}),
   };
 }
-async function searchSymbols(prefixRaw, limit = 20, exchangeFilter) {
+async function searchSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
   if (!prefix) return [];
 
   const results = [];
-  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     let bySymbol;
     try {
       ({ bySymbol } = await loadInstrumentMaster(exchange));
     } catch (e) {
-      continue; // let other exchanges still return results
+      continue; // let the other exchange still return results
     }
     for (const [symbol, info] of bySymbol) {
       if (symbol.startsWith(prefix)) {
@@ -795,12 +703,6 @@ function isIndianMarketOpen(now = new Date()) {
   const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
   const day = ist.getUTCDay();
   if (day === 0 || day === 6) return false;
-  // FIX: weekday+time alone can't tell a real trading day apart from a
-  // published exchange holiday (Holi, Diwali-Balipratipada, Republic Day,
-  // etc.) — without this check the Screener kept logging scanner signals
-  // on holidays, polluting the "everyday accuracy" numbers with days the
-  // market was never actually open. See utils/tradingCalendar.js.
-  if (!isTradingDay(now)) return false;
   const minutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
   return minutes >= (9 * 60 + 15) && minutes < (15 * 60 + 30);
 }

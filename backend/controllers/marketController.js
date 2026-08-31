@@ -137,7 +137,7 @@ const getIndexCandles = asyncHandler(async (req, res) => {
 const listStocks = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 150);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const result = await marketDataService.listAllSymbols({ exchange, page, limit });
   res.json(result);
 });
@@ -152,13 +152,9 @@ const INDEX_INSTRUMENT_KEYS = {
 const getOptionsChain = asyncHandler(async (req, res) => {
   const { underlying = 'NIFTY', expiry } = req.query;
   if (!expiry) throw new AppError('expiry query param is required (YYYY-MM-DD).', 400);
-  // ?exchange=MCX_FO lets the underlying be a commodity (GOLD, CRUDEOIL,
-  // SILVER, NATURALGAS, etc.) instead of a stock/index — resolved to that
-  // commodity's current front-month futures contract, same as elsewhere.
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
 
-  const instrumentKey = (!exchange && INDEX_INSTRUMENT_KEYS[underlying.toUpperCase()])
-    || await marketDataService.resolveInstrumentKey(underlying, exchange); // falls through to NSE/BSE equity, or MCX commodity, for the options chain
+  const instrumentKey = INDEX_INSTRUMENT_KEYS[underlying.toUpperCase()]
+    || await marketDataService.resolveInstrumentKey(underlying); // falls through to NSE/BSE equity for stock options
 
   const chain = await marketDataService.getOptionChain(instrumentKey, expiry);
   res.json({ underlying, expiry, chain });
@@ -169,8 +165,7 @@ const getOptionsChain = asyncHandler(async (req, res) => {
 const searchSymbols = asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q) throw new AppError('q query param is required.', 400);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const results = await marketDataService.searchSymbols(q, 20, exchange);
+  const results = await marketDataService.searchSymbols(q, 20);
   res.json({ results });
 });
 
@@ -182,8 +177,7 @@ const searchSymbols = asyncHandler(async (req, res) => {
 const searchFnoSymbols = asyncHandler(async (req, res) => {
   const { q } = req.query;
   if (!q) throw new AppError('q query param is required.', 400);
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
-  const results = await marketDataService.searchFnoSymbols(q, 20, exchange);
+  const results = await marketDataService.searchFnoSymbols(q, 20);
   res.json({ results });
 });
 
@@ -195,7 +189,7 @@ const searchFnoSymbols = asyncHandler(async (req, res) => {
 // involved and no buy/sell/hold verdict — see utils/indicators.js
 // buildFullTechnicalReport() for the compliance rationale.
 const getFullReport = asyncHandler(async (req, res) => {
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   // FIX: same missing-param bug as getSignals — the full report (Trend,
   // RSI, MACD, Volume, etc. shown on the stock-detail "Analysis" view) was
   // always computed off hardcoded daily candles, ignoring whichever Time
@@ -212,7 +206,7 @@ const getFullReport = asyncHandler(async (req, res) => {
 // symbol listed on both exchanges shows the one the trader actually picked.)
 const getCandles = asyncHandler(async (req, res) => {
   const { unit, interval, from, to } = req.query;
-  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.query.exchange) ? req.query.exchange : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(req.query.exchange) ? req.query.exchange : undefined;
   const data = await marketDataService.getHistoricalCandles(req.params.symbol, {
     unit,
     interval: interval ? Number(interval) : undefined,
