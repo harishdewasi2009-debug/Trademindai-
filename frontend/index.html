@@ -4417,7 +4417,7 @@ async function runAnalysis(){
           <div class="tm-report-block" style="background:var(--bg3);border-radius:var(--radius-lg);padding:16px;border:1px solid var(--border)">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
               <div class="tm-report-block-title" style="margin-bottom:0"><i class="ti ti-sparkles" style="font-size:12px"></i>Multi-timeframe view</div>
-              <button class="btn-sm" onclick="getMultiTimeframeView('${(result.stockSymbol||stockSym).replace(/'/g,"")}')"><i class="ti ti-layers-intersect"></i> Check daily vs weekly</button>
+              <button class="btn-sm" onclick="getMultiTimeframeView('${(result.stockSymbol||stockSym).replace(/'/g,"")}','${result.exchange||analysisExchange||''}')"><i class="ti ti-layers-intersect"></i> Check daily vs weekly</button>
             </div>
             <div id="mtf-view" style="font-size:13px;color:var(--text2);line-height:1.7">Compares real daily and weekly indicator readings for this stock — click to check if the timeframes agree.</div>
           </div>
@@ -4479,9 +4479,16 @@ async function runDeepResearch(){
     // "check daily vs weekly" button, just run automatically as part of
     // the deep report instead of needing a second click.
     try{
+      // FIX: analysisExchange (set when the user picked a BSE/MCX result from
+      // search) was threaded into /api/ai/analyze above but NOT into these
+      // daily/weekly candle calls — so a BSE-selected stock's core analysis
+      // was correctly BSE-priced while this multi-timeframe RSI/trend read
+      // silently pulled NSE (or a 404) candles instead.
+      const mtfExchange=result.exchange||analysisExchange;
+      const mtfExQs=mtfExchange?`&exchange=${encodeURIComponent(mtfExchange)}`:'';
       const [dailyRes,weeklyRes]=await Promise.all([
-        apiFetch(`/api/market/candles/${encodeURIComponent(result.stockSymbol||stockSym)}?unit=days&interval=1`,{cache:'no-store'}),
-        apiFetch(`/api/market/candles/${encodeURIComponent(result.stockSymbol||stockSym)}?unit=weeks&interval=1`,{cache:'no-store'}),
+        apiFetch(`/api/market/candles/${encodeURIComponent(result.stockSymbol||stockSym)}?unit=days&interval=1${mtfExQs}`,{cache:'no-store'}),
+        apiFetch(`/api/market/candles/${encodeURIComponent(result.stockSymbol||stockSym)}?unit=weeks&interval=1${mtfExQs}`,{cache:'no-store'}),
       ]);
       const daily=await dailyRes.json(), weekly=await weeklyRes.json();
       if(dailyRes.ok&&weeklyRes.ok&&daily.candles?.length&&weekly.candles?.length){
@@ -4574,14 +4581,19 @@ async function runDeepResearch(){
   },2400);
 }
 
-async function getMultiTimeframeView(sym){
+async function getMultiTimeframeView(sym,exchange){
   const el=document.getElementById('mtf-view');
   if(!el)return;
   el.innerHTML=`<span style="color:var(--text3)">Fetching real daily + weekly data for ${sym}…</span>`;
+  // FIX: same missing-exchange bug as the deep-report MTF fetch above — this
+  // never received the BSE/MCX exchange the stock was actually analysed on,
+  // so it always re-resolved the symbol via NSE-then-BSE auto-lookup instead
+  // of the exchange the user actually picked.
+  const mtfExQs=exchange?`&exchange=${encodeURIComponent(exchange)}`:'';
   try{
     const [dailyRes,weeklyRes]=await Promise.all([
-      apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1`,{cache:'no-store'}),
-      apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=weeks&interval=1`,{cache:'no-store'}),
+      apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1${mtfExQs}`,{cache:'no-store'}),
+      apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=weeks&interval=1${mtfExQs}`,{cache:'no-store'}),
     ]);
     const daily=await dailyRes.json(), weekly=await weeklyRes.json();
     if(!dailyRes.ok||!weeklyRes.ok)throw new Error(daily.error||weekly.error||'Could not load real candle data.');
@@ -5300,7 +5312,13 @@ function renderDashboard(section){
         ${modelChipsHtml('ai-model-chips-tradeideas')}
         <div id="ai-trade-ideas" style="font-size:13px;color:var(--text2);line-height:1.7">Run a scan above, then click the button for analysis commentary on the real matches — grounded in the actual scan data, not invented.</div>
       </div>`;
-    registerStockSearch('scanner-search-inp',(sym,name)=>{ renderSingleStockScan(sym,name); });
+    // FIX: the search box explicitly advertises "any NSE, BSE stock, or MCX
+    // commodity", and the dropdown correctly returns each result's real
+    // exchange — but this handler silently dropped it, so picking a BSE or
+    // MCX result still scanned whatever the plain-symbol NSE-then-BSE
+    // auto-resolution found (wrong company/contract for MCX, wrong listing
+    // for a dual-listed BSE pick).
+    registerStockSearch('scanner-search-inp',(sym,name,exchange)=>{ renderSingleStockScan(sym,name,exchange); });
     renderScannerCards('breakout');
     refreshModelChipLocks();
   }
@@ -5317,7 +5335,12 @@ function renderDashboard(section){
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:20px">RSI, MACD, moving averages, VWAP, Bollinger Bands, Fibonacci, divergence and volatility — all in one panel.</div>
       <div id="indicators-panel"></div>`;
-    registerStockSearch('ind-sym-inp',()=>renderIndicatorsPanel());
+    // FIX: the search box advertises NSE/BSE/MCX, and results carry their
+    // real exchange, but nothing here ever remembered it — renderIndicatorsPanel()
+    // only ever read the plain symbol text, so a BSE/MCX pick still computed
+    // every indicator (RSI, MACD, VWAP, etc.) off NSE-then-BSE auto-resolved
+    // candles instead of the exchange actually selected.
+    registerStockSearch('ind-sym-inp',(sym,name,exchange)=>{ indSymExchange=exchange||undefined; indSymExchangeSym=sym; renderIndicatorsPanel(); });
     renderIndicatorsPanel();
   }
 
@@ -6088,9 +6111,18 @@ async function fetchInBatches(symbols,batchSize=10){
   const out=[];
   for(let i=0;i<symbols.length;i+=batchSize){
     const batch=symbols.slice(i,i+batchSize);
-    const results=await Promise.all(batch.map(async ({symbol})=>{
+    // FIX (Scanner showing wrong prices/signals for BSE — top 150 / MCX —
+    // commodities universes): resolveScanSymbols() already tags every entry
+    // with its real exchange, but this only ever destructured `symbol`,
+    // silently dropping it — so every candle fetch fell back to the
+    // backend's NSE-then-BSE auto-resolution instead of the exchange the
+    // universe was actually built from. A BSE-picked stock (or an MCX
+    // commodity, which isn't on NSE/BSE at all) could scan against the
+    // wrong instrument's candles entirely.
+    const results=await Promise.all(batch.map(async ({symbol,exchange})=>{
       try{
-        const res=await apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=days&interval=1`,{cache:'no-store'});
+        const exQs=exchange?`&exchange=${encodeURIComponent(exchange)}`:'';
+        const res=await apiFetch(`/api/market/candles/${encodeURIComponent(symbol)}?unit=days&interval=1${exQs}`,{cache:'no-store'});
         const data=await res.json();
         if(!res.ok||!data.candles||data.candles.length<21){
           if(!res.ok && !scanFailReason)scanFailReason=data?.error||('HTTP '+res.status);
@@ -6219,7 +6251,7 @@ async function renderScannerCards(active){
 // against a single searched stock, so picking a stock from the Market
 // Scanner's search bar shows that stock's full breakout-scanner-style
 // breakdown right here, instead of just jumping away to Quick Analysis.
-async function renderSingleStockScan(sym,name){
+async function renderSingleStockScan(sym,name,exchange){
   const wrap=document.getElementById('scanner-cards');
   const resEl=document.getElementById('scanner-results');
   if(!resEl)return;
@@ -6230,7 +6262,8 @@ async function renderSingleStockScan(sym,name){
   </div>`;
   resEl.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3)">Checking every scan type for ${sym}…</div>`;
   try{
-    const res=await apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1`,{cache:'no-store'});
+    const exQs=exchange?`&exchange=${encodeURIComponent(exchange)}`:'';
+    const res=await apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1${exQs}`,{cache:'no-store'});
     const data=await res.json();
     if(!res.ok||!data.candles||data.candles.length<21)throw new Error(data?.error||'Not enough real candle history yet for this stock.');
     const candles=data.candles;
@@ -6261,15 +6294,23 @@ function clearSingleStockScan(){
 }
 
 // ══════════════ TECHNICAL INDICATORS PANEL — real data ══════════════
+let indSymExchange; // set from search dropdown; see registerStockSearch('ind-sym-inp', ...) above
+let indSymExchangeSym; // the symbol indSymExchange was picked for — guards against staleness if the user hand-types a different symbol
 async function renderIndicatorsPanel(){
   const sym=(document.getElementById('ind-sym-inp')?.value||'RELIANCE').toUpperCase();
+  // If the text no longer matches the symbol the exchange was picked for
+  // (user typed a different symbol by hand instead of using the dropdown),
+  // the remembered exchange is stale — fall back to auto NSE-then-BSE
+  // resolution rather than applying the wrong exchange to a new symbol.
+  if(indSymExchange && sym!==indSymExchangeSym)indSymExchange=undefined;
   const panel=document.getElementById('indicators-panel');
   if(!panel)return;
   panel.innerHTML=`<div style="padding:24px;text-align:center;color:var(--text3)">Loading real ${sym} data…</div>`;
 
   let candles;
   try{
-    const res=await apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1`,{cache:'no-store'});
+    const exQs=indSymExchange?`&exchange=${encodeURIComponent(indSymExchange)}`:'';
+    const res=await apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?unit=days&interval=1${exQs}`,{cache:'no-store'});
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'HTTP '+res.status);
     if(!data.candles||data.candles.length<20)throw new Error('Not enough real history returned.');
@@ -7555,7 +7596,11 @@ async function openStockDetail(symbol,exchange,name){
     show('charts');
     document.getElementById('chart-sym-inp').value=symbol;
     if(exchange)syncChartExchangeToggle(exchange);
-    loadChartSymbol();
+    // keepExchange:true — exchange was just explicitly set above from the
+    // stock-detail modal's own exchange (e.g. a BSE row clicked from the
+    // Screener); don't let loadChartSymbol's manual-typing reset stomp it
+    // back to NSE.
+    loadChartSymbol({keepExchange:true});
   };
   modal.classList.add('open');
 
@@ -8201,9 +8246,24 @@ function selectCandleInterval(unit,interval,label){
   document.getElementById('chart-interval-btn')?.classList.add('active');
   renderMainChart();
 }
-function loadChartSymbol(){
+function loadChartSymbol(opts){
+  const keepExchange = opts && opts.keepExchange;
   const v=(document.getElementById('chart-sym-inp').value||'RELIANCE').toUpperCase().trim();
-  chartCurrentSymbol=v||'RELIANCE';
+  const newSymbol=v||'RELIANCE';
+  // FIX (Charts page showing the wrong NSE/BSE/MCX price after switching
+  // stocks): chartCurrentExchange is intentionally "sticky" so re-picking
+  // the same exchange persists across timeframe changes for the SAME
+  // stock — but that meant: view a stock on BSE, then type a DIFFERENT
+  // symbol and hit Load/Enter (instead of picking it from the search
+  // dropdown, which already calls syncChartExchangeToggle before this
+  // runs) — the chart kept the previous stock's BSE selection for the new
+  // symbol, silently fetching/showing THAT symbol's BSE (or MCX) data
+  // instead of its NSE price, even though the Screener showed it correctly
+  // on NSE. Manually typing a new symbol now resets back to NSE (the
+  // default) unless the caller (a search-result pick) explicitly says to
+  // keep the exchange it just set.
+  if(!keepExchange && newSymbol!==chartCurrentSymbol)syncChartExchangeToggle('NSE_EQ');
+  chartCurrentSymbol=newSymbol;
   document.querySelectorAll('#chart-idx-nifty50,#chart-idx-sensex,#chart-idx-banknifty').forEach(c=>c.classList.remove('sel'));
   if(liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
   renderMainChart();
@@ -8256,7 +8316,10 @@ function selectChartSearchResult(sym,exchange){
   document.getElementById('chart-search-dropdown').style.display='none';
   document.getElementById('chart-sym-inp').value=sym;
   if(exchange)syncChartExchangeToggle(exchange);
-  loadChartSymbol();
+  // keepExchange:true — we just explicitly set the exchange above (from the
+  // search result itself), so loadChartSymbol's manual-typing reset must
+  // not immediately undo it.
+  loadChartSymbol({keepExchange:true});
 }
 document.addEventListener('click',(e)=>{
   const dropdown=document.getElementById('chart-search-dropdown');
@@ -8958,8 +9021,17 @@ async function getOptionStrategyAdvice(){
 }
 
 // ── BACKTESTING ENGINE (real historical data via Upstox) ──
+// FIX (same class of bug as Scanner/Indicators panel above): this input's
+// placeholder advertises NSE/BSE/MCX and the search dropdown returns each
+// result's real exchange, but nothing here ever remembered it — every
+// backtest ran against whatever the plain-symbol NSE-then-BSE
+// auto-resolution found, which was silently wrong for a BSE-only listing
+// and outright failed for MCX commodities.
+let btSymExchange; // set from search dropdown; see registerStockSearch('bt-sym', ...) below
+let btSymExchangeSym; // the symbol btSymExchange was picked for — guards against staleness if the user hand-types a different symbol
 async function runBacktest(){
   const sym=(document.getElementById('bt-sym').value||'RELIANCE').toUpperCase();
+  if(btSymExchange && sym!==btSymExchangeSym)btSymExchange=undefined;
   const strategy=document.getElementById('bt-strategy').value;
   const periodLabel=document.getElementById('bt-period').value;
   const years=periodLabel.includes('1')?1:periodLabel.includes('3')?3:5;
@@ -8972,6 +9044,7 @@ async function runBacktest(){
     const to=new Date();
     const from=new Date(); from.setFullYear(from.getFullYear()-years);
     const qs=new URLSearchParams({unit:'days',interval:'1',from:from.toISOString().slice(0,10),to:to.toISOString().slice(0,10)});
+    if(btSymExchange)qs.set('exchange',btSymExchange);
     const res=await apiFetch(`/api/market/candles/${encodeURIComponent(sym)}?${qs}`,{cache:'no-store'});
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
@@ -9080,7 +9153,7 @@ renderDashboard('overview');
 // per-visit like the dashboard sections), so register its search handler
 // once here — selecting a result just needs to fill in the input, which
 // stockSearchBarHtml/selectGenericStockSearchResult already does.
-registerStockSearch('bt-sym',(sym)=>{ document.getElementById('bt-sym').value=sym; runBacktest(); });
+registerStockSearch('bt-sym',(sym,name,exchange)=>{ document.getElementById('bt-sym').value=sym; btSymExchange=exchange||undefined; btSymExchangeSym=sym; runBacktest(); });
 </script>
 </body>
 </html>
