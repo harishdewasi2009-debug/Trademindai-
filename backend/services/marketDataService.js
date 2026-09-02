@@ -963,14 +963,7 @@ async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const intraday = await intradayPromise;
-  // FIX: same root cause as getHistoricalCandles() below — see the comment
-  // there. Once historical has caught up with today's officially settled
-  // close (post the closing auction), trust it instead of always
-  // overwriting it with intraday's last pre-auction tick.
-  const historicalHasToday = candles.some((c) => typeof c.t === 'string' && c.t.startsWith(todayStr));
-  const merged = historicalHasToday
-    ? candles
-    : [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
+  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { label, instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
@@ -1073,22 +1066,7 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   // firing a request that can only ever come back empty (or error). This is
   // the weekly leg the Multi-Timeframe / "Check daily vs weekly" view uses.
   const intraday = await intradayPromise;
-  // FIX (chart's "today" candle showing the wrong close after market hours):
-  // this used to unconditionally drop today's row from `candles` (historical)
-  // and always splice in `intraday` instead, on the assumption historical
-  // never has today's data yet. That's true *during* the session, but once
-  // Upstox processes the day's official close — after the 3:30–3:40pm closing
-  // auction — historical DOES include today, and it's the authoritative,
-  // settled close. intraday's last tick is just the last live trade before
-  // the auction, which routinely differs by a few points/paise from the real
-  // settled close. Always preferring intraday meant the chart kept showing
-  // that pre-auction tick as "today's close" instead of the real one. Now:
-  // if historical already has today, trust it and don't touch it — only
-  // fall back to intraday for today when historical hasn't caught up yet.
-  const historicalHasToday = candles.some((c) => typeof c.t === 'string' && c.t.startsWith(todayStr));
-  const merged = historicalHasToday
-    ? candles
-    : [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
+  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
