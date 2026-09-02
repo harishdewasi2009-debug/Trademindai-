@@ -2070,7 +2070,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="plan-badge plan-badge-pro">Most Popular · Best Value</div>
         <div class="plan-tier">Pro</div>
         <div class="plan-desc">A 4-model analysis stack, Portfolio Tracker, unlimited-feel monthly analysis, and a Trading Assistant Chat — built for active traders.</div>
-        <div class="plan-price" id="price-pro"><sup>₹</sup>999</div>
+        <div class="plan-price" id="price-pro"><sup>₹</sup>499</div>
         <div class="plan-mo" id="mo-pro">per month</div>
         <div class="plan-limit"><strong>499</strong> analysis / month · 1,000,000 tokens/mo</div>
         <div class="plan-hr"></div>
@@ -2088,7 +2088,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Trading Assistant Chat</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-green"></i><span>Referral program access</span></li>
         </ul>
-        <button class="btn-plan p" id="btn-pro" onclick="openPay('Pro','999')">Get Pro</button>
+        <button class="btn-plan p" id="btn-pro" onclick="openPay('Pro','499')">Get Pro</button>
       </div>
 
       <!-- ELITE PLAN -->
@@ -2096,7 +2096,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="plan-badge plan-badge-elite">🏆 Institutional Grade</div>
         <div class="plan-tier">Elite</div>
         <div class="plan-desc">Institutional-grade 4-model consensus, backtesting, options analysis, and a Portfolio Advisor — built for serious traders.</div>
-        <div class="plan-price" id="price-elite"><sup>₹</sup>3,199</div>
+        <div class="plan-price" id="price-elite"><sup>₹</sup>999</div>
         <div class="plan-mo" id="mo-elite">per month</div>
         <div class="plan-limit"><strong>1,499</strong> analysis / month · 2,015,000 tokens/mo fair-use cap</div>
         <div class="plan-hr"></div>
@@ -2114,7 +2114,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>Priority processing + support</span></li>
           <li class="plan-li"><i class="ti ti-check chk chk-amber"></i><span>2FA + Device management</span></li>
         </ul>
-        <button class="btn-plan elite" id="btn-elite" onclick="openPay('Elite','3,199')">Get Elite</button>
+        <button class="btn-plan elite" id="btn-elite" onclick="openPay('Elite','999')">Get Elite</button>
       </div>
     </div>
     <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:28px">Payments by <strong style="color:var(--text2)">Razorpay</strong> · UPI · Netbanking · Credit &amp; Debit Cards · Auto-debit · All payments in INR</p>
@@ -2129,8 +2129,8 @@ img,svg,video,canvas,iframe{max-width:100%}
             <th>Feature</th>
             <th>Free<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-free">₹0</span></th>
             <th>Basic<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-basic">₹149</span></th>
-            <th>Pro<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-pro">₹999</span></th>
-            <th>Elite<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--amber)" id="comp-price-elite">₹3,199</span></th>
+            <th>Pro<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--text)" id="comp-price-pro">₹499</span></th>
+            <th>Elite<br/><span style="font-family:'Space Grotesk';font-size:14px;color:var(--amber)" id="comp-price-elite">₹999</span></th>
           </tr>
         </thead>
         <tbody>
@@ -3701,23 +3701,6 @@ liveSocket.onmessage=(evt)=>{
           priceEl.style.color=(p>=lwLastBar.open)?'var(--green2)':'var(--rose2)';
         }
       }
-    }
-    // FIX (homepage NIFTY 50 hero chart price only ever changing once a
-    // minute): unlike the Charts page panel above, the hero chart's price/
-    // canvas had NO WebSocket wiring at all — hc-price was only ever set
-    // from renderHeroChart(), which only runs off the 60s REST candle poll
-    // (loadHeroChart, see CHART_REFRESH_MS). NIFTY 50 ticks already arrive
-    // right here (the INDEX_LABELS branch above already keeps
-    // liveQuoteCache['NIFTY 50'] fresh) — just reuse that same tick to patch
-    // the hero chart's in-progress last candle and re-render in place,
-    // instead of waiting up to 60s for the next candle fetch.
-    if(msg.feeds?.['NIFTY 50']&&typeof msg.feeds['NIFTY 50'].price==='number'&&heroCandles&&heroCandles.length){
-      const p=msg.feeds['NIFTY 50'].price;
-      const lastCandle=heroCandles[heroCandles.length-1];
-      lastCandle.c=p;
-      lastCandle.h=Math.max(lastCandle.h,p);
-      lastCandle.l=Math.min(lastCandle.l,p);
-      renderHeroChart();
     }
     if(got){
       marketStatus='live';
@@ -8692,36 +8675,7 @@ function renderMainChartWith(realCandles){
   const closes=candles.map(c=>c.c);
   const last=candles[candles.length-1];
   const up=last.c>=candles[0].o;
-  // FIX (NSE/BSE chart price only ever changing once every 60s, and even
-  // then snapping to a stale value): this function runs on EVERY
-  // CHART_REFRESH_MS (60s) background candle poll for the same chart, not
-  // just on a genuine symbol/timeframe/exchange switch. It used to
-  // unconditionally rebuild titleEl's innerHTML with `last.c` — the closing
-  // price of the most recently fetched candle — which destroys and replaces
-  // the exact `.hc-price` <span> that the live WebSocket tick handler
-  // (connectLiveFeed's onmessage, see lastChartTick) had been updating in
-  // real time between polls. The net effect: the price would tick live for
-  // a few seconds after each WS message, then get stomped back to a REST
-  // candle close — which is itself up to one candle-interval old, not the
-  // current LTP — every single 60s refresh. That's "previous 60 sec data"
-  // repeating forever, on every chart, regardless of exchange (it just read
-  // as NSE/BSE-specific because MCX's separate 24h contract-rollover fix
-  // masked the same underlying pattern there).
-  // Fix: only rebuild the whole title (new "LIVE" badge etc.) on an actual
-  // new chart. On a same-chart background refresh, just patch the existing
-  // price span in place — and prefer a live tick we already have for this
-  // exact symbol over the candle's close, since the tick is newer.
-  const chartKeyNow=`${sym}|${chartCurrentTF}|${chartCurrentExchange}|${chartCustomInterval?chartCustomInterval.unit+chartCustomInterval.interval:''}`;
-  const isNewChartTitle = chartKeyNow!==lwFitKey;
-  const livePrice = (lastChartTick && lastChartTick.symbol===sym) ? lastChartTick.price : last.c;
-  const liveUp = livePrice>=candles[0].o;
-  if(isNewChartTitle || !titleEl.querySelector('.hc-price')){
-    titleEl.innerHTML=`${sym} <span class="hc-price" style="color:${liveUp?'var(--green2)':'var(--rose2)'}">₹${livePrice.toFixed(2)}</span> <span style="font-size:10px;font-weight:600;color:var(--green2);border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);padding:2px 7px;border-radius:8px;vertical-align:middle">LIVE</span>`;
-  }else{
-    const priceEl=titleEl.querySelector('.hc-price');
-    priceEl.textContent='₹'+livePrice.toFixed(2);
-    priceEl.style.color=liveUp?'var(--green2)':'var(--rose2)';
-  }
+  titleEl.innerHTML=`${sym} <span class="hc-price" style="color:${up?'var(--green2)':'var(--rose2)'}">₹${last.c.toFixed(2)}</span> <span style="font-size:10px;font-weight:600;color:var(--green2);border:1px solid rgba(16,185,129,.3);background:rgba(16,185,129,.08);padding:2px 7px;border-radius:8px;vertical-align:middle">LIVE</span>`;
 
   // Reset the container each time in case the empty state above replaced it with a message div.
   const container=document.getElementById('mainChart');
