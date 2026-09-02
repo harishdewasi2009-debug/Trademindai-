@@ -3664,23 +3664,6 @@ liveSocket.onmessage=(evt)=>{
         persistIndexCache();
         got=true;
       }
-      // FIX (homepage NIFTY 50 hero chart stuck ~60s behind): heroChart used
-      // to only redraw from loadHeroChart()'s REST poll on CHART_REFRESH_MS
-      // (60s) — the same interval the backend's candle cache uses — so the
-      // candle on screen was always up to a minute stale even though a live
-      // tick for NIFTY 50 was arriving over this socket several times a
-      // second the whole time. This mirrors the exact pattern already used
-      // for the Charts page's lwLastBar below: patch the *currently forming*
-      // candle's close/high/low from the tick and redraw immediately,
-      // instead of waiting for the next full candle re-fetch.
-      if(sym==='NIFTY 50' && typeof q.price==='number' && heroCandles && heroCandles.length){
-        const p=q.price;
-        const lastCandle=heroCandles[heroCandles.length-1];
-        lastCandle.c=p;
-        lastCandle.h=Math.max(lastCandle.h,p);
-        lastCandle.l=Math.min(lastCandle.l,p);
-        renderHeroChart();
-      }
       // Screener rows: patch in place if this tick's symbol is currently
       // rendered on screen — true tick-by-tick movement, same as Upstox,
       // independent of the ~30 fixed TICKER_SYMBOLS or the 4s REST poll.
