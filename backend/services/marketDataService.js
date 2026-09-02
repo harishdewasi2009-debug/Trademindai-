@@ -722,65 +722,6 @@ async function getDailyCloseFallback(instrumentKey) {
   }
 }
 
-// FIX (homepage NIFTY 50 hero chart — and any other minute/hour-granularity
-// chart — still showing the wrong "today" close after market hours, even
-// after the historicalHasToday fix above): that fix only helps when the
-// caller requested DAILY candles, because Upstox backfills "today" into the
-// historical feed same-day only at daily granularity. The homepage hero
-// chart defaults to a 5-day/15-minute view, and Upstox's historical feed at
-// minute granularity typically does NOT get today backfilled same-day at
-// all — so historicalHasToday stayed false forever for that view, and it
-// kept showing intraday's last pre-auction tick no matter how long after
-// close you looked. This helper sidesteps that by asking specifically for
-// TODAY's daily candle (which does settle same-day) regardless of what
-// granularity the chart itself is drawn in, so the true auction-settled
-// close can be patched onto the chart's last candle either way.
-const settledCloseCache = new Map(); // `${instrumentKey}:${dateStr}` -> { close, expiresAt }
-async function getSettledTodayClose(instrumentKey) {
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const cacheKey = `${instrumentKey}:${todayStr}`;
-  const cached = settledCloseCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.close;
-  try {
-    const accessToken = await getValidAccessToken();
-    const encodedKey = encodeURIComponent(instrumentKey);
-    const url = `${BASE_V3}/historical-candle/${encodedKey}/days/1/${todayStr}/${todayStr}`;
-    const res = await fetch(url, {
-      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const rows = data.data?.candles || [];
-    const todayRow = rows.find((r) => Array.isArray(r) && typeof r[0] === 'string' && r[0].startsWith(todayStr));
-    const close = todayRow ? todayRow[4] : null;
-    if (typeof close !== 'number') return null;
-    settledCloseCache.set(cacheKey, { close, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
-    return close;
-  } catch {
-    return null;
-  }
-}
-
-/** Once the market is closed, patches the officially settled close onto the
- *  last candle of `merged` if that candle is today's — regardless of what
- *  unit/interval the chart itself was drawn in (minutes, hours, days...).
- *  Mutates and returns `merged`. No-op while the market is open, or if the
- *  last candle isn't today's, or if the settled-close lookup fails (in
- *  which case the chart just keeps showing its normal intraday value). */
-async function patchSettledCloseIntoMerged(merged, instrumentKey, todayStr) {
-  if (!merged.length || isIndianMarketOpen()) return merged;
-  const last = merged[merged.length - 1];
-  if (typeof last.t !== 'string' || !last.t.startsWith(todayStr)) return merged;
-  const settledClose = await getSettledTodayClose(instrumentKey).catch(() => null);
-  if (typeof settledClose === 'number' && settledClose !== last.c) {
-    last.c = settledClose;
-    last.h = Math.max(last.h, settledClose);
-    last.l = Math.min(last.l, settledClose);
-  }
-  return merged;
-}
-
 
 async function getLtpBatch(symbols) {
   if (!Array.isArray(symbols) || !symbols.length) {
@@ -1022,18 +963,7 @@ async function getIndexHistoricalCandles(label, { unit = 'minutes', interval = 5
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const intraday = await intradayPromise;
-  // FIX: same root cause as getHistoricalCandles() below — see the comment
-  // there. Once historical has caught up with today's officially settled
-  // close (post the closing auction), trust it instead of always
-  // overwriting it with intraday's last pre-auction tick.
-  const historicalHasToday = candles.some((c) => typeof c.t === 'string' && c.t.startsWith(todayStr));
-  const merged = historicalHasToday
-    ? candles
-    : [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
-  // Covers minute/hour-granularity charts (e.g. the homepage hero chart's
-  // 5-day/15-minute default) where historicalHasToday above never goes true
-  // — see patchSettledCloseIntoMerged's comment for why.
-  await patchSettledCloseIntoMerged(merged, instrumentKey, todayStr);
+  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { label, instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
@@ -1136,25 +1066,7 @@ async function getHistoricalCandles(symbol, { unit = 'days', interval = 1, from,
   // firing a request that can only ever come back empty (or error). This is
   // the weekly leg the Multi-Timeframe / "Check daily vs weekly" view uses.
   const intraday = await intradayPromise;
-  // FIX (chart's "today" candle showing the wrong close after market hours):
-  // this used to unconditionally drop today's row from `candles` (historical)
-  // and always splice in `intraday` instead, on the assumption historical
-  // never has today's data yet. That's true *during* the session, but once
-  // Upstox processes the day's official close — after the 3:30–3:40pm closing
-  // auction — historical DOES include today, and it's the authoritative,
-  // settled close. intraday's last tick is just the last live trade before
-  // the auction, which routinely differs by a few points/paise from the real
-  // settled close. Always preferring intraday meant the chart kept showing
-  // that pre-auction tick as "today's close" instead of the real one. Now:
-  // if historical already has today, trust it and don't touch it — only
-  // fall back to intraday for today when historical hasn't caught up yet.
-  const historicalHasToday = candles.some((c) => typeof c.t === 'string' && c.t.startsWith(todayStr));
-  const merged = historicalHasToday
-    ? candles
-    : [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
-  // Covers minute/hour-granularity charts where historicalHasToday above
-  // never goes true — see patchSettledCloseIntoMerged's comment for why.
-  await patchSettledCloseIntoMerged(merged, instrumentKey, todayStr);
+  const merged = [...candles.filter((c) => typeof c.t === 'string' && !c.t.startsWith(todayStr)), ...intraday];
 
   const result = { symbol: symbol.toUpperCase(), instrumentKey, unit, interval, candles: merged };
   candleCache.set(cacheKey, { data: result, expiresAt: Date.now() + CANDLE_CACHE_TTL_MS });
