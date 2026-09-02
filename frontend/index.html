@@ -1856,7 +1856,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     </div>
     <div class="inp-row" style="margin-bottom:8px;max-width:520px;position:relative">
       <div class="inp-group" style="position:relative">
-        <label class="inp-lbl">Or search any NSE/BSE stock or MCX commodity</label>
+        <label class="inp-lbl">Or search any NSE/BSE stock</label>
         <input class="tm-inp" id="chart-sym-inp" value="RELIANCE" placeholder="e.g. RELIANCE, TATASTEEL, 500325…" autocomplete="off" oninput="onChartSearchInput(this.value)" onkeydown="if(event.key==='Enter')loadChartSymbol()"/>
         <div id="chart-search-dropdown" style="display:none;position:absolute;top:68px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:20;max-height:280px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
       </div>
@@ -1868,7 +1868,6 @@ img,svg,video,canvas,iframe{max-width:100%}
       <span style="font-size:11px;color:var(--text3)">Exchange:</span>
       <span class="chart-tool-btn active" id="chart-ex-nse" onclick="setChartExchange('NSE_EQ',this)" title="Show this symbol's NSE price/candles"><i class="ti ti-building"></i> NSE</span>
       <span class="chart-tool-btn" id="chart-ex-bse" onclick="setChartExchange('BSE_EQ',this)" title="Show this symbol's BSE price/candles"><i class="ti ti-building"></i> BSE</span>
-      <span class="chart-tool-btn" id="chart-ex-mcx" onclick="setChartExchange('MCX_FO',this)" title="Show this commodity's MCX front-month futures price/candles"><i class="ti ti-building"></i> MCX</span>
     </div>
     <div class="chart-toolbar">
       <span class="ind-chip sel" data-ind="ema" onclick="toggleIndicator(this)"><span class="dot" style="background:#f59e0b"></span> EMA 50</span>
@@ -1881,8 +1880,8 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="chart-panel-hdr">
         <div class="hc-sym" id="chart-panel-title">RELIANCE <span class="hc-price" id="chart-panel-price" style="color:var(--text3)">—</span></div>
         <div class="hc-tabs" style="position:relative">
-          <span class="hc-tab" onclick="setChartTF(this,'1D')">1D</span>
-          <span class="hc-tab active" onclick="setChartTF(this,'1M')">1M</span>
+          <span class="hc-tab active" onclick="setChartTF(this,'1D')">1D</span>
+          <span class="hc-tab" onclick="setChartTF(this,'1M')">1M</span>
           <span class="hc-tab" onclick="setChartTF(this,'6M')">6M</span>
           <span class="hc-tab" onclick="setChartTF(this,'1Y')">1Y</span>
           <span style="width:1px;align-self:stretch;background:var(--border2);margin:0 2px"></span>
@@ -3683,10 +3682,10 @@ liveSocket.onmessage=(evt)=>{
         }
       }
     }
-    // Live ticks for a BSE- or MCX-selected symbol arrive keyed "BSE:SYMBOL"
-    // / "MCX:SYMBOL" (see liveFeedService's feedKeyFor) so they never get
-    // confused with the same symbol's NSE ticks.
-    const chartFeedKey=chartCurrentExchange==='BSE_EQ'?`BSE:${chartCurrentSymbol}`:chartCurrentExchange==='MCX_FO'?`MCX:${chartCurrentSymbol}`:chartCurrentSymbol;
+    // Live ticks for a BSE-selected symbol arrive keyed "BSE:SYMBOL" (see
+    // liveFeedService's feedKeyFor) so they never get confused with the
+    // same symbol's NSE ticks. Charts is NSE/BSE-only (no MCX toggle).
+    const chartFeedKey=chartCurrentExchange==='BSE_EQ'?`BSE:${chartCurrentSymbol}`:chartCurrentSymbol;
     if(msg.feeds?.[chartFeedKey]){
       lastChartTick={symbol:chartCurrentSymbol,price:msg.feeds[chartFeedKey].price};
       if(lwLastBar&&lwCandleSeries){
@@ -8104,12 +8103,12 @@ window.addEventListener('resize',()=>{renderHeroChart();if(document.getElementBy
 // ── CHARTS PAGE ──
 let chartActiveIndicators={ema:true,bb:false,vwap:false,rsi:true,macd:true};
 let chartCurrentSymbol='RELIANCE';
-let chartCurrentExchange='NSE_EQ'; // 'NSE_EQ' | 'BSE_EQ' | 'MCX_FO' — which exchange's price/candles to show for the charted symbol
-let chartCurrentTF='1M';
+let chartCurrentExchange='NSE_EQ'; // 'NSE_EQ' | 'BSE_EQ' — which exchange's price/candles to show for the charted symbol
+let chartCurrentTF='1D';
 function setChartExchange(ex,btn){
   if(chartCurrentExchange===ex)return;
   chartCurrentExchange=ex;
-  document.querySelectorAll('#chart-ex-nse,#chart-ex-bse,#chart-ex-mcx').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#chart-ex-nse,#chart-ex-bse').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   // Indices (NIFTY 50 / SENSEX / NIFTY BANK) aren't exchange-switchable —
   // only re-fetch for a real equity symbol.
@@ -8119,9 +8118,9 @@ function setChartExchange(ex,btn){
   }
 }
 function syncChartExchangeToggle(ex){
-  chartCurrentExchange=(ex==='BSE_EQ'||ex==='MCX_FO')?ex:'NSE_EQ';
-  document.querySelectorAll('#chart-ex-nse,#chart-ex-bse,#chart-ex-mcx').forEach(b=>b.classList.remove('active'));
-  const btnId=chartCurrentExchange==='BSE_EQ'?'chart-ex-bse':chartCurrentExchange==='MCX_FO'?'chart-ex-mcx':'chart-ex-nse';
+  chartCurrentExchange=ex==='BSE_EQ'?'BSE_EQ':'NSE_EQ';
+  document.querySelectorAll('#chart-ex-nse,#chart-ex-bse').forEach(b=>b.classList.remove('active'));
+  const btnId=chartCurrentExchange==='BSE_EQ'?'chart-ex-bse':'chart-ex-nse';
   document.getElementById(btnId)?.classList.add('active');
 }
 function toggleIndicator(el){
@@ -8233,13 +8232,17 @@ async function runChartSearch(q){
   const dropdown=document.getElementById('chart-search-dropdown');
   if(!dropdown)return;
   dropdown.style.display='block';
-  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE + MCX…</div>`;
+  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE…</div>`;
   try{
     const res=await apiFetch('/api/market/search?q='+encodeURIComponent(q),{cache:'no-store'});
     if(!res.ok)throw new Error('HTTP '+res.status);
-    const {results}=await res.json();
+    const {results:rawResults}=await res.json();
+    // Charts no longer has an MCX toggle, so don't offer MCX commodities
+    // here — picking one would have nowhere to render (see setChartExchange/
+    // syncChartExchangeToggle, which are NSE/BSE-only now).
+    const results=(rawResults||[]).filter(r=>r.exchange!=='MCX_FO');
     if(!results||!results.length){
-      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE, BSE, or MCX for "${q}".</div>`;
+      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE or BSE for "${q}".</div>`;
       return;
     }
     dropdown.innerHTML=results.map(r=>{
