@@ -1,35 +1,43 @@
 # Fix: chart's live price snapping back to a stale "closing" value every 60s (NSE + BSE)
 
 ## Symptom
-On the Charts page, the price next to the symbol name would tick live for a
-few seconds after a WebSocket update, then visibly jump back down/up to an
-older value — repeating roughly once a minute. Looked like the chart was
-only capable of showing "the last 60 seconds of data" instead of a real
-live quote.
+On the Charts page, the price and the last candle itself would visibly
+snap backward roughly once a minute — looked like the chart was only
+capable of showing "the last 60 seconds of data" instead of a real live
+quote, even after ticks arrived in between.
 
-## Root cause
-`renderMainChartWith()` (frontend/index.html) runs on **every**
-`CHART_REFRESH_MS` (60s) background candle poll for the currently-open
-chart, not just when the user actually switches symbol/timeframe/exchange.
-It used to unconditionally rebuild `#chart-panel-title`'s `innerHTML` with
-`last.c` — the close of the most recently fetched candle — every time it
-ran. That destroyed and replaced the exact `.hc-price` `<span>` that the
-live WebSocket tick handler (`connectLiveFeed`'s `onmessage`, see
-`lastChartTick`) had been updating in real time between polls.
+## Root cause (two layers — v1 of this fix only caught the first one)
 
-So the price would tick live for a bit, then every 60 seconds get stomped
-back to a REST-fetched candle close — which is itself up to one candle
-interval old (not the current LTP). This is exchange-agnostic (same code
-path for NSE and BSE), which is why it looked identical on both.
+**Layer 1 (title text)**: `renderMainChartWith()` runs on every
+`CHART_REFRESH_MS` (60s) background candle poll, not just on a real
+symbol/timeframe/exchange switch. It rebuilt `#chart-panel-title`'s
+`innerHTML` from the REST candle's close every time, destroying the
+`.hc-price` span the live WebSocket tick handler had been updating between
+polls.
+
+**Layer 2 (the actual candle series — the part that was still broken)**:
+`renderLightweightMainChart()`'s `lwCandleSeries.setData(...)` is a full
+replace of the whole series, including the last bar, sourced from the same
+REST candle fetch. Even after fixing the title text, this line alone was
+enough to visibly reset the candlestick itself (and therefore the price
+users actually watch) back to the REST value every single poll — regardless
+of how many live ticks had moved it in between. This is why the chart still
+looked stuck on a 60-second cadence after the first fix.
 
 ## Fix
-- Only rebuild the whole title element (new "LIVE" badge, fresh span, etc.)
-  when this is genuinely a new chart (symbol/timeframe/exchange changed
-  since the last render).
-- On a same-chart background refresh, patch just the existing `.hc-price`
-  span's text/color in place, and prefer the latest live WebSocket tick for
-  this exact symbol over the candle's close when one is available — the
-  tick is always newer.
+- `renderMainChartWith`: only fully rebuild the title on a genuine new
+  chart; patch the existing price span in place otherwise, preferring the
+  latest live tick over the candle close.
+- `renderLightweightMainChart`: after `setData()` resets the last bar from
+  REST data, immediately re-apply the latest known live WebSocket tick for
+  the current symbol on top of it (`lwCandleSeries.update(...)`), so a poll
+  landing can never regress a price the WebSocket had already shown.
+- Same pattern applied to the homepage NIFTY 50 hero chart
+  (`loadHeroChart`), which had the identical issue: its 60s REST poll fully
+  replaces `heroCandles`, wiping out the live-tick patch from the previous
+  fix unless it's reapplied after each poll.
 
 ## Files changed
-- `frontend/index.html` (`renderMainChartWith`)
+- `frontend/index.html` (`renderMainChartWith`, `renderLightweightMainChart`,
+  `loadHeroChart`)
+
