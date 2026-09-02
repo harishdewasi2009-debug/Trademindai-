@@ -42,7 +42,7 @@ const FREE_SCREENER_TRIAL_DAYS = 7;
 //  blocks creating a paid order while the trial is active.
 //
 //  Once the window closes, pricing reverts to the amountInPaise values
-//  configured per plan below (Pro ₹499, Elite ₹999).
+//  configured per plan below (Pro ₹999, Elite ₹3,199).
 // ══════════════════════════════════════════════════════════════════════════
 const LAUNCH_TRIAL_START = new Date('2026-08-16T00:00:00Z');
 const LAUNCH_TRIAL_DAYS = 30;
@@ -143,7 +143,13 @@ const PLANS = {
 
   pro: {
     name: 'Pro',
-    amountInPaise: 49900,             // ₹499 (post-launch-trial price)
+    // FIX: this was left at 49900 (₹499) — the top-of-file summary comment,
+    // the FAQ copy in frontend/index.html, and the worst-case margin math in
+    // the comment right below (already written against a ₹999 price) were
+    // all already updated for ₹999, but the actual charged amount never
+    // matched. Corrected to 99900 (₹999) so checkout actually charges what
+    // every other part of the app already claims the price is.
+    amountInPaise: 99900,             // ₹999 (post-launch-trial price)
 
     // Token limits
     // UPDATED: quota raised from 800,000 → 1,000,000 (×1.25). Per-model splits
@@ -208,7 +214,12 @@ const PLANS = {
 
   elite: {
     name: 'Elite',
-    amountInPaise: 99900,              // ₹999 (post-launch-trial price)
+    // FIX: this was left at 99900 (₹999) even though the margin-fix comment
+    // right below it already documents a raise to ₹3,199 (and the per-model
+    // quotas below were already sized against that ₹3,199 price to keep
+    // worst-case AI cost from exceeding it) — the actual charged amount
+    // just never got updated to match. Corrected to 319900 (₹3,199).
+    amountInPaise: 319900,             // ₹3,199 (post-launch-trial price)
 
     // Token limits
     // UPDATED (margin fix): price raised ₹2,999 → ₹3,199 and per-model quotas
