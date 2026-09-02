@@ -2,7 +2,7 @@
 const { query, getClient } = require('../db/pool');
 const { createOrder, verifyPaymentSignature, verifyWebhookSignature } = require('../services/razorpayService');
 const { creditReferralIfEligible } = require('../services/referralService');
-const { getPlan, isLaunchTrialActive, launchTrialDaysRemaining } = require('../config/plans');
+const { getPlan } = require('../config/plans');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -12,15 +12,15 @@ const createPaymentOrder = asyncHandler(async (req, res) => {
   if (!['basic', 'pro', 'elite'].includes(planName)) {
     throw new AppError('Invalid plan selected.', 400);
   }
-  // Nothing is billed while the sitewide launch trial is running — every
-  // signed-in user already has full Elite-tier access for free (see
-  // middleware/planCheck.js), so block accidental/duplicate charges here.
-  if (isLaunchTrialActive()) {
-    throw new AppError(
-      `Everything is free during our launch trial (${launchTrialDaysRemaining()} day(s) left) — no need to pay yet.`,
-      400
-    );
-  }
+  // NOTE: this used to hard-block checkout entirely while the sitewide
+  // launch trial was running (isLaunchTrialActive()), since every signed-in
+  // user already gets full Elite access for free during the trial (see
+  // middleware/planCheck.js). That's why "Pay" was failing on the Pro plan
+  // — the backend was correctly rejecting the order with a 400 (by design),
+  // not erroring. Removed the block so checkout works during the trial too,
+  // for anyone who wants to pay/lock in a plan now regardless of the free
+  // trial access. Free-tier access from the trial itself is untouched —
+  // this only concerns whether a PAID order can be created.
   const plan = getPlan(planName);
 
   const order = await createOrder({ amountInPaise: plan.amountInPaise, userId: req.user.id, planName });
