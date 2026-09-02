@@ -42,7 +42,7 @@ const FREE_SCREENER_TRIAL_DAYS = 7;
 //  blocks creating a paid order while the trial is active.
 //
 //  Once the window closes, pricing reverts to the amountInPaise values
-//  configured per plan below (Pro ₹999, Elite ₹3,199).
+//  configured per plan below (Pro ₹499, Elite ₹999).
 // ══════════════════════════════════════════════════════════════════════════
 const LAUNCH_TRIAL_START = new Date('2026-08-16T00:00:00Z');
 const LAUNCH_TRIAL_DAYS = 30;
@@ -143,7 +143,7 @@ const PLANS = {
 
   pro: {
     name: 'Pro',
-    amountInPaise: 99900,              // ₹999 (post-launch-trial price)
+    amountInPaise: 49900,             // ₹499 (post-launch-trial price)
 
     // Token limits
     // UPDATED: quota raised from 800,000 → 1,000,000 (×1.25). Per-model splits
@@ -208,7 +208,7 @@ const PLANS = {
 
   elite: {
     name: 'Elite',
-    amountInPaise: 319900,             // ₹3,199 (post-launch-trial price)
+    amountInPaise: 99900,              // ₹999 (post-launch-trial price)
 
     // Token limits
     // UPDATED (margin fix): price raised ₹2,999 → ₹3,199 and per-model quotas
