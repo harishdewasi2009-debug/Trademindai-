@@ -565,6 +565,20 @@ const candleCache = new Map(); // cacheKey -> { data, expiresAt }
 // stickiness for intraday candles.
 const lastGoodIntraday = new Map(); // instrumentKey:unit:interval -> candles[]
 
+// FIX: quoteBatchCache/candleCache entries were never removed once their
+// expiresAt passed — only checked, never cleaned up. A long-running process
+// (no longer crash-restarting every few minutes) accumulates these forever
+// until Render's 512MB free-tier limit OOM-kills the instance. Sweep both
+// every 5 minutes and drop anything already expired.
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of quoteBatchCache) {
+    if (value.expiresAt <= now) quoteBatchCache.delete(key);
+  }
+  for (const [key, value] of candleCache) {
+    if (value.expiresAt <= now) candleCache.delete(key);
+  }
+}, 5 * 60 * 1000);
 /**
  * fetch() wrapper that automatically retries on HTTP 429. Cloudflare
  * returns 429 (with "Error 1015: You are being rate limited") when too
