@@ -193,13 +193,21 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
   // 401 instead of letting the SDK keep hammering that buggy retry path —
   // startUpstoxTokenScheduler() will call startLiveFeed() again with a
   // fresh token once one is available.
+  // FIX (Google sign-in "signal timed out" — server up but unresponsive):
+  // the SDK's buggy internal auto-reconnect timer wasn't only failing on
+  // 401 — it also throws as AggregateError, TypeError, etc. Retrying every
+  // ~1 second, each attempt hitting the same crash-prone internal path,
+  // flooded Node's single-threaded event loop with synchronous error
+  // handling. The server never actually crashed (uncaughtException catches
+  // it now), but it became too busy to service other requests — like
+  // /api/auth/google — within the frontend's timeout window. Since a
+  // reconnect loop that's failing this fast is never going to self-heal
+  // anyway, stop the feed on ANY stream error now, not just 401s, so it
+  // fails once and stays quiet instead of retrying forever.
   streamer.on('error', (err) => {
     const message = err?.message || String(err);
-    console.error('[liveFeedService] Upstox stream error:', message);
-    if (/401/.test(message)) {
-      console.error('[liveFeedService] Token appears invalid/expired — stopping the feed instead of letting the SDK retry (avoids a known upstox-js-sdk reconnect crash).');
-      stopLiveFeed();
-    }
+    console.error('[liveFeedService] Upstox stream error:', message, '— stopping the feed instead of letting the SDK retry.');
+    stopLiveFeed();
   });
   streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
   streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
