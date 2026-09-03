@@ -29,6 +29,17 @@ const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
 const marketDataService = require('./services/marketDataService');
 const liveFeedService = require('./services/liveFeedService');
 
+// Safety net: an uncaught exception anywhere (including inside third-party
+// packages like upstox-js-sdk) used to crash the entire Node process,
+// taking down every route (including Google sign-in) with it. This keeps
+// the server alive and just logs the error instead.
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught exception (server kept running):', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ Unhandled promise rejection (server kept running):', reason);
+});
+
 const app = express();
 
 app.set('trust proxy', 1);
