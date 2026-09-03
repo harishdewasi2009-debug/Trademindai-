@@ -160,7 +160,16 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     if (Object.keys(out).length) broadcast({ type: 'tick', feeds: out });
   });
 
-  streamer.on('error', (err) => console.error('[liveFeedService] Upstox stream error:', err?.message || err));
+ let consecutiveErrors = 0;
+  streamer.on('open', () => { consecutiveErrors = 0; });
+  streamer.on('error', (err) => {
+    console.error('[liveFeedService] Upstox stream error:', err?.message || err);
+    consecutiveErrors += 1;
+    if (consecutiveErrors >= 5) {
+      console.error('[liveFeedService] 5 consecutive Upstox errors — token is likely expired. Stopping live feed instead of retrying; reconnect at /api/market/upstox/login.');
+      stopLiveFeed();
+    }
+  });
   streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
   streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
 
