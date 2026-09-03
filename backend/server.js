@@ -29,26 +29,6 @@ const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
 const marketDataService = require('./services/marketDataService');
 const liveFeedService = require('./services/liveFeedService');
 
-// FIX (backend crash loop — Google sign-in / all API routes going down):
-// a bug inside the upstox-js-sdk package's internal auto-reconnect timer
-// (Streamer.js: `this.streamer.clearSubscriptions is not a function`) was
-// throwing inside a setTimeout callback whenever the Upstox access token
-// was invalid/expired. An exception thrown outside Express's request cycle
-// can't be caught by any try/catch here — Node's default behavior is to
-// crash the entire process on any uncaught exception, which killed the
-// whole API (including unrelated routes like /api/auth/google) every time
-// the live market feed's token happened to be stale. Catching it here means
-// a bug in that one background feature can never take down the rest of the
-// server again — see also the liveFeedService fix that stops retrying with
-// a token we already know is bad, which addresses the root cause instead of
-// just papering over the symptom.
-process.on('uncaughtException', (err) => {
-  console.error('❌ Uncaught exception (server kept running):', err);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('❌ Unhandled promise rejection (server kept running):', reason);
-});
-
 const app = express();
 
 app.set('trust proxy', 1);
@@ -163,15 +143,9 @@ server.listen(config.port, () => {
   console.log(`   Health check: http://localhost:${config.port}/health`);
   console.log(`   Live market WebSocket: ws://localhost:${config.port}/ws/market`);
   startUpstoxTokenScheduler();
-  marketDataService.startCacheEvictionSweep(); // FIX: periodically drop expired cache entries so memory doesn't creep up over a trading day
 
   // If Upstox is already connected (token cached from a previous approval),
   // start the live feed immediately instead of waiting for the next login.
-  // NOTE: this runs at boot same as before — the actual OOM fix is the
-  // runExclusive queue in marketDataService.js, which now guarantees only
-  // ONE exchange's ~30MB instrument master is ever being parsed in memory
-  // at a time, no matter how many symbols/exchanges resolve in parallel
-  // here. That serialization is what caps the memory spike, not timing.
   marketDataService.upstoxStatus()
     .then(async (status) => {
       if (!status.connected) return;

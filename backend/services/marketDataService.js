@@ -22,7 +22,6 @@
 const { config } = require('../config');
 const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
-const { isTradingDay } = require('../utils/tradingCalendar');
 
 const BASE_V2 = 'https://api.upstox.com/v2';
 const BASE_V3 = 'https://api.upstox.com/v3';
@@ -234,68 +233,18 @@ const SEED_INSTRUMENTS = {
 
 // Upstox publishes one instrument-master file per exchange. NSE is checked
 // first by default (better liquidity/data quality for the same company),
-// BSE is the fallback — see resolveInstrumentKey(). MCX_FO is the
-// commodity-derivatives segment (Gold, Silver, Crude Oil, Natural Gas,
-// base metals, etc.) — unlike NSE/BSE it carries no cash-equity segment at
-// all, so every row in MCX.json.gz is itself a future/option contract; see
-// the MCX branch inside loadInstrumentMaster() below for how that's turned
-// into one "front month" instrument_key per commodity.
+// BSE is the fallback — see resolveInstrumentKey().
 const EXCHANGE_FILES = {
   NSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/NSE.json.gz',
   BSE_EQ: 'https://assets.upstox.com/market-quote/instruments/exchange/BSE.json.gz',
-  MCX_FO: 'https://assets.upstox.com/market-quote/instruments/exchange/MCX.json.gz',
 };
 
-// Every exchange the app knows how to browse/search across by default (the
-// "give me everything" loops: searchSymbols, searchFnoSymbols, listAllSymbols,
-// getFnoUnderlyings). resolveInstrumentKey() intentionally does NOT default
-// to this list — an ambiguous plain symbol (watchlist add, quote lookup)
-// still only auto-resolves against NSE then BSE, exactly as before, so an
-// equity ticker can never accidentally resolve to a commodity contract.
-// Callers that specifically want MCX must pass exchange: 'MCX_FO'.
-const ALL_BROWSABLE_EXCHANGES = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'];
-
-const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...}, MCX_FO: {...} } — in-memory, process lifetime
-
-// FIX (memory limit exceeded — Web Service restart loop): loadInstrumentMaster
-// had no protection against concurrent cache misses for the same exchange.
-// startLiveFeed() resolves ~35 symbols in parallel via Promise.all — on a
-// cold start (fresh deploy, empty instrument_cache table) every one of those
-// that wasn't in SEED_INSTRUMENTS triggered its OWN independent download +
-// gunzip + JSON.parse of the same ~30MB (uncompressed) NSE instrument-master
-// file at the same time. Each parse holds a full JS object graph of 80,000+
-// rows in memory, so a dozen-plus of those running concurrently multiplied
-// memory use far past Render's free-tier limit and got OOM-killed. This map
-// makes every concurrent caller for the same exchange await one shared
-// in-flight download/parse instead of starting their own.
-const instrumentMasterInFlight = {}; // { NSE_EQ: Promise, ... }
-
-// FIX (OOM on Render free tier — 512MB): instrumentMasterInFlight above only
-// dedupes concurrent loads of the SAME exchange. On boot, startLiveFeed()
-// resolves symbols across NSE_EQ, BSE_EQ and MCX_FO in parallel, so it was
-// still possible for 2-3 DIFFERENT exchanges to each gunzip+JSON.parse their
-// own ~30MB file (80,000+ rows) at the exact same moment. Each parse holds a
-// full raw object graph in memory (well past 30MB) for the few hundred ms it
-// takes to trim it down to {instrumentKey, name} pairs — three of those
-// overlapping at once was enough to blow past Render's 512MB limit and get
-// OOM-killed, which is what was taking down sign-in and every other route
-// along with it. This queue forces exchange loads to run one at a time
-// process-wide, so only one ~30MB parse is ever resident in memory at once.
-let instrumentMasterGlobalQueue = Promise.resolve();
-function runExclusive(fn) {
-  const result = instrumentMasterGlobalQueue.then(fn, fn);
-  // Swallow rejections here so one failed load doesn't jam the queue for
-  // every load after it — the caller (loadPromise below) still sees/throws
-  // the real error via `result`.
-  instrumentMasterGlobalQueue = result.catch(() => {});
-  return result;
-}
+const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...} } — in-memory, process lifetime
 
 /**
  * Downloads and parses Upstox's equity instrument master for one exchange
  * (gzipped JSON, ~30MB uncompressed for NSE). Cache miss only — cached in
- * memory for the life of the process per exchange. For MCX_FO this instead
- * parses the commodity-derivatives file — see the branch below.
+ * memory for the life of the process per exchange.
  */
 async function loadInstrumentMaster(exchange = 'NSE_EQ') {
   const INSTRUMENT_MASTER_TTL_MS = 24 * 60 * 60 * 1000; // refresh once a day — Upstox republishes this file daily
@@ -303,28 +252,16 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
     return instrumentMasterCache[exchange];
   }
 
-  // A download for this exchange is already running — piggyback on it
-  // instead of starting a second (or fifteenth) redundant one.
-  if (instrumentMasterInFlight[exchange]) {
-    return instrumentMasterInFlight[exchange];
-  }
+  const url = EXCHANGE_FILES[exchange];
+  if (!url) throw new AppError(`Unsupported exchange: ${exchange}`, 400);
 
-  const loadPromise = runExclusive(async () => {
-    const url = EXCHANGE_FILES[exchange];
-    if (!url) throw new AppError(`Unsupported exchange: ${exchange}`, 400);
+  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+  if (!res.ok) throw new AppError(`Could not download Upstox ${exchange} instrument master.`, 502);
 
-    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-    if (!res.ok) throw new AppError(`Could not download Upstox ${exchange} instrument master.`, 502);
-
-    const zlib = require('zlib');
-    const buf = Buffer.from(await res.arrayBuffer());
-    const json = zlib.gunzipSync(buf).toString('utf-8');
-    const list = JSON.parse(json);
-
-  if (exchange === 'MCX_FO') {
-    instrumentMasterCache.MCX_FO = parseMcxInstrumentMaster(list);
-    return instrumentMasterCache.MCX_FO;
-  }
+  const zlib = require('zlib');
+  const buf = Buffer.from(await res.arrayBuffer());
+  const json = zlib.gunzipSync(buf).toString('utf-8');
+  const list = JSON.parse(json);
 
   // NOTE: Upstox's NSE.json.gz and BSE.json.gz are NOT guaranteed to use
   // identical field names/values row-to-row (reported by multiple devs on
@@ -386,92 +323,15 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
 
   instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
   return instrumentMasterCache[exchange];
-  });
-
-  instrumentMasterInFlight[exchange] = loadPromise;
-  try {
-    return await loadPromise;
-  } finally {
-    // Whether it succeeded or threw, free the slot so the NEXT genuinely
-    // new attempt (e.g. after a transient download failure) isn't stuck
-    // forever waiting on a promise that already settled.
-    delete instrumentMasterInFlight[exchange];
-  }
-}
-
-// ── MCX (commodity derivatives) instrument-master parsing ────────────────
-// MCX has no cash-equity segment — every row in MCX.json.gz is itself a
-// futures or options contract on a commodity (GOLD, SILVER, CRUDEOIL,
-// NATURALGAS, COPPER, ZINC, ALUMINIUM, LEAD, MENTHAOIL, COTTON, etc.), and
-// the same commodity has several rows at once (one per expiry month, plus
-// CE/PE option rows). So unlike NSE/BSE there is no single "the equity
-// row" to key on — instead, for each commodity we pick the FUTURES
-// contract with the nearest expiry that hasn't already lapsed (the "front
-// month"/"near month" contract, the one carrying most of the trading
-// volume) and use that as the one instrument_key the rest of the app
-// treats as "this commodity's price" — the same role NIFTY 50's single
-// index instrument_key plays for INDEX_INSTRUMENT_KEYS above. This re-picks
-// itself automatically as contracts expire and roll, with no manual
-// updates needed when MCX opens a new expiry each month.
-function parseMcxInstrumentMaster(list) {
-  const nearestFutureByUnderlying = new Map(); // UNDERLYING -> { instrumentKey, name, expiry }
-  const fnoUnderlyings = new Set(); // commodities that have a listed CE/PE options chain
-  const todayMs = Date.now();
-  let skippedNoSymbol = 0;
-
-  for (const row of list) {
-    const instrumentType = (row.instrument_type || '').toUpperCase();
-    const instrumentKey = row.instrument_key || row.instrumentKey;
-    const underlying = String(row.underlying_symbol || row.asset_symbol || row.trading_symbol || row.name || '')
-      .toUpperCase()
-      .replace(/\s+(FUT|CE|PE)$/, '')
-      .trim();
-    if (!instrumentKey || !underlying) { skippedNoSymbol++; continue; }
-
-    if (instrumentType === 'CE' || instrumentType === 'PE') {
-      fnoUnderlyings.add(underlying);
-      continue;
-    }
-    if (instrumentType !== 'FUT') continue; // ignore anything else (spreads, indices, etc.)
-
-    const expiryMs = row.expiry ? Number(row.expiry) : NaN;
-    if (!Number.isFinite(expiryMs) || expiryMs < todayMs) continue; // already-expired contract
-
-    const existing = nearestFutureByUnderlying.get(underlying);
-    if (!existing || expiryMs < existing.expiry) {
-      nearestFutureByUnderlying.set(underlying, {
-        instrumentKey,
-        name: row.name || underlying,
-        expiry: expiryMs,
-      });
-    }
-  }
-
-  const bySymbol = new Map();
-  for (const [underlying, info] of nearestFutureByUnderlying) {
-    bySymbol.set(underlying, { instrumentKey: info.instrumentKey, name: info.name });
-    fnoUnderlyings.add(underlying); // every commodity with a live future is a valid F&O underlying
-  }
-
-  if (bySymbol.size === 0) {
-    throw new AppError(
-      `Upstox MCX instrument master parsed to 0 active commodity contracts (downloaded ${list.length} rows, ${skippedNoSymbol} missing symbol/key). The file format may have changed.`,
-      502
-    );
-  }
-
-  return { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
 }
 
 // Every stock symbol (across NSE + BSE) that actually has listed options,
-// plus the tradeable indices (NIFTY, BANKNIFTY, SENSEX, etc) and every MCX
-// commodity with a live futures/options contract (GOLD, SILVER, CRUDEOIL,
-// NATURALGAS, etc). Backs the Options page's search bar so it only ever
-// suggests underlyings that will actually return a real option chain,
-// instead of all 5,000+ equities.
+// plus the tradeable indices (NIFTY, BANKNIFTY, SENSEX, etc). Backs the
+// Options page's search bar so it only ever suggests underlyings that will
+// actually return a real option chain, instead of all 5,000+ equities.
 async function getFnoUnderlyings() {
   const symbols = new Set();
-  for (const exchange of ALL_BROWSABLE_EXCHANGES) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     try {
       const { fnoUnderlyings } = await loadInstrumentMaster(exchange);
       fnoUnderlyings.forEach((s) => symbols.add(s));
@@ -484,13 +344,13 @@ async function getFnoUnderlyings() {
 
 // Same as searchSymbols() but filtered down to only F&O-enabled
 // underlyings — used by the Options page's underlying search bar.
-async function searchFnoSymbols(prefixRaw, limit = 20, exchangeFilter) {
+async function searchFnoSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
   if (!prefix) return [];
 
   const fnoSet = await getFnoUnderlyings();
   const results = [];
-  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     let bySymbol;
     try {
       ({ bySymbol } = await loadInstrumentMaster(exchange));
@@ -510,25 +370,8 @@ async function searchFnoSymbols(prefixRaw, limit = 20, exchangeFilter) {
 /**
  * Resolves a plain trading symbol to an Upstox instrument_key, caching the
  * result in Postgres. Tries NSE first (default), falls back to BSE if the
- * symbol isn't listed on NSE. Pass exchange: 'BSE_EQ' to force BSE only, or
- * exchange: 'MCX_FO' to resolve a commodity (e.g. "GOLD", "CRUDEOIL") to
- * its current front-month contract — MCX is never tried automatically, an
- * equity lookup with no exchange given stays NSE-then-BSE only.
+ * symbol isn't listed on NSE. Pass exchange: 'BSE_EQ' to force BSE only.
  */
-// FIX (MCX quotes/candles/screener going dead a few weeks after this was
-// first cached — "MCX not showing live quote price"): instrument_cache was
-// treated as permanent for every exchange, which is correct for NSE/BSE
-// (an equity's instrument_key/ISIN never changes) but WRONG for MCX_FO.
-// A commodity resolves to its current FRONT-MONTH FUTURES CONTRACT
-// (see parseMcxInstrumentMaster above), which expires and rolls to a new
-// contract every month. Once that contract's instrument_key got cached
-// here, resolveInstrumentKey kept returning it forever — including after
-// the contract expired — so Upstox had nothing live left to quote against
-// it. Equities skip this check (no ttlMs passed) and keep the old
-// permanent-cache behavior; only MCX_FO rows are subject to it. 24h matches
-// the in-memory instrument-master TTL (INSTRUMENT_MASTER_TTL_MS above) so a
-// re-resolution always has a freshly-downloaded master to pick the new
-// front-month contract from.
 async function resolveInstrumentKey(symbolRaw, exchange) {
   const symbol = (symbolRaw || '').trim().toUpperCase();
   if (!symbol) throw new AppError('stockSymbol is required.', 400);
@@ -539,10 +382,7 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
 
   for (const ex of exchangesToTry) {
     const { rows } = await query(
-      ex === 'MCX_FO'
-        ? `SELECT instrument_key FROM instrument_cache
-           WHERE exchange = $1 AND trading_symbol = $2 AND updated_at > now() - interval '24 hours'`
-        : `SELECT instrument_key FROM instrument_cache WHERE exchange = $1 AND trading_symbol = $2`,
+      `SELECT instrument_key FROM instrument_cache WHERE exchange = $1 AND trading_symbol = $2`,
       [ex, symbol]
     );
     if (rows.length) return rows[0].instrument_key;
@@ -574,13 +414,12 @@ async function resolveInstrumentKey(symbolRaw, exchange) {
 }
 
 /**
- * Returns a page of ALL equities/commodities on one exchange (or all of
- * them), for a full stock/contract browser — as opposed to searchSymbols()
- * which is prefix-matching for a search box. Sorted alphabetically for
- * stable pagination. Pass exchange: 'MCX_FO' to browse commodities only.
+ * Returns a page of ALL equities on one exchange (or both), for a full
+ * stock browser — as opposed to searchSymbols() which is prefix-matching
+ * for a search box. Sorted alphabetically for stable pagination.
  */
 async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
-  const exchanges = exchange ? [exchange] : ALL_BROWSABLE_EXCHANGES;
+  const exchanges = exchange ? [exchange] : ['NSE_EQ', 'BSE_EQ'];
   let all = [];
   const failures = [];
   for (const ex of exchanges) {
@@ -608,17 +447,17 @@ async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
     ...(failures.length ? { partialFailure: failures } : {}),
   };
 }
-async function searchSymbols(prefixRaw, limit = 20, exchangeFilter) {
+async function searchSymbols(prefixRaw, limit = 20) {
   const prefix = (prefixRaw || '').trim().toUpperCase();
   if (!prefix) return [];
 
   const results = [];
-  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
+  for (const exchange of ['NSE_EQ', 'BSE_EQ']) {
     let bySymbol;
     try {
       ({ bySymbol } = await loadInstrumentMaster(exchange));
     } catch (e) {
-      continue; // let other exchanges still return results
+      continue; // let the other exchange still return results
     }
     for (const [symbol, info] of bySymbol) {
       if (symbol.startsWith(prefix)) {
@@ -673,7 +512,6 @@ async function getLtp(symbol, exchange) {
   return {
     symbol: symbol.toUpperCase(),
     instrumentKey,
-    exchange: instrumentKey.split('|')[0] || null,
     lastPrice,
     previousClose,
     changePct,
@@ -820,20 +658,8 @@ async function getLtpBatch(symbols) {
   }
 
   const data = await res.json();
-  // FIX (Reliance/NSE/BSE — and any index requested via this batch
-  // endpoint — silently showing yesterday's close instead of the live
-  // price): Upstox sometimes echoes instrument_token back with the pipe
-  // URL-encoded ("NSE_EQ%7CINE002A01018") instead of literal
-  // ("NSE_EQ|INE002A01018"). The map below used to key on the raw token,
-  // so a %7C-encoded token never matched our real "|" instrumentKey, the
-  // quote lookup silently missed, and every affected row fell through to
-  // getDailyCloseFallback() below (a real but stale price) instead of the
-  // live one. getIndexQuotes() already normalizes this same %7C quirk —
-  // this mirrors that fix here so stock and index rows fetched through
-  // /api/market/quotes get it too.
-  const normalizeToken = (t) => (typeof t === 'string' ? t.replace('%7C', '|') : t);
   const byInstrumentKey = new Map(
-    Object.values(data.data || {}).map((q) => [normalizeToken(q.instrument_token || q.instrument_key), q])
+    Object.values(data.data || {}).map((q) => [q.instrument_token || q.instrument_key, q])
   );
 
  const quotes = await Promise.all(resolved.map(async ({ symbol, instrumentKey }) => {
@@ -841,17 +667,7 @@ async function getLtpBatch(symbols) {
     // the request instrument_key in some cases, so also try a loose match.
     const quote =
       byInstrumentKey.get(instrumentKey) ||
-      Object.values(data.data || {}).find((q) => normalizeToken(q.instrument_token) === instrumentKey);
-
-    // FIX (screener showing the same price for a symbol's NSE row and its
-    // BSE row): instrumentKey is "EXCHANGE|ISIN" (e.g. "BSE_EQ|INE..."),
-    // so the exchange this quote actually resolved to is right there — we
-    // now echo it back so the caller (frontend) can key its results by
-    // symbol+exchange instead of by symbol alone. Without this, two rows
-    // for the same trading symbol (one NSE, one BSE) were indistinguishable
-    // once the response came back, and whichever one the frontend read
-    // last silently overwrote the other with its own price.
-    const exchange = instrumentKey.split('|')[0] || null;
+      Object.values(data.data || {}).find((q) => q.instrument_token === instrumentKey);
 
     const lastPrice = quote?.last_price;
     const netChange = quote?.net_change;
@@ -866,12 +682,12 @@ const previousClose = (typeof lastPrice === 'number' && typeof netChange === 'nu
     // still has real data instead of silently excluding every stock.
     if (typeof lastPrice !== 'number' || typeof previousClose !== 'number' || previousClose <= 0) {
       const fallback = await getDailyCloseFallback(instrumentKey).catch(() => null);
-      if (fallback) return { symbol, instrumentKey, exchange, ...fallback, closed: true };
-      return { symbol, instrumentKey, exchange, lastPrice: null, previousClose: null, changePct: null };
+      if (fallback) return { symbol, instrumentKey, ...fallback, closed: true };
+      return { symbol, instrumentKey, lastPrice: null, previousClose: null, changePct: null };
     }
 
     const changePct = ((lastPrice - previousClose) / previousClose) * 100;
-    return { symbol, instrumentKey, exchange, lastPrice, previousClose, changePct };
+    return { symbol, instrumentKey, lastPrice, previousClose, changePct };
   }));
   const result = { quotes, errors: unresolved, fetchedAt: new Date().toISOString() };
   quoteBatchCache.set(cacheKey, { data: result, expiresAt: Date.now() + QUOTE_CACHE_TTL_MS });
@@ -887,12 +703,6 @@ function isIndianMarketOpen(now = new Date()) {
   const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
   const day = ist.getUTCDay();
   if (day === 0 || day === 6) return false;
-  // FIX: weekday+time alone can't tell a real trading day apart from a
-  // published exchange holiday (Holi, Diwali-Balipratipada, Republic Day,
-  // etc.) — without this check the Screener kept logging scanner signals
-  // on holidays, polluting the "everyday accuracy" numbers with days the
-  // market was never actually open. See utils/tradingCalendar.js.
-  if (!isTradingDay(now)) return false;
   const minutes = ist.getUTCHours() * 60 + ist.getUTCMinutes();
   return minutes >= (9 * 60 + 15) && minutes < (15 * 60 + 30);
 }
@@ -1221,13 +1031,10 @@ function candleParamsForPeriod(period) {
 // to move on every live tick like price does — this also keeps Upstox
 // request volume sane when the Screener renders 50 symbols at once.
 const { computeAllIndicators, deriveSignal, buildFullTechnicalReport } = require('../utils/indicators');
-const { computeQuantReport } = require('../utils/quantReport');
 const scannerAccuracyService = require('./scannerAccuracyService');
 const signalCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
 const SIGNAL_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
 const reportCache = new Map(); // "SYMBOL:EXCHANGE" -> { data, expiresAt }
-const quantReportCache = new Map(); // "SYMBOL:EXCHANGE:PERIOD:BENCHMARK" -> { data, expiresAt }
-const QUANT_REPORT_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes — matches signal/report cache
 
 // ── FULL TECHNICAL REPORT (Screener "full analysis" view) ────────────────
 // Rule-based, no AI/LLM involved — same real candles + indicators as the
@@ -1278,12 +1085,9 @@ async function getTechnicalSignal(symbol, exchange, period) {
     const derived = deriveSignal(ind);
     // COMPLIANCE: exposes strength/bullishVotes (descriptive), not a
     // signal/confidence verdict — see indicators.js deriveSignal() note.
-    // exchange included so a dual-listed symbol's NSE-row and BSE-row
-    // signals never collide under a single "SYMBOL" key on the frontend
-    // (same fix as getLtpBatch's exchange field above).
     const data = derived
-      ? { symbol: symbol.toUpperCase(), exchange: exchange || null, period: period || '1d', currentPrice: ind.currentPrice, strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
-      : { symbol: symbol.toUpperCase(), exchange: exchange || null, period: period || '1d', currentPrice: ind.currentPrice, strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
+      ? { symbol: symbol.toUpperCase(), period: period || '1d', currentPrice: ind.currentPrice, strength: derived.strength, strengthScore: derived.strengthScore, bullishVotes: derived.bullishVotes, totalVotes: derived.totalVotes, votes: derived.votes }
+      : { symbol: symbol.toUpperCase(), period: period || '1d', currentPrice: ind.currentPrice, strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: 'Not enough candle history yet.' };
     signalCache.set(cacheKey, { data, expiresAt: Date.now() + SIGNAL_CACHE_TTL_MS });
 
     // Log this freshly-computed signal for accuracy tracking — every stock
@@ -1300,42 +1104,6 @@ async function getTechnicalSignal(symbol, exchange, period) {
     return data;
   } catch (err) {
     return { symbol: symbol.toUpperCase(), period: period || '1d', currentPrice: null, strength: null, strengthScore: null, bullishVotes: null, totalVotes: null, votes: [], error: err.message };
-  }
-}
-
-// ── GET-style aggregator: the full quant-analysis engine (statistics,
-// price-action structure, extra technical indicators, divergences,
-// anomalies, benchmark-relative strength, and a grouped composite score)
-// on top of the existing core technical report. See utils/quantReport.js
-// for the full breakdown and the compliance rationale for why this stays
-// descriptive rather than a buy/sell verdict.
-async function getQuantReport(symbol, exchange, period, benchmarkUnderlying) {
-  const cacheKey = `${symbol.toUpperCase()}:${exchange || ''}:${period || '1d'}:${benchmarkUnderlying || ''}`;
-  const cached = quantReportCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.data;
-
-  try {
-    const { unit, interval, from } = candleParamsForPeriod(period);
-    const { candles } = await getHistoricalCandles(symbol, { unit, interval, from, exchange });
-
-    let benchmarkCandles;
-    if (benchmarkUnderlying) {
-      try {
-        const benchResult = await getIndexHistoricalCandles(benchmarkUnderlying, { unit, interval, from });
-        benchmarkCandles = benchResult?.candles;
-      } catch (err) {
-        // Benchmark is optional context — a failure here shouldn't break
-        // the rest of a real, otherwise-successful quant report.
-        console.warn(`[quantReport] benchmark fetch failed for ${benchmarkUnderlying}:`, err.message);
-      }
-    }
-
-    const report = computeQuantReport(candles, { benchmarkCandles });
-    const data = { symbol: symbol.toUpperCase(), period: period || '1d', unit, interval, benchmark: benchmarkUnderlying || null, ...report };
-    quantReportCache.set(cacheKey, { data, expiresAt: Date.now() + QUANT_REPORT_CACHE_TTL_MS });
-    return data;
-  } catch (err) {
-    return { symbol: symbol.toUpperCase(), period: period || '1d', error: err.message };
   }
 }
 
@@ -1360,48 +1128,8 @@ async function getSignalsBatch(symbols, period) {
   return results;
 }
 
-// FIX (slow memory creep on Render free tier): quoteBatchCache, candleCache,
-// signalCache, reportCache, quantReportCache and lastGoodIntraday are all
-// plain Maps that only ever get OVERWRITTEN on next access to the same key —
-// nothing ever deletes an entry once its data is stale, so over a trading
-// day (hundreds of distinct symbols/timeframes queried once and never
-// again) they just grow. Combined with the instrument masters above, that
-// slow creep is what eventually tips a long-running process over Render's
-// 512MB limit even hours after boot, not just on cold start. This sweep
-// runs periodically and drops anything past its own expiresAt. lastGoodIntraday
-// has no TTL by design (it's an intentional last-known-good fallback), so
-// it's left alone here — only capped indirectly by symbols actually traded.
-function sweepExpiredCaches() {
-  const now = Date.now();
-  let removed = 0;
-  for (const cache of [quoteBatchCache, candleCache, signalCache, reportCache, quantReportCache]) {
-    for (const [key, entry] of cache) {
-      if (entry && entry.expiresAt && entry.expiresAt < now) {
-        cache.delete(key);
-        removed++;
-      }
-    }
-  }
-  return removed;
-}
-
-let cacheEvictionTimer = null;
-function startCacheEvictionSweep(intervalMs = 5 * 60 * 1000) {
-  if (cacheEvictionTimer) return cacheEvictionTimer; // already running
-  cacheEvictionTimer = setInterval(() => {
-    try {
-      sweepExpiredCaches();
-    } catch (err) {
-      console.warn('[cacheEviction] sweep failed:', err.message);
-    }
-  }, intervalMs);
-  cacheEvictionTimer.unref?.(); // don't keep the process alive just for this
-  return cacheEvictionTimer;
-}
-
 module.exports = {
   buildLoginUrl,
-  startCacheEvictionSweep,
   exchangeCodeForToken,
   upstoxStatus,
   getValidAccessToken,
@@ -1422,6 +1150,5 @@ module.exports = {
   getSignalsBatch,
   isIndianMarketOpen,
   getFullTechnicalReport,
-  getQuantReport,
   candleParamsForPeriod,
 };
