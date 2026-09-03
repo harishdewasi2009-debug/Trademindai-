@@ -28,7 +28,14 @@ const { handleWebhook } = require('./controllers/paymentController');
 const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
 const marketDataService = require('./services/marketDataService');
 const liveFeedService = require('./services/liveFeedService');
-
+process.on('uncaughtException', (err) => {
+  console.error('[server] Uncaught exception — keeping server alive, stopping live feed:', err);
+  try { liveFeedService.stopLiveFeed(); } catch { /* already down */ }
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[server] Unhandled rejection — keeping server alive, stopping live feed:', reason);
+  try { liveFeedService.stopLiveFeed(); } catch { /* already down */ }
+});
 const app = express();
 
 app.set('trust proxy', 1);
