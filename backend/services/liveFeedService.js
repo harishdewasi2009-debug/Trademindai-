@@ -127,6 +127,17 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
 
   streamer = new UpstoxClient.MarketDataStreamerV3();
 
+  // FIX: the SDK's built-in auto-reconnect used to run with its own
+  // defaults — retrying fast and basically forever. On a dead token or an
+  // unreachable Upstox, that meant hundreds of reconnect attempts piling up
+  // within minutes, which is what was actually causing the OOM crashes (not
+  // just our own error-counting, which runs on a separate track and can't
+  // control the SDK's internal retry loop). This caps it explicitly: retry
+  // at most every 30 seconds, and give up entirely after 5 tries — at which
+  // point 'autoReconnectStopped' below shuts the feed down for good instead
+  // of the SDK silently continuing to hammer Upstox.
+  streamer.autoReconnect(true, 30, 5);
+
   streamer.on('open', () => {
     console.log(`[liveFeedService] Connected to Upstox — subscribing to ${instrumentKeys.length} symbols`);
     streamer.subscribe(instrumentKeys, 'full');
@@ -160,32 +171,34 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     if (Object.keys(out).length) broadcast({ type: 'tick', feeds: out });
   });
 
- // FIX: network-level errors (Upstox unreachable) were being retried by
+  // FIX: network-level errors (Upstox unreachable) were being retried by
   // the SDK so fast that failed connection attempts piled up in memory
-  // within seconds — faster than the old "stop after 5 errors" check could
-  // react, causing the OOM crash. These now stop the feed immediately on
-  // the first occurrence instead of waiting to count to 5.
+  // within seconds — faster than a simple "stop after N errors" counter
+  // could react. These now log immediately; the actual stop-retrying
+  // decision is handled by streamer.autoReconnect(...) above plus
+  // 'autoReconnectStopped' below, not by counting errors ourselves.
   const NETWORK_ERROR_CODES = new Set(['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN']);
-  let consecutiveErrors = 0;
-  streamer.on('open', () => { consecutiveErrors = 0; });
   streamer.on('error', (err) => {
-    console.error('[liveFeedService] Upstox stream error:', err?.message || err);
     const code = err?.code || err?.errors?.[0]?.code;
     if (NETWORK_ERROR_CODES.has(code)) {
-      console.error(`[liveFeedService] Network error (${code}) reaching Upstox — stopping live feed instead of retrying.`);
-      stopLiveFeed();
-      return;
-    }
-    consecutiveErrors += 1;
-    if (consecutiveErrors >= 5) {
-      console.error('[liveFeedService] 5 consecutive Upstox errors — token is likely expired. Stopping live feed instead of retrying; reconnect at /api/market/upstox/login.');
-      stopLiveFeed();
+      console.error(`[liveFeedService] Upstox stream error: network error (${code}) reaching Upstox.`);
+    } else {
+      console.error('[liveFeedService] Upstox stream error:', err?.message || err);
     }
   });
   streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
-  streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
+  streamer.on('autoReconnectStopped', () => {
+    console.error('[liveFeedService] Gave up reconnecting to Upstox after repeated failures — stopping live feed. Reconnect at /api/market/upstox/login once the token/connectivity issue is resolved.');
+    stopLiveFeed();
+  });
+
+  streamer.connect();
+}
+
+function stopLiveFeed() {
+  if (streamer) {
     try { streamer.disconnect(); } catch { /* already closed */ }
-  try { streamer.removeAllListeners?.(); } catch { /* not supported, fine */ }
+    try { streamer.removeAllListeners?.(); } catch { /* not supported, fine */ }
     streamer = null;
   }
 }
