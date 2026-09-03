@@ -3,7 +3,8 @@ const { query } = require('../db/pool');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { getAccuracyStats, evaluateDuePredictions, listAllPredictions } = require('../services/predictionAccuracyService');
-const { getScannerAccuracyStats, evaluateDueScannerSignals, listAllScannerSignals } = require('../services/scannerAccuracyService');
+const { getScannerAccuracyStats, evaluateDueScannerSignals, listAllScannerSignals, getScannerAccuracyCalendar } = require('../services/scannerAccuracyService');
+const { runCoverageBatch, getCoverageStatus } = require('../services/screenerCoverageService');
 const { config } = require('../config');
 
 // AI provider bills come back from ai_requests.cost_usd in USD (that's what
@@ -146,6 +147,32 @@ const getAllScannerSignals = asyncHandler(async (req, res) => {
   const { page, limit, outcome, symbol, timeframe, from, to } = req.query;
   const result = await listAllScannerSignals({ page, limit, outcome, symbol, timeframe, from, to });
   res.json(result);
+});
+
+// ── GET /api/admin/scanner-accuracy/calendar?month=&year= ── (day-by-day
+// accuracy for one calendar month — every day the market was open, with
+// weekends/holidays distinguished, and a per-exchange NSE/BSE/MCX
+// breakdown. See scannerAccuracyService.getScannerAccuracyCalendar.)
+const getScannerAccuracyCalendarView = asyncHandler(async (req, res) => {
+  const { month, year } = req.query;
+  const result = await getScannerAccuracyCalendar({ month, year });
+  res.json(result);
+});
+
+// ── GET /api/admin/scanner-accuracy/coverage ── (today's progress toward
+// scanning every NSE + BSE + MCX symbol, independent of user traffic — see
+// screenerCoverageService.js.)
+const getScannerCoverageStatus = asyncHandler(async (req, res) => {
+  const result = await getCoverageStatus();
+  res.json(result);
+});
+
+// ── POST /api/admin/scanner-accuracy/scan-now ── (manually kick off one
+// coverage batch tick instead of waiting for the cron interval — useful
+// right after deploying this feature or if a symbol's outcome looks stale.)
+const runScannerCoverageBatchNow = asyncHandler(async (req, res) => {
+  const result = await runCoverageBatch();
+  res.json({ message: 'Coverage batch run complete.', ...result });
 });
 
 // ── GET /api/admin/advertisers ── (real enquiries submitted via the public
@@ -332,4 +359,5 @@ module.exports = {
   getStats, listUsers, updateUserPlan, getApiUsage, getAiAccuracy, runAiAccuracyEvaluationNow,
   getAllPredictions, listAdvertiserEnquiries, updateAdvertiserStatus, listFeedback, listReferrals,
   getRiskFlags, getScannerAccuracy, runScannerAccuracyEvaluationNow, getAllScannerSignals,
+  getScannerAccuracyCalendarView, getScannerCoverageStatus, runScannerCoverageBatchNow,
 };

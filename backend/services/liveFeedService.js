@@ -25,6 +25,13 @@ const DEFAULT_SYMBOLS = [
   'TATAMOTORS', 'ADANIENT', 'MARUTI', 'SUNPHARMA', 'LTIM', 'TITAN', 'KOTAKBANK', 'LT', 'ITC', 'HINDUNILVR',
   'BAJAJFINSV', 'CIPLA', 'APOLLOHOSP', 'ASTRAL', 'DMART', 'POLYCAB', 'ABFRL', 'NESTLEIND', 'ULTRACEMCO', 'ONGC',
 ];
+// The handful of MCX commodities most retail traders actually watch — kept
+// small and separate from DEFAULT_SYMBOLS since each one costs an instrument-
+// master lookup (front-month contract resolution, see marketDataService's
+// parseMcxInstrumentMaster) rather than a free seeded lookup. Streamed
+// alongside the equities above so the live feed has commodity ticks ready
+// without waiting for a browser to open the MCX tab first.
+const DEFAULT_MCX_SYMBOLS = ['GOLD', 'SILVER', 'CRUDEOIL', 'NATURALGAS', 'COPPER'];
 const INDEX_INSTRUMENT_KEYS = {
   'NIFTY 50': 'NSE_INDEX|Nifty 50',
   'NIFTY BANK': 'NSE_INDEX|Nifty Bank',
@@ -37,7 +44,11 @@ const INDEX_INSTRUMENT_KEYS = {
 // which never send an exchange. An explicit BSE watch (from the Charts
 // page's NSE/BSE switch) gets its own "BSE:RELIANCE" key so its ticks never
 // get confused with — or overwritten by — the NSE feed for the same symbol.
+// MCX commodities always get an "MCX:" prefix — there's no bare/default
+// form for them the way NSE is the default for equities, since a commodity
+// symbol like "GOLD" has no equity-side meaning to collide with.
 function feedKeyFor(symbol, exchange) {
+  if (exchange === 'MCX_FO') return `MCX:${symbol}`;
   return exchange === 'BSE_EQ' ? `BSE:${symbol}` : symbol;
 }
 
@@ -66,12 +77,13 @@ function registerBrowserClient(ws) {
 /** Called when a browser asks to watch a symbol that isn't already in the
  *  live feed (e.g. searched/charted but not in DEFAULT_SYMBOLS). Resolves
  *  its instrument key and adds it to the running Upstox subscription.
- *  Pass exchange: 'BSE_EQ' to watch the BSE listing specifically (otherwise
- *  resolveInstrumentKey tries NSE first, same default as everywhere else). */
+ *  Pass exchange: 'BSE_EQ' to watch the BSE listing specifically, or
+ *  exchange: 'MCX_FO' to watch a commodity (GOLD, CRUDEOIL, ...) — otherwise
+ *  resolveInstrumentKey tries NSE first, same default as everywhere else. */
 async function watchSymbol(symbolRaw, exchangeRaw) {
   if (!streamer) return; // live feed not started yet — nothing to add to
   const symbol = symbolRaw.toUpperCase();
-  const exchange = ['NSE_EQ', 'BSE_EQ'].includes(exchangeRaw) ? exchangeRaw : undefined;
+  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(exchangeRaw) ? exchangeRaw : undefined;
   const feedKey = feedKeyFor(symbol, exchange);
   if ([...instrumentKeyToSymbol.values()].some((v) => v.feedKey === feedKey)) return; // already watching
 
@@ -99,19 +111,31 @@ function extractLtpc(feed) {
  *     refresh via the notifier webhook) — tokens expire ~3:30am IST daily,
  *     so the old socket goes stale and must be replaced.
  */
-async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS) {
+async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS, mcxSymbols = DEFAULT_MCX_SYMBOLS) {
   stopLiveFeed();
 
   const resolved = await Promise.all(symbols.map(async (symbol) => {
     try {
       const instrumentKey = await resolveInstrumentKey(symbol);
-      return { symbol, instrumentKey };
+      return { symbol, instrumentKey, feedKey: symbol };
     } catch {
       return null; // symbol didn't resolve — skip it, don't kill the whole feed
     }
   }));
-  const valid = resolved.filter(Boolean);
-  instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, { symbol: v.symbol, feedKey: v.symbol }]));
+  // MCX commodities resolved separately with exchange: 'MCX_FO' pinned —
+  // otherwise resolveInstrumentKey's default NSE-then-BSE lookup would just
+  // 404 on a symbol like "CRUDEOIL" that isn't an equity at all.
+  const resolvedMcx = await Promise.all(mcxSymbols.map(async (symbol) => {
+    try {
+      const instrumentKey = await resolveInstrumentKey(symbol, 'MCX_FO');
+      return { symbol, instrumentKey, feedKey: feedKeyFor(symbol, 'MCX_FO') };
+    } catch (e) {
+      console.warn(`[liveFeedService] MCX symbol ${symbol} did not resolve — skipping:`, e.message);
+      return null;
+    }
+  }));
+  const valid = [...resolved, ...resolvedMcx].filter(Boolean);
+  instrumentKeyToSymbol = new Map(valid.map((v) => [v.instrumentKey, { symbol: v.symbol, feedKey: v.feedKey }]));
   const instrumentKeys = valid.map((v) => v.instrumentKey);
 for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     instrumentKeyToSymbol.set(instrumentKey, { symbol, feedKey: symbol });
@@ -127,16 +151,11 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
 
   streamer = new UpstoxClient.MarketDataStreamerV3();
 
-  // FIX: the SDK's built-in auto-reconnect used to run with its own
-  // defaults — retrying fast and basically forever. On a dead token or an
-  // unreachable Upstox, that meant hundreds of reconnect attempts piling up
-  // within minutes, which is what was actually causing the OOM crashes (not
-  // just our own error-counting, which runs on a separate track and can't
-  // control the SDK's internal retry loop). This caps it explicitly: retry
-  // at most every 30 seconds, and give up entirely after 5 tries — at which
-  // point 'autoReconnectStopped' below shuts the feed down for good instead
-  // of the SDK silently continuing to hammer Upstox.
-  streamer.autoReconnect(true, 30, 5);
+  // Belt-and-suspenders on top of the "stop on any error" fix below: tell
+  // the SDK itself not to auto-reconnect, in case its internal retry timer
+  // ever fires before our own error handler gets a chance to call
+  // stopLiveFeed().
+  streamer.autoReconnect(false);
 
   streamer.on('open', () => {
     console.log(`[liveFeedService] Connected to Upstox — subscribing to ${instrumentKeys.length} symbols`);
@@ -171,26 +190,33 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     if (Object.keys(out).length) broadcast({ type: 'tick', feeds: out });
   });
 
-  // FIX: network-level errors (Upstox unreachable) were being retried by
-  // the SDK so fast that failed connection attempts piled up in memory
-  // within seconds — faster than a simple "stop after N errors" counter
-  // could react. These now log immediately; the actual stop-retrying
-  // decision is handled by streamer.autoReconnect(...) above plus
-  // 'autoReconnectStopped' below, not by counting errors ourselves.
-  const NETWORK_ERROR_CODES = new Set(['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN']);
+  // FIX (server crash loop): a 401 here means the access token itself is
+  // invalid/expired — no amount of reconnecting will fix that, and the
+  // upstox-js-sdk's own internal auto-reconnect timer has a bug that throws
+  // an uncaught exception on every retry attempt (see server.js's
+  // uncaughtException handler for the full story), which was crashing the
+  // whole backend in a loop. Stop the feed ourselves the moment we see a
+  // 401 instead of letting the SDK keep hammering that buggy retry path —
+  // startUpstoxTokenScheduler() will call startLiveFeed() again with a
+  // fresh token once one is available.
+  // FIX (Google sign-in "signal timed out" — server up but unresponsive):
+  // the SDK's buggy internal auto-reconnect timer wasn't only failing on
+  // 401 — it also throws as AggregateError, TypeError, etc. Retrying every
+  // ~1 second, each attempt hitting the same crash-prone internal path,
+  // flooded Node's single-threaded event loop with synchronous error
+  // handling. The server never actually crashed (uncaughtException catches
+  // it now), but it became too busy to service other requests — like
+  // /api/auth/google — within the frontend's timeout window. Since a
+  // reconnect loop that's failing this fast is never going to self-heal
+  // anyway, stop the feed on ANY stream error now, not just 401s, so it
+  // fails once and stays quiet instead of retrying forever.
   streamer.on('error', (err) => {
-    const code = err?.code || err?.errors?.[0]?.code;
-    if (NETWORK_ERROR_CODES.has(code)) {
-      console.error(`[liveFeedService] Upstox stream error: network error (${code}) reaching Upstox.`);
-    } else {
-      console.error('[liveFeedService] Upstox stream error:', err?.message || err);
-    }
-  });
-  streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
-  streamer.on('autoReconnectStopped', () => {
-    console.error('[liveFeedService] Gave up reconnecting to Upstox after repeated failures — stopping live feed. Reconnect at /api/market/upstox/login once the token/connectivity issue is resolved.');
+    const message = err?.message || String(err);
+    console.error('[liveFeedService] Upstox stream error:', message, '— stopping the feed instead of letting the SDK retry.');
     stopLiveFeed();
   });
+  streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
+  streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
 
   streamer.connect();
 }
@@ -203,4 +229,4 @@ function stopLiveFeed() {
   }
 }
 
-module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, DEFAULT_SYMBOLS, INDEX_INSTRUMENT_KEYS };
+module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, DEFAULT_SYMBOLS, DEFAULT_MCX_SYMBOLS, INDEX_INSTRUMENT_KEYS };
