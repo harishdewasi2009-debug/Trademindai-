@@ -184,15 +184,20 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     if (Object.keys(out).length) broadcast({ type: 'tick', feeds: out });
   });
 
-  // A 401 means the token itself is invalid — retrying won't fix that, and
-  // the SDK's own auto-reconnect timer has a bug that throws an uncaught
-  // exception on every retry, which was crashing the whole backend. Stop
-  // the feed ourselves on 401 instead of letting the SDK keep retrying.
+  // FIX (server crash loop): a 401 here means the access token itself is
+  // invalid/expired — no amount of reconnecting will fix that, and the
+  // upstox-js-sdk's own internal auto-reconnect timer has a bug that throws
+  // an uncaught exception on every retry attempt (see server.js's
+  // uncaughtException handler for the full story), which was crashing the
+  // whole backend in a loop. Stop the feed ourselves the moment we see a
+  // 401 instead of letting the SDK keep hammering that buggy retry path —
+  // startUpstoxTokenScheduler() will call startLiveFeed() again with a
+  // fresh token once one is available.
   streamer.on('error', (err) => {
     const message = err?.message || String(err);
     console.error('[liveFeedService] Upstox stream error:', message);
     if (/401/.test(message)) {
-      console.error('[liveFeedService] Token appears invalid/expired — stopping the feed instead of letting the SDK retry.');
+      console.error('[liveFeedService] Token appears invalid/expired — stopping the feed instead of letting the SDK retry (avoids a known upstox-js-sdk reconnect crash).');
       stopLiveFeed();
     }
   });

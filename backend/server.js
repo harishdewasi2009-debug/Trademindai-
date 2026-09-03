@@ -29,10 +29,19 @@ const { startUpstoxTokenScheduler } = require('./services/tokenScheduler');
 const marketDataService = require('./services/marketDataService');
 const liveFeedService = require('./services/liveFeedService');
 
-// Safety net: an uncaught exception anywhere (including inside third-party
-// packages like upstox-js-sdk) used to crash the entire Node process,
-// taking down every route (including Google sign-in) with it. This keeps
-// the server alive and just logs the error instead.
+// FIX (backend crash loop — Google sign-in / all API routes going down):
+// a bug inside the upstox-js-sdk package's internal auto-reconnect timer
+// (Streamer.js: `this.streamer.clearSubscriptions is not a function`) was
+// throwing inside a setTimeout callback whenever the Upstox access token
+// was invalid/expired. An exception thrown outside Express's request cycle
+// can't be caught by any try/catch here — Node's default behavior is to
+// crash the entire process on any uncaught exception, which killed the
+// whole API (including unrelated routes like /api/auth/google) every time
+// the live market feed's token happened to be stale. Catching it here means
+// a bug in that one background feature can never take down the rest of the
+// server again — see also the liveFeedService fix that stops retrying with
+// a token we already know is bad, which addresses the root cause instead of
+// just papering over the symptom.
 process.on('uncaughtException', (err) => {
   console.error('❌ Uncaught exception (server kept running):', err);
 });

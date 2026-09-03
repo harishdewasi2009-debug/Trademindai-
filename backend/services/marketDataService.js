@@ -255,22 +255,51 @@ const EXCHANGE_FILES = {
 // Callers that specifically want MCX must pass exchange: 'MCX_FO'.
 const ALL_BROWSABLE_EXCHANGES = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'];
 
-// A 401 means the token itself is invalid — retrying won't fix that, and
-  // the SDK's own auto-reconnect timer has a bug that throws an uncaught
-  // exception on every retry, which was crashing the whole backend. Stop
-  // the feed ourselves on 401 instead of letting the SDK keep retrying.
-  streamer.on('error', (err) => {
-    const message = err?.message || String(err);
-    console.error('[liveFeedService] Upstox stream error:', message);
-    if (/401/.test(message)) {
-      console.error('[liveFeedService] Token appears invalid/expired — stopping the feed instead of letting the SDK retry.');
-      stopLiveFeed();
-    }
-  });
-  streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
-  streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
+const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...}, MCX_FO: {...} } — in-memory, process lifetime
 
-  streamer.connect();
+// FIX (memory limit exceeded — Web Service restart loop): loadInstrumentMaster
+// had no protection against concurrent cache misses for the same exchange.
+// startLiveFeed() resolves ~35 symbols in parallel via Promise.all — on a
+// cold start (fresh deploy, empty instrument_cache table) every one of those
+// that wasn't in SEED_INSTRUMENTS triggered its OWN independent download +
+// gunzip + JSON.parse of the same ~30MB (uncompressed) NSE instrument-master
+// file at the same time. Each parse holds a full JS object graph of 80,000+
+// rows in memory, so a dozen-plus of those running concurrently multiplied
+// memory use far past Render's free-tier limit and got OOM-killed. This map
+// makes every concurrent caller for the same exchange await one shared
+// in-flight download/parse instead of starting their own.
+const instrumentMasterInFlight = {}; // { NSE_EQ: Promise, ... }
+
+/**
+ * Downloads and parses Upstox's equity instrument master for one exchange
+ * (gzipped JSON, ~30MB uncompressed for NSE). Cache miss only — cached in
+ * memory for the life of the process per exchange. For MCX_FO this instead
+ * parses the commodity-derivatives file — see the branch below.
+ */
+async function loadInstrumentMaster(exchange = 'NSE_EQ') {
+  const INSTRUMENT_MASTER_TTL_MS = 24 * 60 * 60 * 1000; // refresh once a day — Upstox republishes this file daily
+  if (instrumentMasterCache[exchange] && (Date.now() - instrumentMasterCache[exchange].fetchedAt.getTime() < INSTRUMENT_MASTER_TTL_MS)) {
+    return instrumentMasterCache[exchange];
+  }
+
+  // A download for this exchange is already running — piggyback on it
+  // instead of starting a second (or fifteenth) redundant one.
+  if (instrumentMasterInFlight[exchange]) {
+    return instrumentMasterInFlight[exchange];
+  }
+
+  const loadPromise = (async () => {
+    const url = EXCHANGE_FILES[exchange];
+    if (!url) throw new AppError(`Unsupported exchange: ${exchange}`, 400);
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+    if (!res.ok) throw new AppError(`Could not download Upstox ${exchange} instrument master.`, 502);
+
+    const zlib = require('zlib');
+    const buf = Buffer.from(await res.arrayBuffer());
+    const json = zlib.gunzipSync(buf).toString('utf-8');
+    const list = JSON.parse(json);
+
   if (exchange === 'MCX_FO') {
     instrumentMasterCache.MCX_FO = parseMcxInstrumentMaster(list);
     return instrumentMasterCache.MCX_FO;
@@ -334,7 +363,7 @@ const ALL_BROWSABLE_EXCHANGES = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'];
     );
   }
 
- instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
+  instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
   return instrumentMasterCache[exchange];
   })();
 
@@ -342,6 +371,9 @@ const ALL_BROWSABLE_EXCHANGES = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'];
   try {
     return await loadPromise;
   } finally {
+    // Whether it succeeded or threw, free the slot so the NEXT genuinely
+    // new attempt (e.g. after a transient download failure) isn't stuck
+    // forever waiting on a promise that already settled.
     delete instrumentMasterInFlight[exchange];
   }
 }
