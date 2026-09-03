@@ -2818,7 +2818,7 @@ function modelDisplayName(raw){
 // settles (resolves or rejects) within API_TIMEOUT_MS, so callers' existing
 // try/catch blocks can do their normal "data unavailable" fallback instead
 // of hanging the UI/network panel indefinitely.
-const API_TIMEOUT_MS=20000;
+const API_TIMEOUT_MS=70000;
 async function apiFetch(path, opts={}){
   if(isPlaceholder(APP_CONFIG.API_BASE_URL)){
     throw new Error('Something went wrong loading the site. Please refresh in a moment.');
