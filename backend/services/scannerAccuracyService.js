@@ -16,6 +16,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const { query } = require('../db/pool');
+const { isTradingDay, isMarketHoliday } = require('../utils/tradingCalendar');
 
 const NEUTRAL_BAND_PCT = 3; // same convention as predictionAccuracyService
 
@@ -257,4 +258,85 @@ async function listAllScannerSignals({ page = 1, limit = 50, outcome, symbol, ti
   };
 }
 
-module.exports = { logSignal, evaluateDueScannerSignals, getScannerAccuracyStats, listAllScannerSignals, judgeOutcome };
+/** Day-by-day accuracy for one calendar month, for the admin "everyday
+ *  accuracy" calendar view. Every day in the month gets an entry — trading
+ *  days with no logged signals yet (market open but nothing scanned/
+ *  evaluated), weekends, and published exchange holidays are all
+ *  distinguished, not just lumped together as "no data". Coverage is also
+ *  broken out per exchange (NSE_EQ/BSE_EQ/MCX_FO) so it's visible at a
+ *  glance whether a given day's scan actually reached all three markets. */
+async function getScannerAccuracyCalendar({ month, year } = {}) {
+  const now = new Date();
+  const y = Number(year) || now.getFullYear();
+  const m = Number(month) || now.getMonth() + 1; // 1-12, matches the API's month param
+  if (m < 1 || m > 12) throw new Error('month must be between 1 and 12');
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const monthStart = `${y}-${pad(m)}-01`;
+  const nextMonthStart = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
+
+  const { rows } = await query(
+    `SELECT
+       signal_date::text AS date,
+       COUNT(*) FILTER (WHERE outcome = 'correct')::int   AS correct,
+       COUNT(*) FILTER (WHERE outcome = 'incorrect')::int AS incorrect,
+       COUNT(*) FILTER (WHERE outcome = 'pending')::int   AS pending,
+       COUNT(*)::int AS total,
+       COUNT(*) FILTER (WHERE exchange = 'NSE_EQ')::int AS nse,
+       COUNT(*) FILTER (WHERE exchange = 'BSE_EQ')::int AS bse,
+       COUNT(*) FILTER (WHERE exchange = 'MCX_FO')::int AS mcx,
+       COUNT(DISTINCT stock_symbol)::int AS symbols_scanned
+     FROM scanner_signal_history
+     WHERE signal_date >= $1::date AND signal_date < $2::date
+     GROUP BY signal_date`,
+    [monthStart, nextMonthStart]
+  );
+  const byDate = new Map(rows.map((r) => [r.date, r]));
+
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const days = [];
+  let monthCorrect = 0, monthIncorrect = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = `${y}-${pad(m)}-${pad(d)}`;
+    const row = byDate.get(date);
+    const evaluated = row ? row.correct + row.incorrect : 0;
+    monthCorrect += row?.correct || 0;
+    monthIncorrect += row?.incorrect || 0;
+
+    days.push({
+      date,
+      isTradingDay: isTradingDay(date),
+      isHoliday: isMarketHoliday(date),
+      hasData: !!row,
+      correct: row?.correct || 0,
+      incorrect: row?.incorrect || 0,
+      pending: row?.pending || 0,
+      total: row?.total || 0,
+      symbolsScanned: row?.symbols_scanned || 0,
+      accuracyPct: evaluated ? Number(((row.correct / evaluated) * 100).toFixed(1)) : null,
+      byExchange: {
+        NSE_EQ: row?.nse || 0,
+        BSE_EQ: row?.bse || 0,
+        MCX_FO: row?.mcx || 0,
+      },
+    });
+  }
+
+  const monthEvaluated = monthCorrect + monthIncorrect;
+  return {
+    year: y,
+    month: m,
+    monthAccuracyPct: monthEvaluated ? Number(((monthCorrect / monthEvaluated) * 100).toFixed(1)) : null,
+    days,
+  };
+}
+
+module.exports = {
+  logSignal,
+  evaluateDueScannerSignals,
+  getScannerAccuracyStats,
+  listAllScannerSignals,
+  getScannerAccuracyCalendar,
+  judgeOutcome,
+};

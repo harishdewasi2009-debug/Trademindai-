@@ -19,6 +19,9 @@ const getWatchlist = asyncHandler(async (req, res) => {
 const addToWatchlist = asyncHandler(async (req, res) => {
   const { stockSymbol, stockName, alertPrice, alertDirection } = req.body;
   if (!stockSymbol) throw new AppError('stockSymbol is required.', 400);
+  // 'MCX_FO' watches a commodity (GOLD, CRUDEOIL, SILVER, NATURALGAS, ...)
+  // instead of an equity; omit for a normal NSE/BSE stock, unchanged from before.
+  const exchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(req.body.exchange) ? req.body.exchange : null;
 
   const limit = WATCHLIST_LIMITS[req.user.plan] ?? 5;
   const { rows: countRows } = await query('SELECT COUNT(*)::int AS count FROM watchlist WHERE user_id = $1', [req.user.id]);
@@ -27,11 +30,11 @@ const addToWatchlist = asyncHandler(async (req, res) => {
   }
 
   const { rows } = await query(
-    `INSERT INTO watchlist (user_id, stock_symbol, stock_name, alert_price, alert_direction)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (user_id, stock_symbol) DO UPDATE SET alert_price = $4, alert_direction = $5
+    `INSERT INTO watchlist (user_id, stock_symbol, stock_name, alert_price, alert_direction, exchange)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (user_id, stock_symbol) DO UPDATE SET alert_price = $4, alert_direction = $5, exchange = $6
      RETURNING *`,
-    [req.user.id, stockSymbol.toUpperCase(), stockName, alertPrice || null, alertDirection || null]
+    [req.user.id, stockSymbol.toUpperCase(), stockName, alertPrice || null, alertDirection || null, exchange]
   );
   res.status(201).json({ item: rows[0] });
 });
