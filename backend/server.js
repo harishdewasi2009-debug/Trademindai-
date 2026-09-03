@@ -163,9 +163,15 @@ server.listen(config.port, () => {
   console.log(`   Health check: http://localhost:${config.port}/health`);
   console.log(`   Live market WebSocket: ws://localhost:${config.port}/ws/market`);
   startUpstoxTokenScheduler();
+  marketDataService.startCacheEvictionSweep(); // FIX: periodically drop expired cache entries so memory doesn't creep up over a trading day
 
   // If Upstox is already connected (token cached from a previous approval),
   // start the live feed immediately instead of waiting for the next login.
+  // NOTE: this runs at boot same as before — the actual OOM fix is the
+  // runExclusive queue in marketDataService.js, which now guarantees only
+  // ONE exchange's ~30MB instrument master is ever being parsed in memory
+  // at a time, no matter how many symbols/exchanges resolve in parallel
+  // here. That serialization is what caps the memory spike, not timing.
   marketDataService.upstoxStatus()
     .then(async (status) => {
       if (!status.connected) return;

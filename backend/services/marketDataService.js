@@ -270,6 +270,27 @@ const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {.
 // in-flight download/parse instead of starting their own.
 const instrumentMasterInFlight = {}; // { NSE_EQ: Promise, ... }
 
+// FIX (OOM on Render free tier — 512MB): instrumentMasterInFlight above only
+// dedupes concurrent loads of the SAME exchange. On boot, startLiveFeed()
+// resolves symbols across NSE_EQ, BSE_EQ and MCX_FO in parallel, so it was
+// still possible for 2-3 DIFFERENT exchanges to each gunzip+JSON.parse their
+// own ~30MB file (80,000+ rows) at the exact same moment. Each parse holds a
+// full raw object graph in memory (well past 30MB) for the few hundred ms it
+// takes to trim it down to {instrumentKey, name} pairs — three of those
+// overlapping at once was enough to blow past Render's 512MB limit and get
+// OOM-killed, which is what was taking down sign-in and every other route
+// along with it. This queue forces exchange loads to run one at a time
+// process-wide, so only one ~30MB parse is ever resident in memory at once.
+let instrumentMasterGlobalQueue = Promise.resolve();
+function runExclusive(fn) {
+  const result = instrumentMasterGlobalQueue.then(fn, fn);
+  // Swallow rejections here so one failed load doesn't jam the queue for
+  // every load after it — the caller (loadPromise below) still sees/throws
+  // the real error via `result`.
+  instrumentMasterGlobalQueue = result.catch(() => {});
+  return result;
+}
+
 /**
  * Downloads and parses Upstox's equity instrument master for one exchange
  * (gzipped JSON, ~30MB uncompressed for NSE). Cache miss only — cached in
@@ -288,7 +309,7 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
     return instrumentMasterInFlight[exchange];
   }
 
-  const loadPromise = (async () => {
+  const loadPromise = runExclusive(async () => {
     const url = EXCHANGE_FILES[exchange];
     if (!url) throw new AppError(`Unsupported exchange: ${exchange}`, 400);
 
@@ -365,7 +386,7 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
 
   instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
   return instrumentMasterCache[exchange];
-  })();
+  });
 
   instrumentMasterInFlight[exchange] = loadPromise;
   try {
@@ -1339,8 +1360,48 @@ async function getSignalsBatch(symbols, period) {
   return results;
 }
 
+// FIX (slow memory creep on Render free tier): quoteBatchCache, candleCache,
+// signalCache, reportCache, quantReportCache and lastGoodIntraday are all
+// plain Maps that only ever get OVERWRITTEN on next access to the same key —
+// nothing ever deletes an entry once its data is stale, so over a trading
+// day (hundreds of distinct symbols/timeframes queried once and never
+// again) they just grow. Combined with the instrument masters above, that
+// slow creep is what eventually tips a long-running process over Render's
+// 512MB limit even hours after boot, not just on cold start. This sweep
+// runs periodically and drops anything past its own expiresAt. lastGoodIntraday
+// has no TTL by design (it's an intentional last-known-good fallback), so
+// it's left alone here — only capped indirectly by symbols actually traded.
+function sweepExpiredCaches() {
+  const now = Date.now();
+  let removed = 0;
+  for (const cache of [quoteBatchCache, candleCache, signalCache, reportCache, quantReportCache]) {
+    for (const [key, entry] of cache) {
+      if (entry && entry.expiresAt && entry.expiresAt < now) {
+        cache.delete(key);
+        removed++;
+      }
+    }
+  }
+  return removed;
+}
+
+let cacheEvictionTimer = null;
+function startCacheEvictionSweep(intervalMs = 5 * 60 * 1000) {
+  if (cacheEvictionTimer) return cacheEvictionTimer; // already running
+  cacheEvictionTimer = setInterval(() => {
+    try {
+      sweepExpiredCaches();
+    } catch (err) {
+      console.warn('[cacheEviction] sweep failed:', err.message);
+    }
+  }, intervalMs);
+  cacheEvictionTimer.unref?.(); // don't keep the process alive just for this
+  return cacheEvictionTimer;
+}
+
 module.exports = {
   buildLoginUrl,
+  startCacheEvictionSweep,
   exchangeCodeForToken,
   upstoxStatus,
   getValidAccessToken,
