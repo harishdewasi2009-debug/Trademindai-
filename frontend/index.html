@@ -2772,6 +2772,25 @@ const APP_CONFIG = {
 };
 function isPlaceholder(v){ return !v || v.includes('YOUR_') || v.includes('YOUR-'); }
 
+// FIX (Google/email sign-in "signal timed out" right after a cold start):
+// the backend is a Render free-tier web service that spins down after ~15
+// minutes idle and can take 30-60+s to wake back up. apiFetch's 20s abort
+// timeout (below) is fine for a warm backend but was firing mid-wake-up for
+// whichever request happened to be first — most visibly Google/email sign-in,
+// which has no retry of its own, so the raw AbortError ("signal timed out")
+// surfaced straight to the user with no explanation. Two pieces fix this:
+//  1. A fire-and-forget ping to /health the moment this script runs, so the
+//     backend starts waking up as early as possible — often before the user
+//     even finishes the sign-in click.
+//  2. backendWarm flips true the first time ANY request gets ANY response
+//     (even an error status/body — that still proves the process answered).
+//     apiFetch below uses this to tell a genuine cold-start timeout (worth
+//     retrying with more patience) apart from a repeat/real failure.
+let backendWarm=false;
+if(!isPlaceholder(APP_CONFIG.API_BASE_URL)){
+  fetch(APP_CONFIG.API_BASE_URL+'/health').then(()=>{backendWarm=true;}).catch(()=>{});
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 //  AUTH CORE — talks to the real backend (no more fake demo logins)
 // ══════════════════════════════════════════════════════════════════════════
@@ -2818,20 +2837,46 @@ function modelDisplayName(raw){
 // settles (resolves or rejects) within API_TIMEOUT_MS, so callers' existing
 // try/catch blocks can do their normal "data unavailable" fallback instead
 // of hanging the UI/network panel indefinitely.
-const API_TIMEOUT_MS=70000;
+const API_TIMEOUT_MS=20000;
+// Used only for the cold-start retry below — deliberately longer than a
+// Render free-tier wake-up (30-60s) can take, so the retry actually gets a
+// fair shot instead of racing the same 20s window twice.
+const API_COLD_START_TIMEOUT_MS=45000;
 async function apiFetch(path, opts={}){
   if(isPlaceholder(APP_CONFIG.API_BASE_URL)){
     throw new Error('Something went wrong loading the site. Please refresh in a moment.');
   }
-  const doFetch=()=>{
+  const doFetch=(timeoutMs)=>{
     const headers={'Content-Type':'application/json',...(opts.headers||{})};
     if(authToken)headers['Authorization']='Bearer '+authToken;
     // Respect a caller-supplied AbortSignal if given, otherwise apply our
     // own timeout so this call can never hang forever.
-    const signal=opts.signal||AbortSignal.timeout(API_TIMEOUT_MS);
-    return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include',signal});
+    const signal=opts.signal||AbortSignal.timeout(timeoutMs);
+    return fetch(APP_CONFIG.API_BASE_URL+path,{...opts,headers,credentials:'include',signal})
+      .then(r=>{backendWarm=true;return r;});
   };
-  let res=await doFetch();
+  let res;
+  try{
+    res=await doFetch(API_TIMEOUT_MS);
+  }catch(e){
+    // FIX: a timeout before we've ever heard back from the backend almost
+    // always means it's still waking up from sleep, not that it's actually
+    // stuck — give it one longer, patient retry instead of failing the
+    // user's very first request (commonly sign-in) with a raw "signal timed
+    // out". If we've already heard from the backend once (backendWarm), or
+    // the caller supplied their own signal, a timeout is a real failure and
+    // we let it surface immediately.
+    const isTimeout=e.name==='TimeoutError'||e.name==='AbortError';
+    if(isTimeout && !backendWarm && !opts.signal){
+      try{
+        res=await doFetch(API_COLD_START_TIMEOUT_MS);
+      }catch(e2){
+        throw new Error('The server is taking longer than usual to wake up. Please try again in a few seconds.');
+      }
+    }else{
+      throw e;
+    }
+  }
   // Stay signed in: retry once via the refresh-token cookie on ANY 401 — not
   // only when we already hold an in-memory access token. Without this, a
   // request that fires before tryRestoreSession() finishes on page load (or
@@ -2842,7 +2887,7 @@ async function apiFetch(path, opts={}){
   const skipRefresh=/\/api\/auth\/(refresh|login|signup|google)/.test(path);
   if(res.status===401 && !skipRefresh){
     const refreshed=await tryRefreshToken();
-    if(refreshed)res=await doFetch();
+    if(refreshed)res=await doFetch(API_TIMEOUT_MS);
   }
   return res;
 }
