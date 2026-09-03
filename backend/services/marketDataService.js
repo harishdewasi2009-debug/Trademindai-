@@ -255,31 +255,22 @@ const EXCHANGE_FILES = {
 // Callers that specifically want MCX must pass exchange: 'MCX_FO'.
 const ALL_BROWSABLE_EXCHANGES = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'];
 
-const instrumentMasterCache = {}; // { NSE_EQ: {bySymbol, fetchedAt}, BSE_EQ: {...}, MCX_FO: {...} } — in-memory, process lifetime
+// A 401 means the token itself is invalid — retrying won't fix that, and
+  // the SDK's own auto-reconnect timer has a bug that throws an uncaught
+  // exception on every retry, which was crashing the whole backend. Stop
+  // the feed ourselves on 401 instead of letting the SDK keep retrying.
+  streamer.on('error', (err) => {
+    const message = err?.message || String(err);
+    console.error('[liveFeedService] Upstox stream error:', message);
+    if (/401/.test(message)) {
+      console.error('[liveFeedService] Token appears invalid/expired — stopping the feed instead of letting the SDK retry.');
+      stopLiveFeed();
+    }
+  });
+  streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
+  streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
 
-/**
- * Downloads and parses Upstox's equity instrument master for one exchange
- * (gzipped JSON, ~30MB uncompressed for NSE). Cache miss only — cached in
- * memory for the life of the process per exchange. For MCX_FO this instead
- * parses the commodity-derivatives file — see the branch below.
- */
-async function loadInstrumentMaster(exchange = 'NSE_EQ') {
-  const INSTRUMENT_MASTER_TTL_MS = 24 * 60 * 60 * 1000; // refresh once a day — Upstox republishes this file daily
-  if (instrumentMasterCache[exchange] && (Date.now() - instrumentMasterCache[exchange].fetchedAt.getTime() < INSTRUMENT_MASTER_TTL_MS)) {
-    return instrumentMasterCache[exchange];
-  }
-
-  const url = EXCHANGE_FILES[exchange];
-  if (!url) throw new AppError(`Unsupported exchange: ${exchange}`, 400);
-
-  const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!res.ok) throw new AppError(`Could not download Upstox ${exchange} instrument master.`, 502);
-
-  const zlib = require('zlib');
-  const buf = Buffer.from(await res.arrayBuffer());
-  const json = zlib.gunzipSync(buf).toString('utf-8');
-  const list = JSON.parse(json);
-
+  streamer.connect();
   if (exchange === 'MCX_FO') {
     instrumentMasterCache.MCX_FO = parseMcxInstrumentMaster(list);
     return instrumentMasterCache.MCX_FO;
@@ -343,8 +334,16 @@ async function loadInstrumentMaster(exchange = 'NSE_EQ') {
     );
   }
 
-  instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
+ instrumentMasterCache[exchange] = { bySymbol, fnoUnderlyings, fetchedAt: new Date() };
   return instrumentMasterCache[exchange];
+  })();
+
+  instrumentMasterInFlight[exchange] = loadPromise;
+  try {
+    return await loadPromise;
+  } finally {
+    delete instrumentMasterInFlight[exchange];
+  }
 }
 
 // ── MCX (commodity derivatives) instrument-master parsing ────────────────
