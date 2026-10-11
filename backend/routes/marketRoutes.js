@@ -7,6 +7,7 @@ const { requireFeature, requireScreenerAccess } = require('../middleware/planChe
 const { marketLimiter, adminLimiter } = require('../middleware/rateLimit');
 const { validateMarketSymbol, validateMarketCandles, validateMarketQuotes, validateMarketReport, validateMarketSearch } = require('../middleware/validate');
 const ctrl = require('../controllers/marketController');
+const { getPublicAccuracy } = require('../services/publicAccuracyService');
 const { isLaunchTrialActive, launchTrialDaysRemaining, LAUNCH_TRIAL_END } = require('../config/plans');
 
 // Public (no auth) — lets the Pricing page and the top-of-app trial banner
@@ -20,6 +21,19 @@ router.get('/launch-trial', (req, res) => {
     daysRemaining: launchTrialDaysRemaining(),
     endsAt: LAUNCH_TRIAL_END.toISOString(),
   });
+});
+
+// Public (no auth), read-only: aggregated verified-accuracy statistics for
+// the homepage. Exposes only counts, percentages and timestamps.
+router.get('/public-accuracy', async (req, res) => {
+  try {
+    const data = await getPublicAccuracy();
+    res.set('Cache-Control', 'public, max-age=30');
+    res.json(data);
+  } catch (err) {
+    console.error('[public-accuracy]', err.message);
+    res.status(503).json({ available: false, error: 'Accuracy data temporarily unavailable.' });
+  }
 });
 
 // ── Upstox connection management (admin only) ──

@@ -14,8 +14,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>TradeMind AI — India's Computed Stock Market Intelligence Platform</title>
-<meta name="description" content="Live NSE, BSE & MCX market data, professional TradingView charts, and computed market insights — all in one place."/>
+<title>AI Stock Market Analysis India | TradeMind AI</title>
+<meta name="description" content="Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI."/>
+<link rel="canonical" href="https://trademindai.co.in/"/>
+<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large"/>
+<meta name="theme-color" content="#07080F"/>
+<link rel="alternate" hreflang="en-IN" href="https://trademindai.co.in/"/>
+<link rel="alternate" hreflang="x-default" href="https://trademindai.co.in/"/>
 
 <!-- Site icon / "profile picture" shown in browser tabs, bookmarks, home-screen shortcuts -->
 <link rel="icon" href="/assets/favicon.ico" sizes="any"/>
@@ -27,16 +32,20 @@
 <!-- Link-sharing preview (WhatsApp, Telegram, X, Facebook, LinkedIn, iMessage, etc.) -->
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="TradeMind AI"/>
-<meta property="og:title" content="TradeMind AI — India's Computed Stock Market Intelligence Platform"/>
-<meta property="og:description" content="Live NSE, BSE & MCX market data, professional TradingView charts, and computed market insights — all in one place."/>
+<meta property="og:title" content="AI Stock Market Analysis India | TradeMind AI"/>
+<meta property="og:description" content="Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI."/>
+<meta property="og:locale" content="en_IN"/>
 <meta property="og:url" content="https://trademindai.co.in/"/>
 <meta property="og:image" content="https://trademindai.co.in/assets/og-image.png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="TradeMind AI — India's Computed Stock Market Intelligence Platform"/>
-<meta name="twitter:description" content="Live NSE, BSE & MCX market data, professional TradingView charts, and computed market insights — all in one place."/>
+<meta name="twitter:title" content="AI Stock Market Analysis India | TradeMind AI"/>
+<meta name="twitter:description" content="Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI."/>
 <meta name="twitter:image" content="https://trademindai.co.in/assets/og-image.png"/>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "@id": "https://trademindai.co.in/#org", "name": "TradeMind AI", "url": "https://trademindai.co.in/", "logo": "https://trademindai.co.in/assets/logo-icon-512.png", "email": "harishdewasi2009@gmail.com", "sameAs": ["https://instagram.com/_trademind.ai"]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "@id": "https://trademindai.co.in/#website", "name": "TradeMind AI", "url": "https://trademindai.co.in/", "inLanguage": "en-IN", "publisher": {"@id": "https://trademindai.co.in/#org"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "TradeMind AI", "url": "https://trademindai.co.in/", "applicationCategory": "FinanceApplication", "operatingSystem": "Web", "description": "Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR", "description": "Free plan"}}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -180,6 +189,57 @@ nav{
 .sec-h2{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;letter-spacing:-1.2px;color:var(--text);margin-bottom:12px}
 .sec-sub{font-size:15px;color:var(--text2);max-width:520px;line-height:1.75;margin-bottom:52px}
 .sec-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px}
+
+
+/* ── LIVE AI ACCURACY (homepage) ── */
+.la-wrap{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;max-width:1100px}
+.la-main{padding:28px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg);position:relative;overflow:hidden}
+.la-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.la-lbl{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--text2);font-weight:700}
+.la-status{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)}
+.la-dot{width:7px;height:7px;border-radius:50%;background:var(--text3)}
+.la-status.live .la-dot{background:var(--green);box-shadow:0 0 0 0 rgba(0,194,168,.6);animation:laPulse 2s infinite}
+.la-status.stale .la-dot{background:var(--gold)}
+.la-status.err .la-dot{background:var(--rose2)}
+@keyframes laPulse{70%{box-shadow:0 0 0 7px rgba(0,194,168,0)}100%{box-shadow:0 0 0 0 rgba(0,194,168,0)}}
+.la-big{font-family:'Space Grotesk',sans-serif;font-size:72px;font-weight:700;letter-spacing:-2px;color:var(--text);line-height:1.05;margin:6px 0 4px;transition:opacity .3s}
+.la-big small{font-size:32px;color:var(--text2);margin-left:2px}
+.la-note{font-size:12px;color:var(--text2);line-height:1.6}
+.la-chart{margin-top:18px;height:120px;position:relative}
+.la-chart svg{width:100%;height:100%;display:block}
+.la-chart-cap{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px}
+.la-side{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+.la-card{padding:16px 18px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg)}
+.la-card .v{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--text);margin-top:4px;transition:opacity .3s}
+.la-card .l{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:var(--text2);font-weight:700}
+.la-card .s{font-size:11px;color:var(--text3);margin-top:2px}
+.la-up{color:var(--green)!important}.la-down{color:var(--rose2)!important}
+.la-goal{grid-column:1/-1}
+.la-goal-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin:8px 0 4px}
+.la-goal-row b{color:var(--text)}
+.la-foot{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text3);margin-top:2px}
+.la-foot a{color:var(--teal-light);cursor:pointer;font-weight:600}
+.la-cal{max-width:1100px;margin-top:16px;padding:22px 24px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg)}
+.la-cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.la-cal-h .t{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--text)}
+.la-cal-nav{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text)}
+.la-cal-nav button{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;width:30px;height:30px;cursor:pointer}
+.la-cal-nav button:disabled{opacity:.3;cursor:default}
+.la-date{background:var(--bg2);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;color-scheme:dark}
+.la-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.la-pick .la-card .v{font-size:26px}
+@media(max-width:600px){.la-pick{grid-template-columns:1fr}}
+.la-cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.la-cal-w{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;text-align:center;margin-bottom:6px}
+.la-day{min-height:56px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);padding:6px 7px;font-size:10px;color:var(--text3);display:flex;flex-direction:column;justify-content:space-between}
+.la-day b{font-size:13px;font-family:'Space Grotesk',sans-serif;color:var(--text)}
+.la-day.hide{visibility:hidden}
+.la-day.off{opacity:.45}
+.la-day.today{border-color:var(--teal)}
+.la-day.has{background:rgba(0,194,168,.1);border-color:rgba(0,194,168,.35)}
+.la-day.has.low{background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.3)}
+@media(max-width:600px){.la-day{min-height:46px;padding:4px}.la-day b{font-size:11px}.la-cal{padding:14px}}
+@media(max-width:900px){.la-wrap{grid-template-columns:1fr}.la-big{font-size:56px}}
 
 /* ── FEATURE GRID ── */
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
@@ -1183,9 +1243,32 @@ img,svg,video,canvas,iframe{max-width:100%}
 @media(max-width:980px){
   .tm-showcase{display:none}
 }
+
+/* ── shared search dropdown ── */
+.tm-sr-chips{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:1}
+.tm-sr-chip{border:1px solid var(--border2);background:transparent;color:var(--text2);border-radius:999px;font-size:11px;padding:4px 12px;cursor:pointer;min-height:28px}
+.tm-sr-chip.on{background:var(--teal-dim);color:var(--teal2);border-color:var(--teal)}
+.tm-sr-head{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.tm-sr-link{background:none;border:none;color:var(--teal2);font-size:12px;cursor:pointer;padding:2px 4px;text-transform:none;letter-spacing:0}
+.tm-sr-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;min-height:48px;cursor:pointer;border-bottom:1px solid var(--border)}
+.tm-sr-row.active{background:var(--bg3)}
+.tm-sr-main{min-width:0}
+.tm-sr-sym{font-weight:600;font-size:13px;margin-right:6px}
+.tm-sr-badge{font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--bg4);color:var(--text2);margin-right:6px}
+.tm-sr-ex-NSE{color:var(--teal2)}.tm-sr-ex-BSE{color:var(--gold-light)}.tm-sr-ex-MCX{color:var(--violet-light)}
+.tm-sr-type{font-size:10px;color:var(--text3)}
+.tm-sr-name{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm-sr-price{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+.tm-sr-price small{display:block;font-size:9px;font-weight:400;color:var(--text3)}
+.tm-sr-msg{padding:14px;color:var(--text3);font-size:12px;line-height:1.5}
+.tm-sr-err{color:var(--rose2)}
+.tm-sr-spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border3);border-top-color:var(--teal);border-radius:50%;margin-right:8px;vertical-align:-2px;animation:tmsr .7s linear infinite}
+@keyframes tmsr{to{transform:rotate(360deg)}}
+@media(max-width:700px){[id$="-dropdown"].tm-open,#screener-search-dropdown,#chart-search-dropdown{max-height:60vh!important}}
 </style>
 </head>
 <body>
+<noscript><div style="padding:16px;background:#131425;color:#E8EAF6;font-family:sans-serif"><h1>AI-Powered Stock Market Analysis for Indian Markets</h1><p>TradeMind AI offers technical indicators, NSE and BSE stock charts, MCX market data and a computed stock screener. JavaScript is required to use the app.</p><p><a style="color:#2EECD4" href="/ai-stock-analysis/">AI Stock Analysis</a> · <a style="color:#2EECD4" href="/technical-analysis/">Technical Analysis</a> · <a style="color:#2EECD4" href="/nse-stock-analysis/">NSE Stock Analysis</a> · <a style="color:#2EECD4" href="/bse-stock-analysis/">BSE Stock Analysis</a> · <a style="color:#2EECD4" href="/nifty-50-analysis/">NIFTY 50 Analysis</a> · <a style="color:#2EECD4" href="/stock-market-screener/">Stock Market Screener</a> · <a style="color:#2EECD4" href="/mcx-commodity-analysis/">MCX Commodity Analysis</a> · <a style="color:#2EECD4" href="/stock-chart-analysis/">Stock Chart Analysis</a> · <a style="color:#2EECD4" href="/trading-indicators/">Trading Indicators</a> · <a style="color:#2EECD4" href="/features/">Features</a> · <a style="color:#2EECD4" href="/pricing/">Pricing</a> · <a style="color:#2EECD4" href="/trust-accuracy/">Trust and Methodology</a> · <a style="color:#2EECD4" href="/learn/">Learn</a> · <a style="color:#2EECD4" href="/contact/">Contact</a></p></div></noscript>
 
 <nav>
   <div style="display:flex;align-items:center;gap:10px">
@@ -1249,7 +1332,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="hero-grid"></div>
     </div>
     <div class="hero-badge"><span class="hero-badge-dot"></span> Live NSE, BSE &amp; MCX data · 4 analysis engines · Real Upstox market feed</div>
-    <h1 class="hero-h1">India's <em>Computed-Analysis</em><br/>Stock Market Intelligence<br/>Platform</h1>
+    <h1 class="hero-h1"><em>AI-Powered</em> Stock Market Analysis<br/>for Indian Markets</h1>
     <p class="hero-sub">Live NSE, BSE &amp; MCX market data, professional TradingView charts, and computed market insights — all in one place. Sign in to unlock real-time analysis on 5,000+ stocks and commodities.</p>
     <div style="font-size:12px;color:var(--text3);max-width:620px;line-height:1.6;margin-bottom:20px">Educational &amp; informational analysis only — not SEBI-registered investment advice. Always consult a SEBI-registered investment adviser before making investment decisions. <span style="cursor:pointer;text-decoration:underline" onclick="show('terms')">Read our Terms</span>.</div>
     <div class="hero-btns">
@@ -1292,6 +1375,44 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="stat-cell"><div class="stat-num">5,000+</div><div class="stat-lbl">Stocks covered</div><div class="stat-chg">NSE &amp; BSE</div></div>
     <div class="stat-cell"><div class="stat-num">4</div><div class="stat-lbl">Plan tiers</div><div class="stat-chg">Free to Elite</div></div>
     <div class="stat-cell"><div class="stat-num">New</div><div class="stat-lbl">Now in early access</div><div class="stat-chg">Be among our first users</div></div>
+  </div>
+
+  <!-- LIVE AI ACCURACY -->
+  <div class="section" id="live-accuracy">
+    <div class="sec-eyebrow">Live accuracy</div>
+    <h2 class="sec-h2">TRADEMIND AI — LIVE AI ACCURACY</h2>
+    <p class="sec-sub" style="margin-bottom:28px">Track our AI analysis performance through verified market outcomes.</p>
+    <div class="la-wrap">
+      <div class="la-main">
+        <div class="la-top">
+          <div class="la-lbl">Overall accuracy</div>
+          <div class="la-status" id="la-status"><span class="la-dot"></span><span id="la-status-txt">Loading…</span></div>
+        </div>
+        <div class="la-big" id="la-overall">—</div>
+        <div class="la-note" id="la-sample">Loading verified accuracy statistics…</div>
+        <div class="la-chart" id="la-chart"></div>
+        <div class="la-chart-cap"><span id="la-chart-from"></span><span id="la-chart-to"></span></div>
+      </div>
+      <div class="la-side">
+        <div class="la-card"><div class="l">Today's accuracy</div><div class="v" id="la-today">—</div><div class="s" id="la-today-s">&nbsp;</div></div>
+        <div class="la-card"><div class="l">Today's change</div><div class="v" id="la-change">—</div><div class="s">percentage points</div></div>
+        <div class="la-card"><div class="l">Verified analyses</div><div class="v" id="la-verified">—</div><div class="s">total verified</div></div>
+        <div class="la-card"><div class="l">Pending</div><div class="v" id="la-pending">—</div><div class="s">awaiting outcome</div></div>
+        <div class="la-card la-goal">
+          <div class="l">Daily accuracy improvement goal</div>
+          <div class="la-goal-row"><span>Today's target <b id="la-target">—</b></span><span>Today <b id="la-goal-today">—</b></span></div>
+          <div class="progress-bar"><div class="progress-fill" id="la-goal-bar" style="width:0%;background:var(--teal);transition:width .6s"></div></div>
+          <div class="s" id="la-goal-note" style="margin-top:6px">Goal: +5 percentage points a day. A goal, not a guarantee.</div>
+        </div>
+        <div class="la-foot"><span id="la-updated">Last updated: —</span><a href="/trust-accuracy/" id="la-details">View Performance Details →</a></div>
+      </div>
+    </div>
+    <div class="la-cal" id="la-cal">
+      <div class="la-cal-h"><div class="t">Check accuracy for any date</div>
+        <input type="date" id="la-date" class="la-date" aria-label="Choose a date"></div>
+      <div class="la-pick" id="la-pick"></div>
+      <div class="la-note" style="margin-top:10px">Choose any date from TradeMind AI's launch up to today. Earlier and future dates are not available.</div>
+    </div>
   </div>
 
   <!-- FEATURES -->
@@ -1630,8 +1751,9 @@ img,svg,video,canvas,iframe{max-width:100%}
         <a class="footer-link" href="mailto:harishdewasi2009@gmail.com" style="text-decoration:none">Contact</a>
       </div>
     </div>
+    <div role="navigation" aria-label="Explore TradeMind AI" style="padding:0 0 18px;border-top:1px solid var(--border);padding-top:18px"><a href="/ai-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">AI Stock Analysis</a><a href="/technical-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Technical Analysis</a><a href="/nse-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">NSE Stock Analysis</a><a href="/bse-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">BSE Stock Analysis</a><a href="/nifty-50-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">NIFTY 50 Analysis</a><a href="/stock-market-screener/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Stock Market Screener</a><a href="/mcx-commodity-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">MCX Commodity Analysis</a><a href="/stock-chart-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Stock Chart Analysis</a><a href="/trading-indicators/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Trading Indicators</a><a href="/features/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Features</a><a href="/pricing/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Pricing</a><a href="/trust-accuracy/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Trust and Methodology</a><a href="/learn/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Learn</a><a href="/contact/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Contact</a></div>
     <div class="footer-bottom">
-      <div class="footer-disclaimer">© 2025 TradeMind AI · Not SEBI registered · Computed analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
+      <div class="footer-disclaimer">© 2026 TradeMind AI · Not SEBI registered · Computed analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
       <div class="social-links">
         <a class="social-link" href="https://instagram.com/_trademind.ai" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
         <a class="social-link" href="https://www.linkedin.com/in/harish-dewasi-98a75a367?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener" aria-label="LinkedIn"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11v5"/><path d="M8 8v.01"/><path d="M12 16v-5"/><path d="M16 16v-3a2 2 0 1 0 -4 0"/><path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4l0 -10"/></svg></a>
@@ -1665,7 +1787,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <div class="inp-group" style="margin-bottom:16px">
           <label class="inp-lbl">Search stock</label>
           <div style="position:relative;margin-bottom:0">
-            <input class="tm-inp" id="analysis-search-inp" placeholder="Search any NSE, BSE stock, or MCX commodity (e.g. RELIANCE, TATASTEEL, GOLD)…" style="width:100%;height:44px;padding-left:40px" value="" autocomplete="off"
+            <input class="tm-inp" id="analysis-search-inp" placeholder="Search a stock or commodity — e.g. RELIANCE, TATA STEEL, GOLD" style="width:100%;height:44px;padding-left:40px" value="" autocomplete="off"
               oninput="onGenericStockSearchInput('analysis-search-inp',this.value)"
               onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('analysis-search-inp-dropdown').style.display='none';}"/>
             <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
@@ -1678,7 +1800,7 @@ img,svg,video,canvas,iframe{max-width:100%}
           <div class="inp-group" style="grid-column:1/-1">
             <label class="inp-lbl">Search 2nd stock to compare</label>
             <div style="position:relative;margin-bottom:0">
-              <input class="tm-inp" id="analysis-search-inp2" placeholder="Search any NSE, BSE stock, or MCX commodity (e.g. TCS, INFY, GOLD)…" style="width:100%;height:44px;padding-left:40px" value="" autocomplete="off"
+              <input class="tm-inp" id="analysis-search-inp2" placeholder="Search a stock or commodity — e.g. TCS, INFOSYS, GOLD" style="width:100%;height:44px;padding-left:40px" value="" autocomplete="off"
                 oninput="onGenericStockSearchInput('analysis-search-inp2',this.value)"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('analysis-search-inp2-dropdown').style.display='none';}"/>
               <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
@@ -1770,7 +1892,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <p class="sec-sub">Curated picks below are updated with computed signals. Use the search box to look up live price data for any of the 5,000+ NSE and BSE listed stocks, or MCX commodity futures.</p>
     <div id="screener-trial-banner" style="display:none"></div>
     <div style="position:relative;margin-bottom:16px">
-      <input class="tm-inp" id="screener-search-inp" placeholder="Search any NSE, BSE stock, or MCX commodity (e.g. RELIANCE, TATASTEEL, GOLD)…" style="width:100%;height:44px;padding-left:40px" oninput="onScreenerSearchInput(this.value)"/>
+      <input class="tm-inp" id="screener-search-inp" placeholder="Search a stock or commodity — e.g. RELIANCE, TATA STEEL, GOLD" style="width:100%;height:44px;padding-left:40px" oninput="onScreenerSearchInput(this.value)"/>
       <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
       <div id="screener-search-dropdown" style="display:none;position:absolute;top:48px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:20;max-height:320px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
     </div>
@@ -1857,7 +1979,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <div class="inp-row" style="margin-bottom:8px;max-width:520px;position:relative">
       <div class="inp-group" style="position:relative">
         <label class="inp-lbl">Or search any NSE/BSE stock or MCX commodity</label>
-        <input class="tm-inp" id="chart-sym-inp" value="RELIANCE" placeholder="e.g. RELIANCE, TATASTEEL, 500325…" autocomplete="off" oninput="onChartSearchInput(this.value)" onkeydown="if(event.key==='Enter')loadChartSymbol()"/>
+        <input class="tm-inp" id="chart-sym-inp" value="RELIANCE" placeholder="Search e.g. RELIANCE, GOLD" autocomplete="off" oninput="onChartSearchInput(this.value)" onkeydown="if(event.key==='Enter')loadChartSymbol()"/>
         <div id="chart-search-dropdown" style="display:none;position:absolute;top:68px;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);z-index:20;max-height:280px;overflow-y:auto;box-shadow:0 12px 32px rgba(0,0,0,.35)"></div>
       </div>
       <div class="inp-group" style="justify-content:flex-end;display:flex;align-items:flex-end">
@@ -1981,7 +2103,7 @@ img,svg,video,canvas,iframe{max-width:100%}
       <div class="inp-group">
         <label class="inp-lbl">Stock / Index</label>
         <div style="position:relative;margin-bottom:0">
-          <input class="tm-inp" id="bt-sym" placeholder="Search any NSE, BSE stock, or MCX commodity…" style="width:100%;height:44px;padding-left:40px" value="RELIANCE" autocomplete="off"
+          <input class="tm-inp" id="bt-sym" placeholder="Search a stock or commodity — e.g. RELIANCE, GOLD" style="width:100%;height:44px;padding-left:40px" value="RELIANCE" autocomplete="off"
             oninput="onGenericStockSearchInput('bt-sym',this.value)"
             onkeydown="if(event.key==='Enter'){event.preventDefault();runBacktest(this.value);document.getElementById('bt-sym-dropdown').style.display='none';}"/>
           <i class="ti ti-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3)"></i>
@@ -2787,6 +2909,113 @@ function isPlaceholder(v){ return !v || v.includes('YOUR_') || v.includes('YOUR-
 //     apiFetch below uses this to tell a genuine cold-start timeout (worth
 //     retrying with more patience) apart from a repeat/real failure.
 let backendWarm=false;
+
+// ── Homepage: live verified AI accuracy (public, read-only) ─────────────
+// Source: GET /api/market/public-accuracy — aggregates of predictions that
+// were checked against real prices. Nothing here is computed client-side
+// beyond formatting; unavailable data is shown as such, never as 0%.
+(function(){
+  const $=id=>document.getElementById(id);
+  const fmtPct=v=>v==null?'—':v.toFixed(2)+'%';
+  const fmtPP=v=>v==null?'—':(v>0?'+':'')+v.toFixed(2);
+  const fmtDay=d=>{try{return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}catch(e){return d}};
+  function setStatus(cls,txt){const e=$('la-status');if(!e)return;e.className='la-status '+cls;$('la-status-txt').textContent=txt;}
+  function set(id,v){const e=$(id);if(e&&e.textContent!==v){e.style.opacity=.3;e.textContent=v;requestAnimationFrame(()=>{e.style.opacity=1;});}}
+  function count(id,to,suffix){const e=$(id);if(!e)return;const from=0,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/700);e.textContent=(from+(to-from)*k).toFixed(2)+(suffix||'');if(k<1)requestAnimationFrame(f);else e.textContent=to.toFixed(2)+(suffix||'');})(t0);}
+  let shown=false;
+
+  function chart(daily){
+    const box=$('la-chart');if(!box)return;
+    // Only days from the launch date forward; one point per calendar day.
+    const pts=daily.map((d,i)=>({i,a:d.accuracy,d:d.date}));
+    const have=pts.filter(p=>p.a!=null);
+    $('la-chart-from').textContent=fmtDay(daily[0].date);
+    $('la-chart-to').textContent=fmtDay(daily[daily.length-1].date);
+    if(!have.length){box.innerHTML='<div class="la-note" style="padding-top:40px;text-align:center">Daily trend appears once outcomes are verified.</div>';return;}
+    const W=600,H=120,pad=8,n=Math.max(daily.length-1,1);
+    const x=i=>pad+(W-2*pad)*(daily.length===1?0.5:i/n);
+    const y=a=>H-pad-(H-2*pad)*(a/100);
+    let path='',pen=false;
+    pts.forEach(p=>{if(p.a==null){pen=false;return;}path+=(pen?'L':'M')+x(p.i).toFixed(1)+' '+y(p.a).toFixed(1)+' ';pen=true;});
+    const dots=have.map(p=>`<circle cx="${x(p.i).toFixed(1)}" cy="${y(p.a).toFixed(1)}" r="3" fill="var(--teal)"><title>${fmtDay(p.d)}: ${p.a.toFixed(2)}%</title></circle>`).join('');
+    box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Daily verified accuracy since launch"><line x1="0" x2="${W}" y1="${y(50)}" y2="${y(50)}" stroke="var(--border2)" stroke-dasharray="3 4"/><path d="${path}" fill="none" stroke="var(--teal)" stroke-width="2" vector-effect="non-scaling-stroke"/>${dots}</svg>`;
+  }
+
+
+  // Calendar: launch month → current month only. Days before launch and
+  // days after today are not shown. Data comes from d.daily (server).
+  let calData=null,calSel=null;
+  function renderCal(){
+    if(!calData)return;
+    const inp=$('la-date'),start=calData.startDate,today=calData.today;
+    inp.min=start;inp.max=today;
+    if(!calSel||calSel<start||calSel>today)calSel=today;
+    inp.value=calSel;
+    const r=(calData.daily||[]).find(x=>x.date===calSel);
+    const has=r&&r.accuracy!=null;
+    const label=new Date(calSel+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    $('la-pick').innerHTML=has
+      ?`<div class="la-card"><div class="l">Date</div><div class="v" style="font-size:16px">${label}</div></div><div class="la-card"><div class="l">Accuracy that day</div><div class="v">${r.accuracy.toFixed(2)}%</div></div><div class="la-card"><div class="l">Verified analyses</div><div class="v">${r.verified}</div></div>`
+      :`<div class="la-card" style="grid-column:1/-1"><div class="l">${label}</div><div class="v" style="font-size:16px">${calSel===today?'Open — outcomes are still being verified today':'No verified outcomes for this date'}</div></div>`;
+  }
+  document.addEventListener('change',e=>{if(e.target&&e.target.id==='la-date'){calSel=e.target.value||null;renderCal();}});
+
+  function render(d){
+    calData={startDate:d.startDate,today:d.today,daily:d.daily||[]};renderCal();
+    if(!d.available){
+      set('la-overall','—');
+      $('la-sample').textContent='Accuracy data is being collected';
+      ['la-today','la-change','la-verified','la-pending','la-target','la-goal-today'].forEach(i=>set(i,'—'));
+      $('la-goal-bar').style.width='0%';
+      $('la-goal-note').textContent='Goal starts once a day of verified results exists.';
+      setStatus('', 'Collecting data');
+      chart(d.daily&&d.daily.length?d.daily:[{date:d.today,accuracy:null}]);
+      $('la-updated').textContent='Last updated: '+new Date(d.generatedAt).toLocaleString('en-IN');
+      return;
+    }
+    const big=$('la-overall');
+    if(!shown){big.innerHTML='';const sp=document.createElement('span');sp.id='la-overall-n';big.appendChild(sp);const sm=document.createElement('small');sm.textContent='%';big.appendChild(sm);count('la-overall-n',d.overall.accuracy);shown=true;}
+    else{$('la-overall-n').textContent=d.overall.accuracy.toFixed(2);}
+    $('la-sample').textContent='Based on '+d.overall.verified.toLocaleString('en-IN')+' verified analyses since '+fmtDay(d.startDate)+' (launch).';
+    set('la-today',fmtPct(d.todayStats.accuracy));
+    $('la-today-s').textContent=d.todayStats.verified?d.todayStats.verified+' verified today':'No outcomes verified yet today';
+    const ch=$('la-change');set('la-change',fmtPP(d.todayStats.changePp));ch.className='v'+(d.todayStats.changePp>0?' la-up':d.todayStats.changePp<0?' la-down':'');
+    set('la-verified',d.overall.verified.toLocaleString('en-IN'));
+    set('la-pending',d.pending.toLocaleString('en-IN'));
+    const g=d.goal;
+    if(g.available){
+      set('la-target',fmtPct(g.targetAccuracy));set('la-goal-today',fmtPct(g.todayAccuracy));
+      $('la-goal-bar').style.width=(g.progressPct||0)+'%';
+      $('la-goal-note').textContent=g.progressPct==null?'Waiting for today\'s first verified outcome.':'Progress: '+g.progressPct.toFixed(0)+'% of the +5 pp daily goal. A goal, not a guarantee.';
+    }else{
+      set('la-target','—');set('la-goal-today',fmtPct(d.todayStats.accuracy));$('la-goal-bar').style.width='0%';
+      $('la-goal-note').textContent='Goal begins after the first full verified day.';
+    }
+    chart(d.daily);
+    if(d.stale)setStatus('stale','Delayed — no new outcomes recently');else setStatus('live','Live · verified outcomes');
+    $('la-updated').textContent='Last updated: '+new Date(d.lastVerifiedAt||d.generatedAt).toLocaleString('en-IN');
+  }
+
+  async function load(){
+    if(typeof isPlaceholder==='function'&&isPlaceholder(APP_CONFIG.API_BASE_URL))return;
+    try{
+      const r=await fetch(APP_CONFIG.API_BASE_URL+'/api/market/public-accuracy');
+      if(!r.ok)throw new Error('http '+r.status);
+      render(await r.json());
+    }catch(e){
+      if(!shown){setStatus('err','Unavailable');$('la-sample').textContent='Accuracy statistics are temporarily unavailable.';}
+      else setStatus('stale','Showing last known values — not live');
+    }
+  }
+  function initCal(){
+    if(!calData){const t=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());calData={startDate:'2026-08-16',today:t,daily:[]};}
+    renderCal();
+  }
+  function boot(){initCal();load();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  setInterval(()=>{if(!document.hidden)load();},60000);
+})();
+
 if(!isPlaceholder(APP_CONFIG.API_BASE_URL)){
   fetch(APP_CONFIG.API_BASE_URL+'/health').then(()=>{backendWarm=true;}).catch(()=>{});
 }
@@ -3095,6 +3324,19 @@ async function submitResetPassword(){
 
 /** If the page loaded from a password-reset email link (?resetToken=...#reset-password),
  *  jump straight to the reset form instead of the normal login form. */
+/** Landing pages link into the app with /?page=<id>. Only whitelisted page ids are honoured. */
+function handleDeepLink(){
+  try{
+    if(new URLSearchParams(window.location.search).get('resetToken'))return;
+    const target=new URLSearchParams(window.location.search).get('page');
+    const allowed=['analysis','charts','screener','options','pricing','dashboard','login','backtest'];
+    if(target&&allowed.includes(target)&&document.getElementById('page-'+target)){
+      show(target);
+      history.replaceState(null,'',window.location.pathname);
+    }
+  }catch(e){}
+}
+
 function checkForPasswordResetLink(){
   const params=new URLSearchParams(window.location.search);
   const token=params.get('resetToken');
@@ -3289,7 +3531,7 @@ function animateCount(el,target,opts={}){
 // the "Real Upstox Account" portfolio feature (see the note near the old
 // broker-sync functions further down).
 
-window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); initScrollReveal(); initRippleEffect(); });
+window.addEventListener('load',async ()=>{ if(typeof refreshModelChipLocks==='function')refreshModelChipLocks(); initGoogleSignIn(); await tryRestoreSession(); checkForPasswordResetLink(); handleDeepLink(); initScrollReveal(); initRippleEffect(); });
 
 // FIX (part of the "signed out after ~30 min" issue): mobile browsers —
 // especially in-app webviews like Instagram's — routinely suspend or fully
@@ -4949,47 +5191,6 @@ function setScreenerExchange(ex){
 // ══════════════ SCREENER SEARCH (all 5,000+ NSE + BSE stocks) ══════════════
 // Complements the paginated browser above with instant symbol lookup —
 // hits the backend's /api/market/search (NSE checked first, then BSE).
-let screenerSearchDebounce=null;
-function onScreenerSearchInput(val){
-  clearTimeout(screenerSearchDebounce);
-  const dropdown=document.getElementById('screener-search-dropdown');
-  if(!val||val.trim().length<1){ if(dropdown)dropdown.style.display='none'; return; }
-  screenerSearchDebounce=setTimeout(()=>runScreenerSearch(val.trim()),300);
-}
-
-async function runScreenerSearch(q){
-  const dropdown=document.getElementById('screener-search-dropdown');
-  if(!dropdown)return;
-  dropdown.style.display='block';
-  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE + MCX…</div>`;
-  try{
-    const res=await apiFetch('/api/market/search?q='+encodeURIComponent(q),{cache:'no-store'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const {results}=await res.json();
-    if(!results||!results.length){
-      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE, BSE, or MCX for "${q}".</div>`;
-      return;
-    }
-    // Fetch live prices for the matches in one batched call so the
-    // dropdown shows real numbers, not just names. FIX: pass the full
-    // result (with exchange) and look up via quoteKey() — otherwise the
-    // same trading symbol appearing once for NSE and once for BSE in the
-    // results list showed the identical NSE-default price under both.
-    const quotes=await fetchBackendQuotesBatch(results).catch(()=>({}));
-    dropdown.innerHTML=results.map(r=>{
-      const q2=quotes[quoteKey(r.symbol,r.exchange)];
-      const priceHtml=q2?`<span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:${q2.up?'var(--green2)':'var(--rose2)'}">₹${fmtINR(q2.price)}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>';
-      const exLabel=exchangeLabel(r.exchange);
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="openStockDetail('${r.symbol}','${r.exchange}','${(r.name||'').replace(/'/g,"\\'")}')">
-        <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
-        ${priceHtml}
-      </div>`;
-    }).join('');
-  }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
-  }
-}
-
 function selectScreenerSearchResult(sym,name){
   document.getElementById('screener-search-dropdown').style.display='none';
   document.getElementById('screener-search-inp').value=sym;
@@ -5036,42 +5237,222 @@ function registerStockSearch(inputId,onSelect){ genericStockSearchHandlers[input
 // them to exist, they're just there in the DOM from page load like the
 // Portfolio/Watchlist/Scanner/Indicators search bars already were.
 
-let genericSearchDebounce=null;
-function onGenericStockSearchInput(inputId,val){
-  clearTimeout(genericSearchDebounce);
-  const dropdown=document.getElementById(inputId+'-dropdown');
-  if(!val||val.trim().length<1){ if(dropdown)dropdown.style.display='none'; return; }
-  genericSearchDebounce=setTimeout(()=>runGenericStockSearch(inputId,val.trim()),300);
-}
+// ══════════════ SHARED SEARCH ENGINE ══════════════
+// One implementation behind every stock-search box (Analysis, Backtest,
+// Screener, Charts, Options, Watchlist, Portfolio, Scanner, Indicators).
+// Features: 200 ms debounce, in-flight request cancellation, 60 s result
+// cache, exchange filter chips, recent searches (clearable), keyboard
+// navigation (↑ ↓ Enter Esc), ARIA combobox semantics, loading / empty /
+// error states with retry. The backend (/api/market/search) does the
+// ranking, typo tolerance and rate limiting. Prices in the dropdown only
+// appear when the quote API returned one — nothing is ever invented.
+const TM_SEARCH_CFG={
+  'screener-search-inp':{dd:'screener-search-dropdown',kind:'all',quotes:true,pick:r=>openStockDetail(r.symbol,r.exchange,r.name||'')},
+  'chart-sym-inp':{dd:'chart-search-dropdown',kind:'all',quotes:false,pick:r=>selectChartSearchResult(r.symbol,r.exchange)},
+  'opt-underlying-search':{dd:'opt-underlying-dropdown',kind:'fno',quotes:false,pick:r=>selectOptUnderlying(r.symbol)},
+};
+const TM_SEARCH_EXCHANGES=[[null,'All'],['NSE_EQ','NSE'],['BSE_EQ','BSE'],['MCX_FO','MCX']];
+const tmSearchState={};      // inputId -> {q,exchange,results,active,ctrl,timer,seq}
+const tmSearchCache=new Map(); // "kind|exchange|QUERY" -> {at,results}
+const TM_SEARCH_TTL=60000, TM_SEARCH_CACHE_MAX=200;
 
-async function runGenericStockSearch(inputId,q){
-  const dropdown=document.getElementById(inputId+'-dropdown');
-  if(!dropdown)return;
-  dropdown.style.display='block';
-  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE + MCX…</div>`;
+function tmSearchCfg(id){
+  if(TM_SEARCH_CFG[id])return TM_SEARCH_CFG[id];
+  if(document.getElementById(id+'-dropdown'))return {dd:id+'-dropdown',kind:'all',quotes:true,pick:r=>selectGenericStockSearchResult(id,r.symbol,r.name||'',r.exchange)};
+  return null;
+}
+function tmEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// Trim, collapse spaces, drop characters the API would reject, cap at 40.
+function tmNormQuery(q){return String(q||'').replace(/[^A-Za-z0-9&_.\- ]/g,' ').replace(/\s+/g,' ').trim().slice(0,40);}
+
+// ── recent searches (localStorage, fully optional) ──
+function tmRecentGet(kind){try{const v=JSON.parse(localStorage.getItem('tm_recent_'+kind)||'[]');return Array.isArray(v)?v.slice(0,6):[];}catch(e){return [];}}
+function tmRecentAdd(kind,r){
   try{
-    const res=await apiFetch('/api/market/search?q='+encodeURIComponent(q),{cache:'no-store'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const {results}=await res.json();
-    if(!results||!results.length){
-      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE, BSE, or MCX for "${q}".</div>`;
+    const list=tmRecentGet(kind).filter(x=>!(x.symbol===r.symbol&&x.exchange===r.exchange));
+    list.unshift({symbol:r.symbol,exchange:r.exchange,name:r.name||'',instrumentType:r.instrumentType||''});
+    localStorage.setItem('tm_recent_'+kind,JSON.stringify(list.slice(0,6)));
+  }catch(e){}
+}
+function tmRecentClear(kind){try{localStorage.removeItem('tm_recent_'+kind);}catch(e){}}
+
+function tmSearchSetup(id){
+  const cfg=tmSearchCfg(id);if(!cfg)return null;
+  const input=document.getElementById(id),dd=document.getElementById(cfg.dd);
+  if(!input||!dd)return null;
+  if(!tmSearchState[id])tmSearchState[id]={q:'',exchange:null,results:[],active:-1,ctrl:null,timer:null,seq:0,mode:'closed'};
+  if(!input.dataset.tmSearch){
+    input.dataset.tmSearch='1';
+    input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');
+    input.setAttribute('aria-expanded','false');input.setAttribute('aria-controls',cfg.dd);
+    dd.setAttribute('role','listbox');dd.setAttribute('aria-live','polite');
+    // mousedown (not click) so the input never loses focus before a pick registers
+    dd.addEventListener('mousedown',e=>{
+      const st=tmSearchState[id];
+      const row=e.target.closest('[data-i]'),chip=e.target.closest('[data-ex]'),clr=e.target.closest('[data-clear]'),retry=e.target.closest('[data-retry]');
+      if(!row&&!chip&&!clr&&!retry)return;
+      e.preventDefault();
+      if(row)tmSearchPick(id,Number(row.dataset.i));
+      else if(chip){st.exchange=chip.dataset.ex||null;tmSearchRun(id);}
+      else if(clr){tmRecentClear(cfg.kind);tmSearchClose(id);}
+      else if(retry)tmSearchRun(id);
+    });
+    dd.addEventListener('mousemove',e=>{
+      const row=e.target.closest('[data-i]');if(!row)return;
+      const st=tmSearchState[id];const i=Number(row.dataset.i);
+      if(st.active!==i){st.active=i;tmSearchHighlight(id);}
+    });
+  }
+  return {cfg,input,dd,st:tmSearchState[id]};
+}
+function tmSearchClose(id){
+  const cfg=tmSearchCfg(id);if(!cfg)return;
+  const input=document.getElementById(id),dd=document.getElementById(cfg.dd);
+  const st=tmSearchState[id];
+  if(st){clearTimeout(st.timer);st.mode='closed';st.active=-1;if(st.ctrl){try{st.ctrl.abort();}catch(e){}st.ctrl=null;}}
+  if(dd)dd.style.display='none';
+  if(input){input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');}
+}
+function tmSearchInput(id,val){
+  const s=tmSearchSetup(id);if(!s)return;
+  const q=tmNormQuery(val);
+  clearTimeout(s.st.timer);
+  if(!q){s.st.q='';s.st.results=[];tmSearchShowRecent(id);return;}
+  s.st.q=q;
+  s.st.timer=setTimeout(()=>tmSearchRun(id),200);
+}
+function tmSearchShowRecent(id){
+  const s=tmSearchSetup(id);if(!s)return;
+  if(s.st.ctrl){try{s.st.ctrl.abort();}catch(e){}s.st.ctrl=null;}
+  const recent=tmRecentGet(s.cfg.kind);
+  if(!recent.length){tmSearchClose(id);return;}
+  s.st.results=recent;s.st.active=-1;s.st.mode='recent';
+  const rows=recent.map((r,i)=>tmSearchRowHtml(id,r,i)).join('');
+  s.dd.innerHTML=`<div class="tm-sr-head"><span>Recent searches</span><button type="button" data-clear="1" class="tm-sr-link">Clear</button></div>${rows}`;
+  tmSearchOpen(id);
+}
+function tmSearchOpen(id){
+  const cfg=tmSearchCfg(id);const input=document.getElementById(id),dd=document.getElementById(cfg.dd);
+  dd.style.display='block';input.setAttribute('aria-expanded','true');
+}
+function tmChipsHtml(st){
+  return `<div class="tm-sr-chips" role="group" aria-label="Filter by exchange">${TM_SEARCH_EXCHANGES.map(([v,l])=>`<button type="button" class="tm-sr-chip${(st.exchange||null)===v?' on':''}" data-ex="${v||''}">${l}</button>`).join('')}</div>`;
+}
+function tmSearchRowHtml(id,r,i){
+  const typ=r.instrumentType?`<span class="tm-sr-type">${tmEsc(r.instrumentType)}</span>`:'';
+  return `<div class="tm-sr-row" role="option" id="${id}-opt-${i}" aria-selected="false" data-i="${i}">
+    <div class="tm-sr-main"><span class="tm-sr-sym">${tmEsc(r.symbol)}</span><span class="tm-sr-badge tm-sr-ex-${tmEsc((r.exchange||'').slice(0,3))}">${tmEsc(exchangeLabel(r.exchange))}</span>${typ}<div class="tm-sr-name">${tmEsc(r.name||'')}${r.matchType==='similar'?' · closest match':''}</div></div>
+    <span class="tm-sr-price" data-price="${i}"></span></div>`;
+}
+function tmSearchHighlight(id){
+  const cfg=tmSearchCfg(id);const dd=document.getElementById(cfg.dd),input=document.getElementById(id),st=tmSearchState[id];
+  dd.querySelectorAll('.tm-sr-row').forEach((el,i)=>{
+    const on=i===st.active;el.classList.toggle('active',on);el.setAttribute('aria-selected',on?'true':'false');
+    if(on){input.setAttribute('aria-activedescendant',el.id);el.scrollIntoView({block:'nearest'});}
+  });
+  if(st.active<0)input.removeAttribute('aria-activedescendant');
+}
+async function tmSearchRun(id){
+  const s=tmSearchSetup(id);if(!s)return;
+  const {cfg,dd,st}=s;
+  const q=st.q;if(!q)return;
+  const seq=++st.seq;
+  if(st.ctrl){try{st.ctrl.abort();}catch(e){}}
+  const key=`${cfg.kind}|${st.exchange||'*'}|${q.toUpperCase()}`;
+  const hit=tmSearchCache.get(key);
+  let results;
+  if(hit&&Date.now()-hit.at<TM_SEARCH_TTL){results=hit.results;}
+  else{
+    st.mode='loading';
+    dd.innerHTML=`${tmChipsHtml(st)}<div class="tm-sr-msg"><span class="tm-sr-spin"></span>Searching…</div>`;
+    tmSearchOpen(id);
+    const ctrl=new AbortController();st.ctrl=ctrl;
+    const signal=(typeof AbortSignal!=='undefined'&&AbortSignal.any&&AbortSignal.timeout)?AbortSignal.any([ctrl.signal,AbortSignal.timeout(20000)]):ctrl.signal;
+    try{
+      const path=(cfg.kind==='fno'?'/api/market/search-fno':'/api/market/search')+'?q='+encodeURIComponent(q)+(st.exchange?'&exchange='+st.exchange:'');
+      const res=await apiFetch(path,{cache:'no-store',signal});
+      if(res.status===429)throw new Error('rate');
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      results=(await res.json()).results||[];
+      if(results.length){
+        if(tmSearchCache.size>=TM_SEARCH_CACHE_MAX)tmSearchCache.delete(tmSearchCache.keys().next().value);
+        tmSearchCache.set(key,{at:Date.now(),results});
+      }
+    }catch(e){
+      if(seq!==st.seq||st.mode==='closed')return; // superseded or closed — stay silent
+      st.mode='error';
+      const msg=e.message==='rate'?'Too many searches — wait a few seconds and try again.':'Search is temporarily unavailable.';
+      dd.innerHTML=`${tmChipsHtml(st)}<div class="tm-sr-msg tm-sr-err">${msg} <button type="button" data-retry="1" class="tm-sr-link">Retry</button></div>`;
       return;
     }
-    // Same NSE/BSE-collision fix as the Screener search dropdown above.
-    const quotes=await fetchBackendQuotesBatch(results).catch(()=>({}));
-    dropdown.innerHTML=results.map(r=>{
-      const q2=quotes[quoteKey(r.symbol,r.exchange)];
-      const priceHtml=q2?`<span style="font-family:'JetBrains Mono';font-size:12px;font-weight:600;color:${q2.up?'var(--green2)':'var(--rose2)'}">₹${fmtINR(q2.price)}</span>`:'<span style="font-size:11px;color:var(--text3)">—</span>';
-      const exLabel=exchangeLabel(r.exchange);
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectGenericStockSearchResult('${inputId}','${r.symbol}','${(r.name||'').replace(/'/g,"\\'")}','${r.exchange}')">
-        <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
-        ${priceHtml}
-      </div>`;
-    }).join('');
-  }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
+    if(seq!==st.seq)return;
+  }
+  st.ctrl=null;st.results=results;st.active=results.length?0:-1;
+  if(!results.length){
+    st.mode='empty';
+    const hint=cfg.kind==='fno'?'Options exist only for a subset of stocks and commodities.':'Try the company name or trading symbol, check the spelling, or switch the exchange filter.';
+    dd.innerHTML=`${tmChipsHtml(st)}<div class="tm-sr-msg">No match for “${tmEsc(q)}”${st.exchange?' on '+exchangeLabel(st.exchange):' on NSE, BSE or MCX'}. ${hint}</div>`;
+    return;
+  }
+  st.mode='results';
+  dd.innerHTML=tmChipsHtml(st)+results.map((r,i)=>tmSearchRowHtml(id,r,i)).join('');
+  tmSearchOpen(id);tmSearchHighlight(id);
+  if(cfg.quotes){
+    const top=results.slice(0,10);
+    fetchBackendQuotesBatch(top).then(quotes=>{
+      if(seq!==st.seq||st.mode!=='results')return;
+      const closed=(typeof globalMarketOpen!=='undefined'&&globalMarketOpen===false);
+      top.forEach((r,i)=>{
+        const q2=quotes[quoteKey(r.symbol,r.exchange)];const el=dd.querySelector(`[data-price="${i}"]`);
+        if(!q2||!el)return;
+        el.innerHTML=`<span style="color:${q2.up?'var(--green2)':'var(--rose2)'}">₹${fmtINR(q2.price)}</span>${closed?'<small>last close</small>':''}`;
+      });
+    }).catch(()=>{});
   }
 }
+function tmSearchPick(id,i){
+  const s=tmSearchSetup(id);if(!s)return;
+  const r=s.st.results[i];if(!r)return;
+  tmRecentAdd(s.cfg.kind,r);
+  tmSearchClose(id);
+  s.cfg.pick(r);
+}
+// Keyboard: capture phase so a highlighted suggestion wins over the page's own Enter handler.
+document.addEventListener('keydown',e=>{
+  const id=e.target&&e.target.id;if(!id||!e.target.dataset||!e.target.dataset.tmSearch)return;
+  const st=tmSearchState[id];if(!st||st.mode==='closed')return;
+  const n=st.results.length;
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    if(!n||(st.mode!=='results'&&st.mode!=='recent'))return;
+    e.preventDefault();
+    st.active=e.key==='ArrowDown'?(st.active+1)%n:(st.active<=0?n-1:st.active-1);
+    tmSearchHighlight(id);
+  }else if(e.key==='Enter'&&st.active>=0&&(st.mode==='results'||st.mode==='recent')){
+    e.preventDefault();e.stopImmediatePropagation();tmSearchPick(id,st.active);
+  }else if(e.key==='Escape'||e.key==='Tab'){
+    tmSearchClose(id);
+  }
+},true);
+// Show recent searches when an empty, registered box gains focus.
+document.addEventListener('focusin',e=>{
+  const el=e.target;if(!el||el.tagName!=='INPUT'||!el.id)return;
+  if(!tmSearchCfg(el.id))return;
+  if(!el.value.trim()){const s=tmSearchSetup(el.id);if(s)tmSearchShowRecent(el.id);}
+});
+// Click outside closes every open search dropdown.
+document.addEventListener('click',e=>{
+  Object.keys(tmSearchState).forEach(id=>{
+    const cfg=tmSearchCfg(id);if(!cfg)return;
+    const dd=document.getElementById(cfg.dd),input=document.getElementById(id);
+    if(dd&&input&&dd.style.display!=='none'&&!dd.contains(e.target)&&e.target!==input)tmSearchClose(id);
+  });
+});
+
+// Thin wrappers keep every existing inline oninput="…" attribute working.
+function onScreenerSearchInput(val){tmSearchInput('screener-search-inp',val);}
+function onGenericStockSearchInput(inputId,val){tmSearchInput(inputId,val);}
+function onChartSearchInput(val){tmSearchInput('chart-sym-inp',val);}
+function onOptUnderlyingSearchInput(val){tmSearchInput('opt-underlying-search',val);}
 
 function selectGenericStockSearchResult(inputId,sym,name,exchange){
   const dropdown=document.getElementById(inputId+'-dropdown');
@@ -5351,7 +5732,7 @@ function renderDashboard(section){
     el.innerHTML=`
       <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text);margin-bottom:6px">Live Market Scanner</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Real Upstox candles — pick how much of the NSE + BSE + MCX universe to scan, then pick a scan type below. Or search any stock to see its full breakout-scanner breakdown across every scan type.</div>
-      ${stockSearchBarHtml('scanner-search-inp','Search any NSE, BSE stock, or MCX commodity (e.g. RELIANCE, TATASTEEL, GOLD)…')}
+      ${stockSearchBarHtml('scanner-search-inp','Search a stock or commodity — e.g. RELIANCE, TATA STEEL, GOLD')}
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span class="ind-chip sel" id="scan-uni-30" onclick="setScanUniverse('curated30',this)">Curated 30 (fastest)</span>
         <span class="ind-chip" id="scan-uni-nse" onclick="setScanUniverse('NSE_EQ',this)">NSE — top 150</span>
@@ -5380,7 +5761,7 @@ function renderDashboard(section){
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:12px;flex-wrap:wrap">
         <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--text)">Technical Indicators</div>
         <div style="display:flex;gap:8px;align-items:center">
-          ${stockSearchBarHtml('ind-sym-inp','Search any NSE, BSE stock, or MCX commodity…',{value:'RELIANCE',height:'36px',wrapStyle:'width:220px',inputStyle:'font-size:12px',onEnter:'renderIndicatorsPanel'})}
+          ${stockSearchBarHtml('ind-sym-inp','Search a stock or commodity — e.g. RELIANCE, GOLD',{value:'RELIANCE',height:'36px',wrapStyle:'width:220px',inputStyle:'font-size:12px',onEnter:'renderIndicatorsPanel'})}
           <button class="btn-sm btn-sm-primary" onclick="renderIndicatorsPanel()"><i class="ti ti-refresh"></i> Run</button>
         </div>
       </div>
@@ -8310,36 +8691,6 @@ function loadChartIndex(indexName,el){
 }
 
 // ── Charts page symbol search (mirrors the Screener search UX) ──
-let chartSearchDebounce=null;
-function onChartSearchInput(val){
-  clearTimeout(chartSearchDebounce);
-  const dropdown=document.getElementById('chart-search-dropdown');
-  if(!val||val.trim().length<1){ if(dropdown)dropdown.style.display='none'; return; }
-  chartSearchDebounce=setTimeout(()=>runChartSearch(val.trim()),300);
-}
-async function runChartSearch(q){
-  const dropdown=document.getElementById('chart-search-dropdown');
-  if(!dropdown)return;
-  dropdown.style.display='block';
-  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching NSE + BSE + MCX…</div>`;
-  try{
-    const res=await apiFetch('/api/market/search?q='+encodeURIComponent(q),{cache:'no-store'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const {results}=await res.json();
-    if(!results||!results.length){
-      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No matches on NSE, BSE, or MCX for "${q}".</div>`;
-      return;
-    }
-    dropdown.innerHTML=results.map(r=>{
-      const exLabel=exchangeLabel(r.exchange);
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectChartSearchResult('${r.symbol}','${r.exchange}')">
-        <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
-      </div>`;
-    }).join('');
-  }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
-  }
-}
 function selectChartSearchResult(sym,exchange){
   document.getElementById('chart-search-dropdown').style.display='none';
   document.getElementById('chart-sym-inp').value=sym;
@@ -8930,42 +9281,6 @@ function selectOptUnderlying(sym,el){
 // actually have a listed options segment (backend derives this from
 // Upstox's own instrument master), so this never suggests a stock with
 // no option chain the way the general Screener/Charts search does.
-let optUnderlyingSearchDebounce=null;
-function onOptUnderlyingSearchInput(val){
-  clearTimeout(optUnderlyingSearchDebounce);
-  const dropdown=document.getElementById('opt-underlying-dropdown');
-  if(!val||val.trim().length<1){ if(dropdown)dropdown.style.display='none'; return; }
-  optUnderlyingSearchDebounce=setTimeout(()=>runOptUnderlyingSearch(val.trim()),300);
-}
-async function runOptUnderlyingSearch(q){
-  const dropdown=document.getElementById('opt-underlying-dropdown');
-  if(!dropdown)return;
-  dropdown.style.display='block';
-  dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">Searching F&amp;O underlyings…</div>`;
-  try{
-    const res=await apiFetch('/api/market/search-fno?q='+encodeURIComponent(q),{cache:'no-store'});
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const {results}=await res.json();
-    if(!results||!results.length){
-      dropdown.innerHTML=`<div style="padding:14px;color:var(--text3);font-size:12px">No F&amp;O stock matches "${q}" — options only exist for a subset of stocks.</div>`;
-      return;
-    }
-    dropdown.innerHTML=results.map(r=>{
-      const exLabel=exchangeLabel(r.exchange);
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selectOptUnderlying('${r.symbol}')">
-        <div><span style="font-weight:600;font-size:13px">${r.symbol}</span> <span style="font-size:11px;color:var(--text3)">· ${exLabel} · ${r.name||''}</span></div>
-      </div>`;
-    }).join('');
-  }catch(e){
-    dropdown.innerHTML=`<div style="padding:14px;color:var(--rose2);font-size:12px">Search is temporarily unavailable — please try again shortly.</div>`;
-  }
-}
-document.addEventListener('click',(e)=>{
-  const dropdown=document.getElementById('opt-underlying-dropdown');
-  const input=document.getElementById('opt-underlying-search');
-  if(dropdown&&input&&!dropdown.contains(e.target)&&e.target!==input)dropdown.style.display='none';
-});
-
 let lastOptionChainSummary=null;
 async function renderOptionsChain(){
   const underlying=document.getElementById('opt-underlying')?.value||'NIFTY';

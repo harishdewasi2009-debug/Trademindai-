@@ -180,6 +180,10 @@ CREATE TABLE IF NOT EXISTS prediction_history (
   evaluated_at      TIMESTAMPTZ,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- FIX: sentiment reads like 'moderate_bullish' (16 chars) did not fit VARCHAR(10),
+-- so every prediction_history INSERT failed silently and no accuracy could ever
+-- be verified. Widen the column (idempotent; safe to re-run).
+ALTER TABLE prediction_history ALTER COLUMN recommendation TYPE VARCHAR(30);
 CREATE INDEX IF NOT EXISTS idx_prediction_history_symbol ON prediction_history(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_prediction_history_outcome ON prediction_history(outcome);
 

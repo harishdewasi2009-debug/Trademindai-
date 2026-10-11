@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /?resetToken=
+Disallow: /*?ref=
+
+Sitemap: https://trademindai.co.in/sitemap.xml

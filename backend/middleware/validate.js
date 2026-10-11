@@ -222,8 +222,10 @@ const validateMarketReport = [
 const validateMarketSearch = [
   query('q')
     .trim().notEmpty().withMessage('q is required.')
-    .isLength({ min: 1, max: 30 }).withMessage('q must be 1-30 characters.')
-    .matches(/^[A-Za-z0-9&_-]+$/).withMessage('q contains invalid characters.'),
+    .isLength({ min: 1, max: 40 }).withMessage('q must be 1-40 characters.')
+    // Letters, digits, spaces and a few symbols so company names such as
+    // "TATA STEEL", "M&M" or "BAJAJ-AUTO" can be searched, not just symbols.
+    .matches(/^[A-Za-z0-9&_.\- ]+$/).withMessage('q contains invalid characters.'),
   // Optional — omit to search across NSE + BSE + MCX together; pass
   // exchange=MCX_FO to search commodities only (e.g. the Screener's MCX tab).
   query('exchange').optional().isIn(['NSE_EQ', 'BSE_EQ', 'MCX_FO']).withMessage('exchange must be NSE_EQ, BSE_EQ, or MCX_FO.'),

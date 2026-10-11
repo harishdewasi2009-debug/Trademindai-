@@ -484,27 +484,13 @@ async function getFnoUnderlyings() {
 
 // Same as searchSymbols() but filtered down to only F&O-enabled
 // underlyings — used by the Options page's underlying search bar.
-async function searchFnoSymbols(prefixRaw, limit = 20, exchangeFilter) {
-  const prefix = (prefixRaw || '').trim().toUpperCase();
-  if (!prefix) return [];
-
-  const fnoSet = await getFnoUnderlyings();
-  const results = [];
-  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
-    let bySymbol;
-    try {
-      ({ bySymbol } = await loadInstrumentMaster(exchange));
-    } catch {
-      continue;
-    }
-    for (const [symbol, info] of bySymbol) {
-      if (symbol.startsWith(prefix) && fnoSet.has(symbol)) {
-        results.push({ symbol, exchange, name: info.name });
-        if (results.length >= limit) return results;
-      }
-    }
-  }
-  return results;
+async function searchFnoSymbols(queryRaw, limit = 20, exchangeFilter) {
+  if (!normalizeSearchText(queryRaw)) return [];
+  return cachedSearch('fno', queryRaw, limit, exchangeFilter, async () => {
+    const fnoSet = await getFnoUnderlyings();
+    const sources = await loadSearchSources(exchangeFilter);
+    return sources.map(src => ({ ...src, filter: sym => fnoSet.has(sym) }));
+  });
 }
 
 /**
@@ -608,26 +594,101 @@ async function listAllSymbols({ exchange, page = 1, limit = 50 } = {}) {
     ...(failures.length ? { partialFailure: failures } : {}),
   };
 }
-async function searchSymbols(prefixRaw, limit = 20, exchangeFilter) {
-  const prefix = (prefixRaw || '').trim().toUpperCase();
-  if (!prefix) return [];
+// ── Ranked symbol / company-name search ──────────────────────────────────
+// Used by every in-app search box. Matching tiers, best first:
+//   0 exact symbol   1 symbol prefix   2 company-name word starts with query
+//   3 company name contains query   4 symbol contains query
+//   5 near-miss typo (edit distance 1, only for queries of 4+ characters)
+// Spaces, dots and punctuation are ignored when comparing, so "tata steel",
+// "TATASTEEL" and " Tata-Steel " all behave the same. Results carry the
+// exchange and an instrumentType so identical names are easy to tell apart.
+const SEARCH_CACHE_TTL_MS = 60 * 1000;
+const SEARCH_CACHE_MAX = 500;
+const searchCache = new Map(); // key -> { at, results }
 
-  const results = [];
-  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
-    let bySymbol;
-    try {
-      ({ bySymbol } = await loadInstrumentMaster(exchange));
-    } catch (e) {
-      continue; // let other exchanges still return results
-    }
+function normalizeSearchText(v) {
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9&]/g, '');
+}
+
+// True when a and b differ by at most one insertion, deletion or substitution.
+function withinOneEdit(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0, j = 0, edits = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (a.length > b.length) i++;
+    else if (a.length < b.length) j++;
+    else { i++; j++; }
+  }
+  return edits + (a.length - i) + (b.length - j) <= 1;
+}
+
+function instrumentTypeFor(exchange) {
+  return exchange === 'MCX_FO' ? 'Commodity future' : 'Equity';
+}
+
+function rankedSearch(entriesByExchange, queryRaw, limit) {
+  const q = normalizeSearchText(queryRaw);
+  if (!q) return [];
+  const words = String(queryRaw).toUpperCase().split(/[^A-Z0-9&]+/).filter(Boolean);
+  const scored = [];
+  for (const { exchange, bySymbol, filter } of entriesByExchange) {
     for (const [symbol, info] of bySymbol) {
-      if (symbol.startsWith(prefix)) {
-        results.push({ symbol, exchange, name: info.name });
-        if (results.length >= limit) return results;
-      }
+      if (filter && !filter(symbol)) continue;
+      const sym = normalizeSearchText(symbol);
+      const name = normalizeSearchText(info.name);
+      const nameWords = String(info.name || '').toUpperCase().split(/[^A-Z0-9&]+/).filter(Boolean);
+      let tier = -1;
+      if (sym === q) tier = 0;
+      else if (sym.startsWith(q)) tier = 1;
+      else if (words.length && words.every(w => nameWords.some(nw => nw.startsWith(w)))) tier = 2;
+      else if (name.includes(q)) tier = 3;
+      else if (q.length >= 3 && sym.includes(q)) tier = 4;
+      else if (q.length >= 4 && (withinOneEdit(sym, q) || withinOneEdit(sym.slice(0, q.length), q))) tier = 5;
+      if (tier < 0) continue;
+      // Within a tier prefer NSE, then shorter (more specific-to-query) symbols.
+      const exRank = exchange === 'NSE_EQ' ? 0 : exchange === 'BSE_EQ' ? 1 : 2;
+      scored.push({ tier, exRank, len: sym.length, symbol, exchange, name: info.name });
     }
   }
+  scored.sort((a, b) => a.tier - b.tier || a.exRank - b.exRank || a.len - b.len || a.symbol.localeCompare(b.symbol));
+  return scored.slice(0, limit).map(r => ({
+    symbol: r.symbol,
+    exchange: r.exchange,
+    name: r.name,
+    instrumentType: instrumentTypeFor(r.exchange),
+    matchType: ['exact', 'symbol', 'name', 'name', 'symbol', 'similar'][r.tier],
+  }));
+}
+
+async function loadSearchSources(exchangeFilter) {
+  const sources = [];
+  for (const exchange of (exchangeFilter ? [exchangeFilter] : ALL_BROWSABLE_EXCHANGES)) {
+    try {
+      const m = await loadInstrumentMaster(exchange);
+      sources.push({ exchange, bySymbol: m.bySymbol });
+    } catch (e) {
+      // let other exchanges still return results
+    }
+  }
+  return sources;
+}
+
+async function cachedSearch(kind, queryRaw, limit, exchangeFilter, buildSources) {
+  const key = `${kind}|${exchangeFilter || '*'}|${limit}|${normalizeSearchText(queryRaw)}|${String(queryRaw).trim().toUpperCase()}`;
+  const hit = searchCache.get(key);
+  if (hit && Date.now() - hit.at < SEARCH_CACHE_TTL_MS) return hit.results;
+  const results = rankedSearch(await buildSources(), queryRaw, limit);
+  if (searchCache.size >= SEARCH_CACHE_MAX) searchCache.delete(searchCache.keys().next().value);
+  // An empty result can just mean an exchange file failed to load; don't pin it.
+  if (results.length) searchCache.set(key, { at: Date.now(), results });
   return results;
+}
+
+async function searchSymbols(queryRaw, limit = 20, exchangeFilter) {
+  if (!normalizeSearchText(queryRaw)) return [];
+  return cachedSearch('all', queryRaw, limit, exchangeFilter, () => loadSearchSources(exchangeFilter));
 }
 
 // ─────────────────────────────────────────────────────────────────────────
