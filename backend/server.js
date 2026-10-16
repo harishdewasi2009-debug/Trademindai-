@@ -21,6 +21,7 @@ const watchlistRoutes = require('./routes/watchlistRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const marketRoutes = require('./routes/marketRoutes');
+const registryRoutes = require('./routes/registryRoutes');
 const referralRoutes = require('./routes/referralRoutes');
 const advertiserRoutes = require('./routes/advertiserRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
@@ -103,6 +104,8 @@ app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
+// Verified Upstox market registry — mounted BEFORE /api/market so its paths win.
+app.use('/api/market/registry', registryRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/alerts', require('./routes/alertRoutes'));
 app.use('/api/referral', referralRoutes);
@@ -179,6 +182,23 @@ server.listen(config.port, () => {
       await liveFeedService.startLiveFeed(token);
     })
     .catch((err) => console.warn('[liveFeed] not started at boot:', err.message));
+
+  // ── Verified market registry bootstrap (non-blocking) ──────────────────
+  // Delayed 60s so the streamed instrument-master ingest never overlaps the
+  // legacy live-feed symbol resolution above (keeps peak memory low on small
+  // instances). Idempotent: skips the download if the DB copy is < 20h old.
+  setTimeout(async () => {
+    try {
+      const registry = require('./services/upstoxRegistry');
+      await registry.refreshRegistry();
+      const status = await marketDataService.upstoxStatus();
+      if (!status.connected) return console.log('[registry] Upstox not connected — capability probes will run once a token is stored.');
+      const { rows } = await require('./db/pool').query('SELECT COUNT(*)::int AS n FROM market_segment_status WHERE last_probed_at IS NOT NULL');
+      if (rows[0].n === 0) await require('./services/upstoxProbe').probeAll();
+    } catch (err) {
+      console.warn('[registry] bootstrap failed:', err.message);
+    }
+  }, 60_000).unref?.();
 });
 
 module.exports = app;

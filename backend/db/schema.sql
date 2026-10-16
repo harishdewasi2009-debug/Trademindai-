@@ -348,3 +348,124 @@ CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users
 DROP TRIGGER IF EXISTS trg_portfolios_updated_at ON portfolios;
 CREATE TRIGGER trg_portfolios_updated_at BEFORE UPDATE ON portfolios
   FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  VERIFIED MARKET REGISTRY (Upstox-only)
+--  Populated exclusively from Upstox's official instrument-master files by
+--  services/upstoxRegistry.js — never hand-typed. Capability/access columns
+--  live in market_segment_status and are filled in only by live probes
+--  (services/upstoxProbe.js) against authorized Upstox API responses.
+-- ══════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS market_registry (
+  instrument_key    VARCHAR(120) PRIMARY KEY,
+  symbol            VARCHAR(120) NOT NULL,
+  name              VARCHAR(250),
+  asset_class       VARCHAR(30)  NOT NULL,
+  exchange          VARCHAR(20),
+  segment           VARCHAR(30)  NOT NULL,
+  instrument_type   VARCHAR(20),
+  currency          VARCHAR(10),
+  expiry            DATE,
+  strike_price      NUMERIC(18,4),
+  lot_size          NUMERIC(18,4),
+  tick_size         NUMERIC(18,6),
+  isin              VARCHAR(20),
+  underlying_key    VARCHAR(120),
+  underlying_symbol VARCHAR(120),
+  exchange_token    VARCHAR(40),
+  provider          VARCHAR(20)  NOT NULL DEFAULT 'upstox',
+  refresh_id        BIGINT       NOT NULL,
+  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_mreg_segment        ON market_registry(segment);
+CREATE INDEX IF NOT EXISTS idx_mreg_class          ON market_registry(asset_class);
+CREATE INDEX IF NOT EXISTS idx_mreg_symbol_prefix  ON market_registry(upper(symbol) text_pattern_ops);
+CREATE INDEX IF NOT EXISTS idx_mreg_underlying     ON market_registry(underlying_symbol, segment, expiry);
+CREATE INDEX IF NOT EXISTS idx_mreg_refresh        ON market_registry(refresh_id);
+
+-- One row per segment: how many instruments the master contains, and what
+-- live probes proved. status values per capability:
+--   verified | empty (200 but no data, e.g. market closed) | denied (401/403)
+--   unsupported (400/404) | rate_limited | error | untested
+-- access_status is 'UNSUPPORTED BY UPSTOX' when an expected segment has no
+-- rows in the master at all.
+CREATE TABLE IF NOT EXISTS market_segment_status (
+  segment              VARCHAR(30) PRIMARY KEY,
+  instrument_count     INTEGER     NOT NULL DEFAULT 0,
+  master_refreshed_at  TIMESTAMPTZ,
+  access_status        VARCHAR(40) NOT NULL DEFAULT 'UNVERIFIED',
+  quote_status         VARCHAR(20) NOT NULL DEFAULT 'untested',
+  ohlc_status          VARCHAR(20) NOT NULL DEFAULT 'untested',
+  candles_status       VARCHAR(20) NOT NULL DEFAULT 'untested',
+  intraday_status      VARCHAR(20) NOT NULL DEFAULT 'untested',
+  option_chain_status  VARCHAR(20) NOT NULL DEFAULT 'untested',
+  greeks_status        VARCHAR(20) NOT NULL DEFAULT 'untested',
+  streaming_status     VARCHAR(20) NOT NULL DEFAULT 'untested',
+  intervals_verified   TEXT,
+  sample_keys          TEXT,
+  last_tick_at         TIMESTAMPTZ,
+  last_probed_at       TIMESTAMPTZ,
+  notes                TEXT
+);
+
+-- The last VALID quote per instrument, so a closed market (or a failed
+-- upstream call) never resets a chart to zero — we serve this, labelled
+-- with its own timestamp, instead of inventing or blanking a price.
+CREATE TABLE IF NOT EXISTS market_last_quote (
+  instrument_key  VARCHAR(120) PRIMARY KEY,
+  last_price      NUMERIC(20,6) NOT NULL,
+  prev_close      NUMERIC(20,6),
+  trade_time      TIMESTAMPTZ,
+  payload         JSONB,
+  saved_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Instrument-key watchlist: lets users watch ANY registry instrument
+-- (global index, future, option, currency pair…), not just NSE/BSE/MCX symbols.
+CREATE TABLE IF NOT EXISTS market_watchlist (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  instrument_key  VARCHAR(120) NOT NULL,
+  symbol          VARCHAR(120) NOT NULL,
+  name            VARCHAR(250),
+  segment         VARCHAR(30),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, instrument_key)
+);
+CREATE INDEX IF NOT EXISTS idx_market_watchlist_user ON market_watchlist(user_id);
+
+-- ══════════════════════════════════════════════════════════════════════════
+--  ANALYSIS OUTCOME LOG (registry instruments). One row per recorded read.
+--  The success criteria are fixed AT RECORD TIME (stored in `criteria`) and
+--  evaluated later against real Upstox candles. Status:
+--    pending       horizon bar has not completed yet
+--    correct / incorrect   evaluated against the stored criteria
+--    unresolvable  horizon passed but Upstox returned no usable candle —
+--                  excluded from accuracy (and reported separately), never
+--                  counted as a success.
+-- ══════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS market_analysis_log (
+  id               BIGSERIAL PRIMARY KEY,
+  instrument_key   VARCHAR(120) NOT NULL,
+  symbol           VARCHAR(120),
+  segment          VARCHAR(30)  NOT NULL,
+  strategy         VARCHAR(60)  NOT NULL,
+  unit             VARCHAR(10)  NOT NULL,
+  interval_n       INTEGER      NOT NULL,
+  horizon_bars     INTEGER      NOT NULL,
+  predicted_bias   VARCHAR(10)  NOT NULL,
+  observed_price   NUMERIC(20,6) NOT NULL,
+  observed_candle_at TIMESTAMPTZ NOT NULL,
+  atr_at_call      NUMERIC(20,6) NOT NULL,
+  criteria         JSONB        NOT NULL,
+  created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  status           VARCHAR(14)  NOT NULL DEFAULT 'pending',
+  outcome_price    NUMERIC(20,6),
+  outcome_candle_at TIMESTAMPTZ,
+  move_in_atr      NUMERIC(10,4),
+  evaluated_at     TIMESTAMPTZ,
+  eval_note        TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mal_status  ON market_analysis_log(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_mal_segment ON market_analysis_log(segment, strategy, unit, interval_n);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mal_candle ON market_analysis_log(instrument_key, strategy, unit, interval_n, observed_candle_at);

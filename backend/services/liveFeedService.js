@@ -68,6 +68,13 @@ function registerBrowserClient(ws) {
     if (msg.type === 'watch' && typeof msg.symbol === 'string') {
       watchSymbol(msg.symbol, msg.exchange).catch((err) => console.warn('[liveFeedService] watchSymbol failed:', err.message));
     }
+    // Registry-era watch: any verified Upstox instrument, addressed by its instrument_key.
+    if (msg.type === 'watch' && typeof msg.instrumentKey === 'string') {
+      watchInstrument(msg.instrumentKey).catch((err) => {
+        console.warn('[liveFeedService] watchInstrument failed:', err.message);
+        try { ws.send(JSON.stringify({ type: 'watch_rejected', instrumentKey: msg.instrumentKey, reason: err.message })); } catch { /* socket closed */ }
+      });
+    }
   });
   if (lastKnownFeed.size) {
     ws.send(JSON.stringify({ type: 'snapshot', feeds: Object.fromEntries(lastKnownFeed) }));
@@ -92,6 +99,71 @@ async function watchSymbol(symbolRaw, exchangeRaw) {
   streamer.subscribe([instrumentKey], 'full');
   console.log(`[liveFeedService] Added ${feedKey} to live feed on demand.`);
 }
+// ── Registry-era streaming: watch ANY verified instrument by instrument_key ──
+// Subscription cap (Upstox limits WebSocket subscriptions per connection/user;
+// verify the current figure for your plan and set UPSTOX_WS_MAX_SUBSCRIPTIONS).
+const MAX_SUBSCRIPTIONS = parseInt(process.env.UPSTOX_WS_MAX_SUBSCRIPTIONS, 10) || 1000;
+const dynamicKeys = [];            // instrument_keys added on demand, oldest first
+const defaultKeys = new Set();     // never evicted
+const KEY_RE = /^[A-Za-z0-9_]+\|[A-Za-z0-9 &_.:\-]+$/;
+const segmentsVerifiedThisFeed = new Set();
+let feedStartedAt = null;
+let lastTickAt = null;
+let reconnectState = { attempts: 0, timer: null, lastError: null };
+
+async function watchInstrument(instrumentKey) {
+  if (!streamer) throw new Error('Live feed is not running.');
+  if (!KEY_RE.test(instrumentKey) || instrumentKey.length > 120) throw new Error('Invalid instrument key.');
+  if (instrumentKeyToSymbol.has(instrumentKey)) return;
+  // Only instruments present in the verified registry may be streamed.
+  const { query } = require('../db/pool');
+  const { rows } = await query('SELECT symbol FROM market_registry WHERE instrument_key = $1', [instrumentKey]);
+  if (!rows.length) throw new Error('Instrument is not in the verified Upstox registry.');
+
+  if (instrumentKeyToSymbol.size >= MAX_SUBSCRIPTIONS) {
+    const evict = dynamicKeys.shift();
+    if (!evict) throw new Error(`Subscription limit (${MAX_SUBSCRIPTIONS}) reached.`);
+    try { streamer.unsubscribe([evict]); } catch { /* best effort */ }
+    instrumentKeyToSymbol.delete(evict);
+  }
+  instrumentKeyToSymbol.set(instrumentKey, { symbol: rows[0].symbol, feedKey: instrumentKey });
+  dynamicKeys.push(instrumentKey);
+  streamer.subscribe([instrumentKey], 'full');
+}
+
+function getFeedState() {
+  return {
+    running: !!streamer, startedAt: feedStartedAt, lastTickAt,
+    subscriptions: instrumentKeyToSymbol.size, maxSubscriptions: MAX_SUBSCRIPTIONS,
+    segmentsWithVerifiedTicks: [...segmentsVerifiedThisFeed],
+    reconnect: { attempts: reconnectState.attempts, scheduled: !!reconnectState.timer, lastError: reconnectState.lastError },
+    browserClients: browserClients.size,
+  };
+}
+
+// Bounded exponential backoff reconnect. Auth failures (401/403) are never
+// retried — the daily token scheduler restarts the feed with a fresh token.
+const MAX_RECONNECT_ATTEMPTS = 8;
+function scheduleReconnect(reason) {
+  reconnectState.lastError = reason;
+  if (/401|403|unauthor|forbidden|invalid token/i.test(reason || '')) return;
+  if (reconnectState.timer || reconnectState.attempts >= MAX_RECONNECT_ATTEMPTS) return;
+  const delay = Math.min(5000 * 2 ** reconnectState.attempts, 5 * 60_000);
+  reconnectState.attempts++;
+  console.warn(`[liveFeedService] reconnecting in ${Math.round(delay / 1000)}s (attempt ${reconnectState.attempts}/${MAX_RECONNECT_ATTEMPTS})`);
+  reconnectState.timer = setTimeout(async () => {
+    reconnectState.timer = null;
+    try {
+      const { getValidAccessToken } = require('./marketDataService');
+      await startLiveFeed(await getValidAccessToken(), undefined, undefined, { isReconnect: true });
+    } catch (e) {
+      console.warn('[liveFeedService] reconnect failed:', e.message);
+      scheduleReconnect(e.message);
+    }
+  }, delay);
+  reconnectState.timer.unref?.();
+}
+
 function broadcast(payload) {
   const msg = JSON.stringify(payload);
   for (const client of browserClients) {
@@ -111,8 +183,11 @@ function extractLtpc(feed) {
  *     refresh via the notifier webhook) — tokens expire ~3:30am IST daily,
  *     so the old socket goes stale and must be replaced.
  */
-async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS, mcxSymbols = DEFAULT_MCX_SYMBOLS) {
+async function startLiveFeed(accessToken, symbols = DEFAULT_SYMBOLS, mcxSymbols = DEFAULT_MCX_SYMBOLS, { isReconnect = false } = {}) {
   stopLiveFeed();
+  if (!isReconnect) { reconnectState.attempts = 0; }
+  if (reconnectState.timer && !isReconnect) { clearTimeout(reconnectState.timer); reconnectState.timer = null; }
+  segmentsVerifiedThisFeed.clear(); dynamicKeys.length = 0; defaultKeys.clear();
 
   const resolved = await Promise.all(symbols.map(async (symbol) => {
     try {
@@ -141,6 +216,17 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     instrumentKeyToSymbol.set(instrumentKey, { symbol, feedKey: symbol });
     instrumentKeys.push(instrumentKey);
   }
+  // One real sample instrument per discovered segment, so each segment's
+  // streaming availability is PROVEN by an actual tick rather than assumed.
+  try {
+    const { query } = require('../db/pool');
+    const { rows } = await query(`SELECT segment, sample_keys FROM market_segment_status WHERE instrument_count > 0 AND sample_keys IS NOT NULL`);
+    for (const r of rows) {
+      const k = String(r.sample_keys).split(',')[0];
+      if (k && !instrumentKeyToSymbol.has(k)) { instrumentKeyToSymbol.set(k, { symbol: k, feedKey: k }); instrumentKeys.push(k); }
+    }
+  } catch (e) { /* registry not built yet — streaming proof happens after the first probe */ }
+  for (const k of instrumentKeys) defaultKeys.add(k);
   if (!instrumentKeys.length) {
     console.warn('[liveFeedService] No symbols resolved — live feed not started.');
     return;
@@ -158,6 +244,7 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
   streamer.autoReconnect(false);
 
   streamer.on('open', () => {
+    reconnectState.attempts = 0; reconnectState.lastError = null; feedStartedAt = new Date().toISOString();
     console.log(`[liveFeedService] Connected to Upstox — subscribing to ${instrumentKeys.length} symbols`);
     streamer.subscribe(instrumentKeys, 'full');
   });
@@ -183,7 +270,14 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
         ? ((price - prevClose) / prevClose) * 100
         : 0;
 
-      const entry = { price, changePct, up: changePct >= 0 };
+      const ltt = Number(ltpc.ltt);
+      const entry = { price, changePct, up: changePct >= 0, ts: Number.isFinite(ltt) && ltt > 0 ? ltt : Date.now(), source: 'Upstox' };
+      lastTickAt = new Date().toISOString();
+      const seg = instrumentKey.split('|')[0];
+      if (seg && !segmentsVerifiedThisFeed.has(seg)) {
+        segmentsVerifiedThisFeed.add(seg);
+        require('./upstoxProbe').recordStreamingTick(seg);
+      }
       out[info.feedKey] = entry;
       lastKnownFeed.set(info.feedKey, entry);
     }
@@ -214,6 +308,7 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     const message = err?.message || String(err);
     console.error('[liveFeedService] Upstox stream error:', message, '— stopping the feed instead of letting the SDK retry.');
     stopLiveFeed();
+    scheduleReconnect(message); // our own bounded backoff (the SDK's internal retry stays disabled)
   });
   streamer.on('close', () => console.warn('[liveFeedService] Upstox stream closed.'));
   streamer.on('autoReconnectStopped', () => console.error('[liveFeedService] Gave up reconnecting to Upstox — call startLiveFeed() again with a fresh token.'));
@@ -229,4 +324,4 @@ function stopLiveFeed() {
   }
 }
 
-module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, DEFAULT_SYMBOLS, DEFAULT_MCX_SYMBOLS, INDEX_INSTRUMENT_KEYS };
+module.exports = { startLiveFeed, stopLiveFeed, registerBrowserClient, watchSymbol, watchInstrument, getFeedState, DEFAULT_SYMBOLS, DEFAULT_MCX_SYMBOLS, INDEX_INSTRUMENT_KEYS };

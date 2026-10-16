@@ -1,0 +1,11 @@
+[
+  {"segment":"NSE_EQ","name":"RELIANCE INDUSTRIES LTD","exchange":"NSE","isin":"INE002A01018","instrument_type":"EQ","instrument_key":"NSE_EQ|INE002A01018","lot_size":1,"trading_symbol":"RELIANCE","tick_size":10},
+  {"segment":"NSE_EQ","name":"NIPPON NIFTY BEES {ETF}","exchange":"NSE","instrument_type":"ETF","instrument_key":"NSE_EQ|INF204KB14I2","trading_symbol":"NIFTYBEES"},
+  {"segment":"NSE_INDEX","name":"Nifty 50","exchange":"NSE","instrument_type":"INDEX","instrument_key":"NSE_INDEX|Nifty 50","trading_symbol":"NIFTY"},
+  {"segment":"NSE_FO","name":"NIFTY","exchange":"NSE","instrument_type":"CE","instrument_key":"NSE_FO|12345","trading_symbol":"NIFTY 25000 CE","expiry":1790000000000,"strike_price":25000,"underlying_key":"NSE_INDEX|Nifty 50","underlying_symbol":"NIFTY","lot_size":75},
+  {"segment":"NSE_FO","name":"NIFTY","exchange":"NSE","instrument_type":"FUT","instrument_key":"NSE_FO|12346","trading_symbol":"NIFTY FUT","expiry":"1790000000000","underlying_symbol":"NIFTY"},
+  {"segment":"NCD_FO","name":"USDINR","instrument_type":"FUT","instrument_key":"NCD_FO|555","trading_symbol":"USDINR FUT","expiry":1790000000000},
+  {"segment":"MCX_FO","name":"GOLD","instrument_type":"FUT","instrument_key":"MCX_FO|777","trading_symbol":"GOLD FUT","expiry":1790000000000,"underlying_symbol":"GOLD"},
+  {"segment":"GLOBAL_INDEX","name":"Dow Jones","instrument_key":"GLOBAL_INDEX|DOW","trading_symbol":"DJI"},
+  {"name":"no key row"}
+]

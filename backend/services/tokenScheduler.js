@@ -119,6 +119,32 @@ function startUpstoxTokenScheduler() {
     );
   }, { timezone: 'Asia/Kolkata' });
 
+  // 06:30 IST daily — re-download Upstox's official instrument master (it is
+  // republished each morning) and rebuild the verified registry. No token
+  // needed: the master files are public static assets.
+  cron.schedule('30 6 * * *', () => {
+    require('./upstoxRegistry').refreshRegistry({ force: true }).catch(err =>
+      console.error('[tokenScheduler] Registry refresh failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
+  // 10:00 IST Mon–Fri — re-run the live capability probes while NSE/BSE,
+  // currency and MCX are all in session, so "no data" can't just mean "closed".
+  // Every 30 min: evaluate registry-analysis reads whose horizon candle has completed (real Upstox candles only).
+  cron.schedule('*/30 * * * *', () => {
+    const tracker = require('./analysisTracker');
+    const data = require('./instrumentData');
+    tracker.evaluateDue((k, o) => data.getCandles(k, o)).catch(err =>
+      console.error('[tokenScheduler] Analysis evaluation failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
+  cron.schedule('0 10 * * 1-5', () => {
+    require('./upstoxProbe').probeAll().catch(err =>
+      console.error('[tokenScheduler] Capability probe failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
   console.log('[tokenScheduler] Automatic daily Upstox token refresh scheduled (08:00 IST request, 08:45 IST follow-up check).');
   console.log('[tokenScheduler] Automatic daily AI-prediction accuracy evaluation scheduled (18:00 IST).');
   console.log('[tokenScheduler] Automatic daily Scanner-signal accuracy evaluation scheduled (18:00 IST).');

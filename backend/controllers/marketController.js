@@ -39,6 +39,7 @@ const upstoxCallback = asyncHandler(async (req, res) => {
  const result = await marketDataService.exchangeCodeForToken(code);
   const token = await marketDataService.getValidAccessToken();
   liveFeedService.startLiveFeed(token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
+  require('../services/upstoxProbe').probeIfNeverRun(); // first connect → prove which segments this account can actually read
   res.json({ message: 'Upstox connected successfully.', ...result });
 });
 // ── GET /api/market/upstox/status  (admin only) ──────────────────────────
@@ -73,6 +74,7 @@ const upstoxNotifier = asyncHandler(async (req, res) => {
   }
 const result = await marketDataService.storeNotifiedToken({ access_token, expires_at });
   liveFeedService.startLiveFeed(access_token).catch((err) => console.error('[liveFeed] restart failed:', err.message));
+  require('../services/upstoxProbe').probeIfNeverRun(); // first connect → prove which segments this account can actually read
   res.json({ message: 'Token received and stored.', ...result });
 });
 

@@ -444,7 +444,7 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and 
 // 'ai_insight' (Basic/Pro/Elite — see config/plans.js), so Basic users
 // actually get the cascade that was already built for them. Free stays
 // excluded, consistent with prediction_history and other Basic+ features.
-const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe'];
+const VALID_INSIGHT_KINDS = ['tradeIdeas', 'portfolioHealth', 'marketBrief', 'optionStrategy', 'backtestAdvisor', 'multiTimeframe', 'instrumentAnalysis'];
 
 // NOTE: the "Select AI models" chip strips send the chip's data-model
 // attribute (a display-facing model id like "claude-sonnet-4.6" or
