@@ -14,7 +14,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>AI Stock Market Analysis India | TradeMind AI</title>
+<title>TradeMind AI | AI Stock Market Analysis for India</title>
 <meta name="description" content="Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI."/>
 <link rel="canonical" href="https://trademindai.co.in/"/>
 <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large"/>
@@ -32,7 +32,7 @@
 <!-- Link-sharing preview (WhatsApp, Telegram, X, Facebook, LinkedIn, iMessage, etc.) -->
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="TradeMind AI"/>
-<meta property="og:title" content="AI Stock Market Analysis India | TradeMind AI"/>
+<meta property="og:title" content="TradeMind AI | AI Stock Market Analysis for India"/>
 <meta property="og:description" content="Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI."/>
 <meta property="og:locale" content="en_IN"/>
 <meta property="og:url" content="https://trademindai.co.in/"/>
@@ -40,12 +40,13 @@
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="AI Stock Market Analysis India | TradeMind AI"/>
+<meta name="twitter:title" content="TradeMind AI | AI Stock Market Analysis for India"/>
 <meta name="twitter:description" content="Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI."/>
 <meta name="twitter:image" content="https://trademindai.co.in/assets/og-image.png"/>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "@id": "https://trademindai.co.in/#org", "name": "TradeMind AI", "url": "https://trademindai.co.in/", "logo": "https://trademindai.co.in/assets/logo-icon-512.png", "email": "harishdewasi2009@gmail.com", "sameAs": ["https://instagram.com/_trademind.ai"]}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "@id": "https://trademindai.co.in/#website", "name": "TradeMind AI", "url": "https://trademindai.co.in/", "inLanguage": "en-IN", "publisher": {"@id": "https://trademindai.co.in/#org"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "TradeMind AI", "url": "https://trademindai.co.in/", "applicationCategory": "FinanceApplication", "operatingSystem": "Web", "description": "Explore AI-powered stock market analysis for Indian markets with technical indicators, NSE and BSE stock charts, MCX market data, and a computed stock screener. Explore TradeMind AI.", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR", "description": "Free plan"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [{"@type": "SiteNavigationElement", "name": "AI Stock Analysis", "url": "https://trademindai.co.in/ai-stock-analysis/"}, {"@type": "SiteNavigationElement", "name": "Features", "url": "https://trademindai.co.in/features/"}, {"@type": "SiteNavigationElement", "name": "Simple Pricing", "url": "https://trademindai.co.in/pricing/"}, {"@type": "SiteNavigationElement", "name": "Trust & Accuracy", "url": "https://trademindai.co.in/trust-accuracy/"}, {"@type": "SiteNavigationElement", "name": "NSE Stock Analysis", "url": "https://trademindai.co.in/nse-stock-analysis/"}, {"@type": "SiteNavigationElement", "name": "BSE Stock Analysis", "url": "https://trademindai.co.in/bse-stock-analysis/"}, {"@type": "SiteNavigationElement", "name": "Contact TradeMind AI", "url": "https://trademindai.co.in/contact/"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
@@ -1265,10 +1266,68 @@ img,svg,video,canvas,iframe{max-width:100%}
 .tm-sr-spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border3);border-top-color:var(--teal);border-radius:50%;margin-right:8px;vertical-align:-2px;animation:tmsr .7s linear infinite}
 @keyframes tmsr{to{transform:rotate(360deg)}}
 @media(max-width:700px){[id$="-dropdown"].tm-open,#screener-search-dropdown,#chart-search-dropdown{max-height:60vh!important}}
+/* ══ MARKETS (Upstox registry) — black & white, functional accents only. Scoped to #page-markets so the rest of the site is untouched. ══ */
+#page-markets{--mk-bg:#000;--mk-s1:#0b0b0b;--mk-s2:#141414;--mk-line:#262626;--mk-fg:#fff;--mk-mut:#9a9a9a;--mk-up:#22c55e;--mk-dn:#ef4444;--mk-warn:#f5a524}
+#page-markets .mk-wrap{padding:28px 20px 60px;max-width:1400px;margin:0 auto}
+#page-markets h2{font-family:'Space Grotesk',sans-serif;font-size:30px;letter-spacing:-1px;margin:4px 0 8px}
+#page-markets .mk-sub{color:var(--mk-mut);font-size:13px;max-width:760px;margin-bottom:16px}
+.mk-segs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px}
+.mk-seg{flex:0 0 auto;border:1px solid var(--mk-line);background:var(--mk-s1);color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;cursor:pointer;min-width:132px}
+.mk-seg.sel{background:#fff;color:#000}
+.mk-seg b{display:block;font-size:13px}
+.mk-seg small{display:block;margin-top:3px;font-size:10px;letter-spacing:.4px;color:var(--mk-mut)}
+.mk-seg.sel small{color:#444}
+.mk-seg.bad{opacity:.55}
+.mk-grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
+@media(max-width:900px){.mk-grid{grid-template-columns:1fr}}
+.mk-card{background:var(--mk-s1);border:1px solid var(--mk-line);border-radius:12px;padding:12px}
+.mk-card h4{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--mk-mut);margin:0 0 8px}
+.mk-inp,.mk-sel{width:100%;background:var(--mk-s2);border:1px solid var(--mk-line);color:#fff;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:8px}
+.mk-inp:focus,.mk-sel:focus{outline:none;border-color:#fff}
+.mk-list{max-height:380px;overflow-y:auto;margin:0 -4px}
+.mk-row{display:flex;justify-content:space-between;gap:8px;padding:9px 8px;border-radius:8px;cursor:pointer;font-size:13px}
+.mk-row:hover,.mk-row.sel{background:var(--mk-s2)}
+.mk-row .n{color:var(--mk-mut);font-size:11px;display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk-tag{font-size:10px;border:1px solid var(--mk-line);border-radius:5px;padding:1px 6px;color:var(--mk-mut);white-space:nowrap;align-self:center}
+.mk-empty{color:var(--mk-mut);font-size:13px;padding:24px 8px;text-align:center}
+.mk-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:flex-start}
+.mk-price{font-family:'Space Grotesk',sans-serif;font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.mk-up{color:var(--mk-up)}.mk-dn{color:var(--mk-dn)}
+.mk-badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.mk-b{font-size:10px;letter-spacing:.5px;padding:3px 8px;border-radius:5px;border:1px solid var(--mk-line);color:#fff}
+.mk-b.rt{border-color:var(--mk-up);color:var(--mk-up)}.mk-b.dl{border-color:var(--mk-warn);color:var(--mk-warn)}.mk-b.lc,.mk-b.hi{color:var(--mk-mut)}
+.mk-warnbox{border:1px solid var(--mk-warn);color:var(--mk-warn);border-radius:8px;padding:8px 10px;font-size:12px;margin:8px 0}
+.mk-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.mk-chip{font-size:12px;border:1px solid var(--mk-line);background:var(--mk-s2);color:#fff;border-radius:999px;padding:5px 11px;cursor:pointer}
+.mk-chip.sel{background:#fff;color:#000}.mk-chip.off{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.mk-chart{width:100%;height:380px}.mk-sub-chart{width:100%;height:110px;margin-top:4px}
+.mk-lbl{font-size:10px;color:var(--mk-mut);letter-spacing:.6px;margin-top:6px}
+.mk-btn{background:#fff;color:#000;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.mk-btn.ghost{background:transparent;color:#fff;border:1px solid var(--mk-line)}
+.mk-ai{white-space:pre-wrap;font-size:13px;line-height:1.55;border:1px solid var(--mk-line);border-radius:8px;padding:12px;margin-top:10px;background:var(--mk-s2)}
+.mk-snap{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:10px}
+.mk-snap div{background:var(--mk-s2);border-radius:8px;padding:8px;font-size:11px;color:var(--mk-mut)}
+.mk-snap b{display:block;color:#fff;font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums}
+
+.mk-cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.mk-cat{border:1px solid var(--mk-line);background:var(--mk-s1);color:#fff;border-radius:10px;padding:10px 12px;cursor:pointer;font-size:13px}
+.mk-cat b{display:block;font-size:13px;margin-bottom:3px}.mk-cat small{display:block;font-size:10px;letter-spacing:.4px;color:var(--mk-mut)}
+.mk-cat.sel{background:#fff;color:#000}.mk-cat.sel small{color:#444}.mk-cat.bad{opacity:.5;cursor:default}
+.mk-box{border:1px solid var(--mk-line);background:var(--mk-s2);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:12px;line-height:1.5}
+.mk-box h5{margin:0 0 6px;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:var(--mk-mut);font-weight:600}
+.mk-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}.mk-kv div{color:var(--mk-mut);font-size:11px}.mk-kv b{display:block;color:#fff;font-size:13px}
+.mk-scroll{overflow-x:auto;margin-top:8px}
+.mk-tbl{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mk-tbl th{color:var(--mk-mut);font-weight:500;font-size:10px;letter-spacing:.5px;text-transform:uppercase;text-align:right;padding:5px 8px;border-bottom:1px solid var(--mk-line)}
+.mk-tbl td{text-align:right;padding:5px 8px;border-bottom:1px solid #1a1a1a}.mk-tbl td.k{text-align:center;font-weight:700;background:#101010}
+.mk-tbl tr.atm td{background:#1b1b1b}.mk-tbl td.c{cursor:pointer;text-decoration:underline dotted}
+.mk-pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid var(--mk-line)}
+.mk-pill.bull{color:var(--mk-up);border-color:var(--mk-up)}.mk-pill.bear{color:var(--mk-dn);border-color:var(--mk-dn)}
+.mk-vote{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid #1a1a1a}
 </style>
 </head>
 <body>
-<noscript><div style="padding:16px;background:#131425;color:#E8EAF6;font-family:sans-serif"><h1>AI-Powered Stock Market Analysis for Indian Markets</h1><p>TradeMind AI offers technical indicators, NSE and BSE stock charts, MCX market data and a computed stock screener. JavaScript is required to use the app.</p><p><a style="color:#2EECD4" href="/ai-stock-analysis/">AI Stock Analysis</a> · <a style="color:#2EECD4" href="/technical-analysis/">Technical Analysis</a> · <a style="color:#2EECD4" href="/nse-stock-analysis/">NSE Stock Analysis</a> · <a style="color:#2EECD4" href="/bse-stock-analysis/">BSE Stock Analysis</a> · <a style="color:#2EECD4" href="/nifty-50-analysis/">NIFTY 50 Analysis</a> · <a style="color:#2EECD4" href="/stock-market-screener/">Stock Market Screener</a> · <a style="color:#2EECD4" href="/mcx-commodity-analysis/">MCX Commodity Analysis</a> · <a style="color:#2EECD4" href="/stock-chart-analysis/">Stock Chart Analysis</a> · <a style="color:#2EECD4" href="/trading-indicators/">Trading Indicators</a> · <a style="color:#2EECD4" href="/features/">Features</a> · <a style="color:#2EECD4" href="/pricing/">Pricing</a> · <a style="color:#2EECD4" href="/trust-accuracy/">Trust and Methodology</a> · <a style="color:#2EECD4" href="/learn/">Learn</a> · <a style="color:#2EECD4" href="/contact/">Contact</a></p></div></noscript>
+<noscript><div style="padding:16px;background:#131425;color:#E8EAF6;font-family:sans-serif"><h1>AI-Powered Stock Market Analysis for Indian Markets</h1><p>TradeMind AI offers technical indicators, NSE and BSE stock charts, MCX market data and a computed stock screener. JavaScript is required to use the app.</p><p><a style="color:#2EECD4" href="/ai-stock-analysis/">AI Stock Analysis</a> · <a style="color:#2EECD4" href="/technical-analysis/">Technical Analysis</a> · <a style="color:#2EECD4" href="/nse-stock-analysis/">NSE Stock Analysis</a> · <a style="color:#2EECD4" href="/bse-stock-analysis/">BSE Stock Analysis</a> · <a style="color:#2EECD4" href="/nifty-50-analysis/">NIFTY 50 Analysis</a> · <a style="color:#2EECD4" href="/stock-market-screener/">Stock Market Screener</a> · <a style="color:#2EECD4" href="/mcx-commodity-analysis/">MCX Commodity Analysis</a> · <a style="color:#2EECD4" href="/stock-chart-analysis/">Stock Chart Analysis</a> · <a style="color:#2EECD4" href="/trading-indicators/">Trading Indicators</a> · <a style="color:#2EECD4" href="/features/">Features</a> · <a style="color:#2EECD4" href="/pricing/">Pricing</a> · <a style="color:#2EECD4" href="/trust-accuracy/">Trust &amp; Accuracy</a> · <a style="color:#2EECD4" href="/learn/">Learn</a> · <a style="color:#2EECD4" href="/contact/">Contact</a></p></div></noscript>
 
 <nav>
   <div style="display:flex;align-items:center;gap:10px">
@@ -1285,6 +1344,7 @@ img,svg,video,canvas,iframe{max-width:100%}
     <span class="nav-link" data-page="analysis" onclick="show('analysis')">Analysis</span>
     <span class="nav-link" data-page="charts" onclick="show('charts')">Charts</span>
     <span class="nav-link" data-page="screener" onclick="show('screener')">Screener</span>
+    <span class="nav-link" data-page="markets" onclick="show('markets')">Markets</span>
     <span class="nav-link" data-page="options" onclick="show('options')">Options</span>
     <span class="nav-link" data-page="pricing" onclick="show('pricing')">Pricing</span>
     <span class="nav-link" data-page="dashboard" onclick="show('dashboard')">Dashboard</span>
@@ -1311,6 +1371,7 @@ img,svg,video,canvas,iframe{max-width:100%}
   <span class="nav-link" data-page="analysis" onclick="show('analysis');toggleMobileSidebar(false)"><i class="ti ti-sparkles" style="margin-right:8px"></i>Analysis</span>
   <span class="nav-link" data-page="charts" onclick="show('charts');toggleMobileSidebar(false)"><i class="ti ti-chart-candle" style="margin-right:8px"></i>Charts</span>
   <span class="nav-link" data-page="screener" onclick="show('screener');toggleMobileSidebar(false)"><i class="ti ti-list-search" style="margin-right:8px"></i>Screener</span>
+  <span class="nav-link" data-page="markets" onclick="show('markets');toggleMobileSidebar(false)"><i class="ti ti-world" style="margin-right:8px"></i>Markets</span>
   <span class="nav-link" data-page="options" onclick="show('options');toggleMobileSidebar(false)"><i class="ti ti-stack" style="margin-right:8px"></i>Options</span>
   <span class="nav-link" onclick="show('dashboard');switchDash('chat');toggleMobileSidebar(false)"><i class="ti ti-robot" style="margin-right:8px"></i>Assistant</span>
   <span class="nav-link" data-page="pricing" onclick="show('pricing');toggleMobileSidebar(false)"><i class="ti ti-tag" style="margin-right:8px"></i>Pricing</span>
@@ -1751,7 +1812,7 @@ img,svg,video,canvas,iframe{max-width:100%}
         <a class="footer-link" href="mailto:harishdewasi2009@gmail.com" style="text-decoration:none">Contact</a>
       </div>
     </div>
-    <div role="navigation" aria-label="Explore TradeMind AI" style="padding:0 0 18px;border-top:1px solid var(--border);padding-top:18px"><a href="/ai-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">AI Stock Analysis</a><a href="/technical-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Technical Analysis</a><a href="/nse-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">NSE Stock Analysis</a><a href="/bse-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">BSE Stock Analysis</a><a href="/nifty-50-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">NIFTY 50 Analysis</a><a href="/stock-market-screener/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Stock Market Screener</a><a href="/mcx-commodity-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">MCX Commodity Analysis</a><a href="/stock-chart-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Stock Chart Analysis</a><a href="/trading-indicators/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Trading Indicators</a><a href="/features/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Features</a><a href="/pricing/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Pricing</a><a href="/trust-accuracy/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Trust and Methodology</a><a href="/learn/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Learn</a><a href="/contact/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Contact</a></div>
+    <div role="navigation" aria-label="Explore TradeMind AI" style="padding:0 0 18px;border-top:1px solid var(--border);padding-top:18px"><a href="/ai-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">AI Stock Analysis</a><a href="/technical-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Technical Analysis</a><a href="/nse-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">NSE Stock Analysis</a><a href="/bse-stock-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">BSE Stock Analysis</a><a href="/nifty-50-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">NIFTY 50 Analysis</a><a href="/stock-market-screener/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Stock Market Screener</a><a href="/mcx-commodity-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">MCX Commodity Analysis</a><a href="/stock-chart-analysis/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Stock Chart Analysis</a><a href="/trading-indicators/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Trading Indicators</a><a href="/features/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Features</a><a href="/pricing/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Pricing</a><a href="/trust-accuracy/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Trust &amp; Accuracy</a><a href="/learn/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Learn</a><a href="/contact/" style="color:var(--text2);margin:0 14px 8px 0;display:inline-block;font-size:13px">Contact</a></div>
     <div class="footer-bottom">
       <div class="footer-disclaimer">© 2026 TradeMind AI · Not SEBI registered · Computed analysis is for educational purposes only and does not constitute financial advice. Always consult a SEBI-registered investment advisor before making investment decisions.</div>
       <div class="social-links">
@@ -2030,6 +2091,62 @@ img,svg,video,canvas,iframe{max-width:100%}
       <canvas id="macdChart"></canvas>
     </div>
     <div class="tech-indicators" id="chart-tech-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════════ MARKETS (verified Upstox registry) ══════════════ -->
+<div id="page-markets" class="page" style="background:#000;color:#fff">
+  <div class="mk-wrap">
+    <div class="sec-eyebrow">Markets</div>
+    <h2>Every market Upstox supports — verified live</h2>
+    <p class="mk-sub">Instruments come straight from Upstox's official instrument master. A capability is shown as available only after a live, authorized Upstox API call proved it. Anything Upstox does not provide is marked <b>UNSUPPORTED BY UPSTOX</b> — no other data provider is used.</p>
+    <div id="mk-cats" class="mk-cats"></div>
+    <div id="mk-segs" class="mk-segs"><div class="mk-empty">Loading segments…</div></div>
+    <div class="mk-grid">
+      <aside>
+        <div class="mk-card">
+          <h4 id="mk-list-title">Instruments</h4>
+          <input id="mk-q" class="mk-inp" placeholder="Search symbol or name" autocomplete="off" oninput="mkSearchDebounced()"/>
+          <select id="mk-class" class="mk-sel" onchange="mkSearch(true)"><option value="">All asset classes</option></select>
+          <div id="mk-list" class="mk-list"></div>
+          <button id="mk-more" class="mk-btn ghost" style="display:none;width:100%;margin-top:8px" onclick="mkSearch(false)">Load more</button>
+        </div>
+        <div id="mk-contracts" class="mk-card" style="display:none;margin-top:12px"></div>
+        <div class="mk-card" style="margin-top:12px">
+          <h4>Watchlist</h4><div id="mk-watch"><div class="mk-empty">Sign in to use the watchlist.</div></div>
+        </div>
+      </aside>
+      <main>
+        <div id="mk-empty" class="mk-card mk-empty">Select an instrument to see its live quote, chart, indicators and AI analysis.</div>
+        <div id="mk-panel" class="mk-card" style="display:none">
+          <div class="mk-head">
+            <div><div id="mk-title" style="font-size:16px;font-weight:600"></div><div id="mk-meta" style="font-size:11px;color:var(--mk-mut)"></div></div>
+            <div style="text-align:right"><div id="mk-price" class="mk-price">—</div><div id="mk-chg" style="font-size:13px"></div></div>
+          </div>
+          <div id="mk-badges" class="mk-badges"></div>
+          <div id="mk-warn"></div>
+          <div id="mk-tfs" class="mk-chips"></div>
+          <div id="mk-inds" class="mk-chips"></div>
+          <div id="mk-chart" class="mk-chart"></div>
+          <div id="mk-sub-wrap"></div>
+          <div id="mk-snap" class="mk-snap"></div>
+          <div id="mk-type"></div>
+          <div id="mk-deriv"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button class="mk-btn" id="mk-ai-btn" onclick="mkRunAI()">AI Analysis</button>
+            <button class="mk-btn ghost" id="mk-wl-btn" onclick="mkToggleWatch()">☆ Watch</button>
+          </div>
+          <div id="mk-tech"></div>
+          <div id="mk-ai" style="display:none" class="mk-ai"></div>
+          <div id="mk-foot" style="font-size:10px;color:var(--mk-mut);margin-top:10px"></div>
+        </div>
+        <div class="mk-card" style="margin-top:12px">
+          <h4>Analysis accuracy &mdash; outcome-tracked</h4>
+          <div id="mk-acc"><div class="mk-empty">Loading…</div></div>
+          <button class="mk-btn ghost" style="margin-top:8px" onclick="mkLoadAcc()">Refresh</button>
+        </div>
+      </main>
+    </div>
   </div>
 </div>
 
@@ -3575,6 +3692,7 @@ function show(id){
   // e.isPlanGate branch below shows the upgrade prompt with the backend's
   // "trial has ended" message.
   if(id==='screener' && !currentUser){ postLoginRedirect='screener'; show('login'); return; }
+  if(id==='markets' && !currentUser){ postLoginRedirect='markets'; show('login'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
   const p=document.getElementById('page-'+id);
@@ -3601,6 +3719,7 @@ function show(id){
     startScreenerAutoRefresh();
   }
   if(id==='charts')initChartsPage();
+  if(id==='markets')initMarketsPage();else if(typeof mkStopTimers==='function')mkStopTimers();
   if(id==='options'){renderOptionsChain();refreshModelChipLocks();}
   if(id==='analysis')refreshModelChipLocks();
   if(id==='admin'){loadAdminPanel();startAdminAutoRefresh();}else{stopAdminAutoRefresh();}
@@ -3905,6 +4024,404 @@ function stopScreenerAutoRefresh(){
   if(screenerAutoRefreshTimer){ clearInterval(screenerAutoRefreshTimer); screenerAutoRefreshTimer=null; }
 }
   
+// ══════════════ MARKETS PAGE (verified Upstox registry) ══════════════
+// Everything shown here comes from /api/market/registry/* — real Upstox data
+// stamped with source, timestamp, market status and data mode. Nothing is simulated.
+const MK_TFS=[['1m','minutes',1],['5m','minutes',5],['15m','minutes',15],['30m','minutes',30],['1h','hours',1],['1D','days',1],['1W','weeks',1],['1M','months',1]];
+const MK_INDS=[['ema20','EMA 20','main'],['ema50','EMA 50','main'],['sma20','SMA 20','main'],['bb','Bollinger','main'],['vwap','VWAP','main'],['rsi','RSI','sub'],['macd','MACD','sub'],['atr','ATR','sub']];
+const MK={segments:[],cat:'',catSegs:[],seg:'',items:[],offset:0,sel:null,tf:'1D',inds:new Set(['ema20','rsi']),charts:[],watch:[],timer:null,wTimer:null,lastData:null,ready:false};
+const mkEsc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function mkApi(path,opts){
+  const res=await apiFetch('/api/market/registry'+path,opts);
+  const j=await res.json().catch(()=>({}));
+  if(!res.ok){const e=new Error(j.error||j.message||('Request failed ('+res.status+')'));e.isPlanGate=res.status===403;throw e;}
+  return j;
+}
+function mkFmt(n,cur){if(typeof n!=='number')return '—';const s=n.toLocaleString('en-IN',{maximumFractionDigits:n<1?6:2,minimumFractionDigits:2});return (cur==='INR'?'₹':'')+s;}
+function mkIST(iso){if(!iso)return '—';try{return new Date(iso).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST';}catch{return iso;}}
+let mkSearchT=null;
+function mkSearchDebounced(){clearTimeout(mkSearchT);mkSearchT=setTimeout(()=>mkSearch(true),250);}
+
+async function initMarketsPage(){
+  mkStartTimers();
+  if(!MK.ready){
+    try{
+      const j=await mkApi('/segments');MK.segments=j.segments||[];MK.ready=true;
+      mkRenderCats();
+      const first=MK_CATS.find(c=>mkCatInfo(c).total>0);
+      if(first)mkPickCat(first.id);
+      mkLoadWatch();mkLoadAcc();
+    }catch(e){document.getElementById('mk-cats').innerHTML='<div class="mk-empty">'+mkEsc(e.message)+'</div>';}
+  }
+}
+// Categories only GROUP segment identifiers; every count, status and instrument comes from the live registry.
+const MK_CATS=[
+  {id:'stocks',label:'Indian Stocks',segs:['NSE_EQ','BSE_EQ']},
+  {id:'indices',label:'Indian Indices',segs:['NSE_INDEX','BSE_INDEX']},
+  {id:'fo',label:'Futures & Options',segs:['NSE_FO','BSE_FO']},
+  {id:'cur',label:'Currency Derivatives',segs:['NSE_CD','NCD_FO','BCD_FO']},
+  {id:'com',label:'Commodity Derivatives',segs:['MCX_FO','NSE_COM','MCX_INDEX']},
+  {id:'gidx',label:'Global Indices',segs:['GLOBAL_INDEX']},
+  {id:'gind',label:'Global Indicators',segs:['GLOBAL_INDICATOR']}
+];
+function mkCats(){
+  const known=new Set(MK_CATS.flatMap(c=>c.segs));
+  const other=MK.segments.filter(s=>!known.has(s.segment)).map(s=>s.segment);
+  return other.length?MK_CATS.concat([{id:'other',label:'Other Upstox segments',segs:other}]):MK_CATS;
+}
+function mkCatInfo(cat){
+  const segs=MK.segments.filter(s=>cat.segs.includes(s.segment));
+  const active=segs.filter(s=>s.instrumentCount>0);
+  return {segs,active,total:active.reduce((a,s)=>a+s.instrumentCount,0)};
+}
+function mkRenderCats(){
+  const el=document.getElementById('mk-cats');
+  if(!MK.segments.length){el.innerHTML='<div class="mk-empty">No segments yet — the instrument master is still loading. Try again in a minute.</div>';return;}
+  el.innerHTML=mkCats().map(c=>{
+    const i=mkCatInfo(c),bad=i.total===0;
+    const st=bad?'UNSUPPORTED BY UPSTOX':[...new Set(i.active.map(mkSegBadge))].join(' / ');
+    return `<div class="mk-cat ${MK.cat===c.id?'sel':''} ${bad?'bad':''}" ${bad?'':`onclick="mkPickCat('${c.id}')"`} title="${bad?'No instruments for these segments exist in the current Upstox instrument master ('+mkEsc(c.segs.join(', '))+')':''}"><b>${mkEsc(c.label)}</b>${bad?'0':i.total.toLocaleString('en-IN')} instruments<small>${mkEsc(st)}</small></div>`;
+  }).join('');
+}
+function mkPickCat(id){
+  MK.cat=id;
+  const cat=mkCats().find(c=>c.id===id),info=mkCatInfo(cat);
+  MK.catSegs=info.segs;
+  mkRenderCats();
+  mkPickSeg(info.active.length?info.active[0].segment:'');
+}
+function mkSegBadge(s){
+  if(s.accessStatus==='UNSUPPORTED BY UPSTOX')return 'UNSUPPORTED BY UPSTOX';
+  return s.accessStatus||'UNVERIFIED';
+}
+function mkRenderSegs(){
+  const el=document.getElementById('mk-segs');
+  const segs=MK.catSegs||[];
+  if(segs.length<2){el.innerHTML='';return;}
+  el.innerHTML=segs.map(s=>{
+    const bad=s.instrumentCount===0;
+    return `<div class="mk-seg ${MK.seg===s.segment?'sel':''} ${bad?'bad':''}" ${bad?'':`onclick="mkPickSeg('${mkEsc(s.segment)}')"`} title="${mkEsc(s.notes||'')}"><b>${mkEsc(s.segment)}</b>${bad?'0':s.instrumentCount.toLocaleString('en-IN')} instruments<small>${mkEsc(mkSegBadge(s))}</small></div>`;
+  }).join('');
+}
+function mkStartTimers(){
+  mkStopTimers();
+  MK.timer=setInterval(()=>{if(MK.sel&&document.getElementById('page-markets').classList.contains('active'))mkRefreshQuote();},4000);
+  MK.wTimer=setInterval(()=>{if(MK.watch.length&&document.getElementById('page-markets').classList.contains('active'))mkRenderWatch();},10000);
+}
+function mkStopTimers(){clearInterval(MK.timer);clearInterval(MK.wTimer);}
+function mkPickSeg(seg){
+  MK.seg=seg;mkRenderSegs();
+  const sg=MK.segments.find(x=>x.segment===seg);
+  const sel=document.getElementById('mk-class');
+  const classes=sg?sg.assetClasses.map(a=>a.assetClass):[];
+  sel.innerHTML='<option value="">All asset classes</option>'+classes.map(c=>`<option value="${mkEsc(c)}">${mkEsc(c.replace(/_/g,' '))}</option>`).join('');
+  document.getElementById('mk-contracts').style.display='none';
+  mkSearch(true);
+}
+function mkIsDerivSeg(){const s=MK.segments.find(x=>x.segment===MK.seg);return !!s&&/_FO$/.test(s.segment)&&s.assetClasses.every(a=>/future|option/.test(a.assetClass));}
+
+async function mkSearch(reset){
+  const list=document.getElementById('mk-list'),more=document.getElementById('mk-more');
+  if(reset){MK.offset=0;MK.items=[];list.innerHTML='<div class="mk-empty">Loading…</div>';}
+  const q=document.getElementById('mk-q').value.trim(),cls=document.getElementById('mk-class').value;
+  if(!MK.seg){more.style.display='none';list.innerHTML='<div class="mk-empty">Upstox\'s instrument master has no instruments for this market, so nothing is shown. No other data provider is substituted.</div>';return;}
+  try{
+    if(mkIsDerivSeg()){
+      document.getElementById('mk-list-title').textContent='Underlyings (derivatives)';
+      const j=await mkApi('/underlyings?segment='+encodeURIComponent(MK.seg)+'&q='+encodeURIComponent(q)+'&limit=100');
+      more.style.display='none';
+      list.innerHTML=j.items.length?j.items.map(u=>`<div class="mk-row" onclick="mkOpenUnderlying('${mkEsc(u.underlyingSymbol)}','${mkEsc(u.segment)}')"><span>${mkEsc(u.underlyingSymbol)}<span class="n">nearest expiry ${mkEsc(u.nearestExpiry||'—')}</span></span><span class="mk-tag">${u.contracts} contracts</span></div>`).join(''):'<div class="mk-empty">No underlyings match.</div>';
+      return;
+    }
+    document.getElementById('mk-list-title').textContent='Instruments';
+    const p=new URLSearchParams({limit:30,offset:MK.offset});
+    if(q)p.set('q',q);if(MK.seg)p.set('segment',MK.seg);if(cls)p.set('assetClass',cls);
+    const j=await mkApi('/instruments?'+p);
+    MK.items=MK.items.concat(j.items);MK.offset+=j.items.length;
+    more.style.display=j.items.length===30?'block':'none';
+    list.innerHTML=MK.items.length?MK.items.map((it,i)=>`<div class="mk-row ${MK.sel&&MK.sel.instrumentKey===it.instrumentKey?'sel':''}" onclick="mkSelect(${i})"><span>${mkEsc(it.symbol)}<span class="n">${mkEsc(it.displayName)}</span></span><span class="mk-tag">${mkEsc(it.segment)}</span></div>`).join(''):'<div class="mk-empty">No verified instruments match.</div>';
+  }catch(e){list.innerHTML='<div class="mk-empty">'+mkEsc(e.message)+'</div>';}
+}
+async function mkOpenUnderlying(und,seg){
+  const box=document.getElementById('mk-contracts');box.style.display='block';box.innerHTML='<h4>'+mkEsc(und)+' contracts</h4><div class="mk-empty">Loading…</div>';
+  try{
+    const j=await mkApi('/contracts?underlying='+encodeURIComponent(und)+'&segment='+encodeURIComponent(seg)+'&limit=300');
+    MK.contracts=j.items;
+    const exps=[...new Set(j.items.map(c=>c.expiry))];
+    box.innerHTML='<h4>'+mkEsc(und)+' contracts</h4><select id="mk-exp" class="mk-sel" onchange="mkRenderContracts()">'+exps.map(e=>`<option>${mkEsc(e)}</option>`).join('')+'</select><div id="mk-clist" class="mk-list"></div>';
+    mkRenderContracts();
+  }catch(e){box.innerHTML='<div class="mk-empty">'+mkEsc(e.message)+'</div>';}
+}
+function mkRenderContracts(){
+  const exp=document.getElementById('mk-exp').value;
+  const rows=(MK.contracts||[]).filter(c=>c.expiry===exp);
+  document.getElementById('mk-clist').innerHTML=rows.map(c=>`<div class="mk-row" onclick='mkSelectKey(${JSON.stringify(c.instrumentKey).replace(/'/g,"&#39;")})'><span>${mkEsc(c.symbol)}</span><span class="mk-tag">${mkEsc(c.instrumentType||'')}${c.strike?' '+c.strike:''}</span></div>`).join('')||'<div class="mk-empty">None.</div>';
+}
+async function mkSelectKey(key){
+  try{const j=await mkApi('/instrument?key='+encodeURIComponent(key));mkSetSel(j.instrument);}catch(e){alert(e.message);}
+}
+function mkSelect(i){mkSetSel(MK.items[i]);}
+function mkSetSel(inst){
+  MK.sel=inst;MK.tf=MK.tf||'1D';
+  document.getElementById('mk-empty').style.display='none';document.getElementById('mk-panel').style.display='block';
+  document.getElementById('mk-ai').style.display='none';
+  document.getElementById('mk-title').textContent=inst.displayName+' · '+inst.symbol;
+  document.getElementById('mk-meta').textContent=[inst.segment,inst.assetClass.replace(/_/g,' '),inst.instrumentType,inst.expiry?'expiry '+inst.expiry:null,inst.currency].filter(Boolean).join(' · ');
+  document.getElementById('mk-price').textContent='—';document.getElementById('mk-chg').textContent='';
+  document.getElementById('mk-tech').innerHTML='';
+  mkRenderType(inst,null);mkRenderDeriv(inst);
+  mkRenderTFs();mkRenderInds();mkUpdateWatchBtn();
+  if(typeof liveSocket!=='undefined'&&liveSocket&&liveSocket.readyState===1)liveSocket.send(JSON.stringify({type:'watch',instrumentKey:inst.instrumentKey}));
+  mkRefreshQuote();mkLoadCandles();
+  document.getElementById('mk-panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function mkTfAllowed(unit,interval){
+  const v=MK.sel&&MK.sel.verifiedIntervals||[];
+  return !v.length||v.includes(unit+':'+interval); // unprobed → allow; probed → only proven intervals
+}
+function mkRenderTFs(){
+  document.getElementById('mk-tfs').innerHTML=MK_TFS.map(([l,u,i])=>{const ok=mkTfAllowed(u,i);return `<span class="mk-chip ${MK.tf===l?'sel':''} ${ok?'':'off'}" title="${ok?'':'Not verified for this segment by Upstox probes'}" onclick="${ok?`mkSetTF('${l}')`:''}">${l}</span>`;}).join('');
+}
+function mkRenderInds(){
+  document.getElementById('mk-inds').innerHTML=MK_INDS.map(([k,l])=>`<span class="mk-chip ${MK.inds.has(k)?'sel':''}" onclick="mkToggleInd('${k}')">${l}</span>`).join('');
+}
+function mkSetTF(l){MK.tf=l;mkRenderTFs();mkLoadCandles();}
+function mkToggleInd(k){MK.inds.has(k)?MK.inds.delete(k):MK.inds.add(k);mkRenderInds();if(MK.lastData)mkDraw(MK.lastData);}
+
+function mkBadges(res){
+  const m=res.market||{},f=res.freshness||{};
+  const mode=res.meta?res.meta.dataMode:f.mode;
+  const cls=mode==='real-time'?'rt':mode==='delayed'?'dl':mode==='historical'?'hi':'lc';
+  const label={'real-time':'REAL-TIME','delayed':'DELAYED / STALE','last-close':'LAST CLOSE','historical':'HISTORICAL'}[mode]||'UNKNOWN';
+  const src=m.source==='upstox-market-status-api'?'official status':m.source==='estimated-schedule'?'estimated hours':'schedule n/a';
+  return `<span class="mk-b ${cls}">${label}</span><span class="mk-b">MARKET ${mkEsc((m.status||'unknown').toUpperCase())} (${src})</span><span class="mk-b">SOURCE: UPSTOX</span>`;
+}
+async function mkRefreshQuote(){
+  if(!MK.sel)return;const key=MK.sel.instrumentKey;
+  try{
+    const r=await mkApi('/quote?key='+encodeURIComponent(key));
+    if(!MK.sel||MK.sel.instrumentKey!==key)return;
+    const q=r.quote;
+    document.getElementById('mk-price').textContent=mkFmt(q.lastPrice,MK.sel.currency);
+    const up=(q.changePct||0)>=0;
+    const chg=document.getElementById('mk-chg');
+    chg.className=up?'mk-up':'mk-dn';
+    chg.textContent=q.changePct==null?'':(up?'▲ +':'▼ ')+q.changePct.toFixed(2)+'%  ('+(q.change>=0?'+':'')+mkFmt(q.change)+')';
+    document.getElementById('mk-badges').innerHTML=mkBadges(r)+`<span class="mk-b">TRADE TIME ${mkEsc(mkIST(r.tradeTime))}</span>`;
+    document.getElementById('mk-warn').innerHTML=r.freshness.stale?'<div class="mk-warnbox">Stale data: market is open but the last trade is '+r.freshness.ageSeconds+'s old (threshold '+r.freshness.staleAfterSeconds+'s).</div>':r.fromStore?'<div class="mk-warnbox">Live quote unavailable ('+mkEsc(r.liveError||'')+'). Showing the last valid stored quote from '+mkEsc(mkIST(r.tradeTime))+'.</div>':'';
+    mkSnap(q);mkRenderType(MK.sel,r);
+  }catch(e){document.getElementById('mk-warn').innerHTML='<div class="mk-warnbox">'+mkEsc(e.message)+'</div>';}
+}
+function mkSnap(q){
+  const items=[['Open',q.open],['High',q.high],['Low',q.low],['Prev close',q.previousClose],['Volume',q.volume],['Open interest',q.openInterest],['Avg price',q.averagePrice]].filter(x=>typeof x[1]==='number');
+  document.getElementById('mk-snap').innerHTML=items.map(([l,v])=>`<div>${l}<b>${l==='Volume'||l==='Open interest'?v.toLocaleString('en-IN'):mkFmt(v)}</b></div>`).join('');
+}
+async function mkLoadCandles(){
+  if(!MK.sel)return;const key=MK.sel.instrumentKey;
+  const [,unit,interval]=MK_TFS.find(t=>t[0]===MK.tf);
+  document.getElementById('mk-foot').textContent='Loading candles…';
+  try{
+    const d=await mkApi('/candles?key='+encodeURIComponent(key)+'&unit='+unit+'&interval='+interval);
+    if(!MK.sel||MK.sel.instrumentKey!==key)return;
+    MK.lastData=d;mkDraw(d);
+    const m=d.meta;
+    document.getElementById('mk-foot').textContent=`Source: Upstox · ${m.count} candles · last candle ${mkIST(m.lastCandleAt)} · mode ${m.dataMode}${m.servedFromLastGood?' (served from last good snapshot: '+m.upstreamError+')':''}${m.droppedMalformed?' · '+m.droppedMalformed+' malformed rows dropped':''} · fetched ${mkIST(m.fetchedAt)}`;
+    if(!m.count)document.getElementById('mk-foot').textContent='Upstox returned no candles for this instrument/timeframe.';
+  }catch(e){
+    mkClearCharts();document.getElementById('mk-foot').textContent=e.message;
+  }
+}
+function mkClearCharts(){MK.charts.forEach(c=>{try{c.remove();}catch{}});MK.charts=[];document.getElementById('mk-chart').innerHTML='';document.getElementById('mk-sub-wrap').innerHTML='';}
+function mkDraw(d){
+  mkClearCharts();
+  if(!d.candles.length||typeof LightweightCharts==='undefined')return;
+  const OFF=19800; // show IST on the time axis
+  const T=c=>c.time+OFF;
+  const base={layout:{background:{color:'#0b0b0b'},textColor:'#9a9a9a'},grid:{vertLines:{color:'#1a1a1a'},horzLines:{color:'#1a1a1a'}},rightPriceScale:{borderColor:'#262626'},timeScale:{borderColor:'#262626',timeVisible:!['days','weeks','months'].includes(d.unit),secondsVisible:false},crosshair:{mode:0}};
+  const main=LightweightCharts.createChart(document.getElementById('mk-chart'),{...base,height:380,width:document.getElementById('mk-chart').clientWidth});
+  MK.charts.push(main);
+  const cs=main.addCandlestickSeries({upColor:'#22c55e',downColor:'#ef4444',borderVisible:false,wickUpColor:'#22c55e',wickDownColor:'#ef4444'});
+  cs.setData(d.candles.map(c=>({time:T(c),open:c.o,high:c.h,low:c.l,close:c.c})));
+  if(d.candles.some(c=>c.v>0)){
+    const vs=main.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol'});
+    main.priceScale('vol').applyOptions({scaleMargins:{top:.82,bottom:0}});
+    vs.setData(d.candles.map(c=>({time:T(c),value:c.v||0,color:c.c>=c.o?'rgba(34,197,94,.35)':'rgba(239,68,68,.35)'})));
+  }
+  const line=(arr,color,w=1)=>{const s=main.addLineSeries({color,lineWidth:w,priceLineVisible:false,lastValueVisible:false});s.setData(d.candles.map((c,i)=>arr[i]==null?null:{time:T(c),value:arr[i]}).filter(Boolean));};
+  const I=d.indicators||{};
+  if(MK.inds.has('ema20')&&I.ema20)line(I.ema20,'#ffffff',2);
+  if(MK.inds.has('ema50')&&I.ema50)line(I.ema50,'#f5a524',2);
+  if(MK.inds.has('sma20')&&I.sma20)line(I.sma20,'#a78bfa',1);
+  if(MK.inds.has('bb')&&I.bb){line(I.bb.upper,'#7a7a7a');line(I.bb.mid,'#4a4a4a');line(I.bb.lower,'#7a7a7a');}
+  if(MK.inds.has('vwap')&&I.vwap)line(I.vwap,'#38bdf8',1);
+  const wrap=document.getElementById('mk-sub-wrap');
+  const sub=(label,build)=>{
+    const lab=document.createElement('div');lab.className='mk-lbl';lab.textContent=label;wrap.appendChild(lab);
+    const box=document.createElement('div');box.className='mk-sub-chart';wrap.appendChild(box);
+    const ch=LightweightCharts.createChart(box,{...base,height:110,width:box.clientWidth});MK.charts.push(ch);build(ch);return ch;
+  };
+  const lineOn=(ch,arr,color)=>{const s=ch.addLineSeries({color,lineWidth:1,priceLineVisible:false});s.setData(d.candles.map((c,i)=>arr[i]==null?null:{time:T(c),value:arr[i]}).filter(Boolean));return s;};
+  if(MK.inds.has('rsi')&&I.rsi)sub('RSI (14)',ch=>{const s=lineOn(ch,I.rsi,'#ffffff');s.createPriceLine({price:70,color:'#555',lineWidth:1,lineStyle:2});s.createPriceLine({price:30,color:'#555',lineWidth:1,lineStyle:2});});
+  if(MK.inds.has('macd')&&I.macd)sub('MACD (12, 26, 9)',ch=>{const h=ch.addHistogramSeries({priceLineVisible:false});h.setData(d.candles.map((c,i)=>I.macd.hist[i]==null?null:{time:T(c),value:I.macd.hist[i],color:I.macd.hist[i]>=0?'rgba(34,197,94,.6)':'rgba(239,68,68,.6)'}).filter(Boolean));lineOn(ch,I.macd.macd,'#ffffff');lineOn(ch,I.macd.signal,'#f5a524');});
+  if(MK.inds.has('atr')&&I.atr)sub('ATR (14)',ch=>lineOn(ch,I.atr,'#38bdf8'));
+  // keep time scales in sync
+  let busy=false;
+  MK.charts.forEach(a=>a.timeScale().subscribeVisibleLogicalRangeChange(r=>{if(busy||!r)return;busy=true;MK.charts.forEach(b=>{if(b!==a)b.timeScale().setVisibleLogicalRange(r);});busy=false;}));
+  main.timeScale().fitContent();
+  window.__mkMain=main;window.__mkCS=cs;
+}
+// live tick from the shared WebSocket (keyed by instrument key)
+function mkOnTick(msg){
+  if(!MK.sel)return;const t=msg.feeds&&msg.feeds[MK.sel.instrumentKey];
+  if(!t||typeof t.price!=='number')return;
+  document.getElementById('mk-price').textContent=mkFmt(t.price,MK.sel.currency);
+  if(typeof t.changePct==='number'){const up=t.changePct>=0,chg=document.getElementById('mk-chg');chg.className=up?'mk-up':'mk-dn';chg.textContent=(up?'▲ +':'▼ ')+t.changePct.toFixed(2)+'%';}
+}
+// AI analysis — grounded on server-computed indicators from real Upstox candles
+const mkN=(v,dp=2)=>typeof v==='number'&&isFinite(v)?v.toLocaleString('en-IN',{maximumFractionDigits:dp,minimumFractionDigits:0}):'—';
+const mkTri=v=>v===true?'Verified by a live Upstox probe':v===false?'Not available (proven by probe)':'Not yet verified';
+// Labels for reference-data segments: never presented as a tradable exchange instrument.
+function mkRenderType(inst,r){
+  const el=document.getElementById('mk-type');if(!el)return;
+  if(!/^GLOBAL_/.test(inst.segment)){el.innerHTML='';return;}
+  const ind=inst.segment==='GLOBAL_INDICATOR';
+  const q=r&&r.quote;
+  el.innerHTML=`<div class="mk-box"><h5>${ind?'Global indicator':'Global index'} — data label</h5><div class="mk-kv">
+    <div>Instrument type<b>${mkEsc(inst.instrumentType||inst.assetClass.replace(/_/g,' '))}</b></div>
+    <div>Tradable on Upstox<b>${ind?'No — reference indicator, not an exchange-traded instrument':'Not implied — index level only; its constituents/derivatives are not assumed available'}</b></div>
+    <div>Source<b>Upstox</b></div>
+    <div>Last update<b>${r?mkEsc(mkIST(r.tradeTime)):'—'}</b></div>
+    <div>Data freshness<b>${r?mkEsc(((r.freshness&&r.freshness.mode)||'unknown').toUpperCase())+(r.freshness&&r.freshness.ageSeconds!=null?' ('+r.freshness.ageSeconds+'s old)':''):'—'}</b></div>
+    <div>Historical candles<b>${mkEsc(mkTri(inst.historicalCandlesAvailable))}</b></div>
+    <div>Refresh interval<b>Not published by the instrument master — judge by the update time above</b></div>
+    ${q&&q.volume==null?'<div>Volume<b>Not provided</b></div>':''}</div></div>`;
+}
+function mkRenderDeriv(inst){
+  const el=document.getElementById('mk-deriv');
+  const t=inst.instrumentType||'',ac=inst.assetClass||'';
+  const isOpt=/option/.test(ac)||t==='CE'||t==='PE',isFut=/future/.test(ac)||t==='FUT';
+  if(!isOpt&&!isFut){el.innerHTML='';return;}
+  let h='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">';
+  if(isOpt&&inst.underlyingKey&&inst.expiry)h+='<button class="mk-btn ghost" onclick="mkLoadChain()">Option chain &amp; Greeks</button>';
+  if(inst.underlyingSymbol)h+='<button class="mk-btn ghost" onclick="mkLoadBasis()">Futures basis</button>';
+  h+='</div><div id="mk-deriv-out"></div>';
+  el.innerHTML=h;
+}
+async function mkLoadChain(){
+  const inst=MK.sel,out=document.getElementById('mk-deriv-out');
+  out.innerHTML='<div class="mk-box">Loading option chain from Upstox…</div>';
+  try{
+    const j=await mkApi('/option-chain?key='+encodeURIComponent(inst.underlyingKey)+'&expiry='+encodeURIComponent(inst.expiry));
+    const rows=(j.chain||[]).filter(x=>typeof x.strike_price==='number').sort((a,b)=>a.strike_price-b.strike_price);
+    if(!rows.length){out.innerHTML='<div class="mk-box">Upstox returned no option-chain rows for this underlying/expiry (the market may be closed or the chain unsupported).</div>';return;}
+    const spot=rows.find(x=>typeof x.underlying_spot_price==='number');const sp=spot?spot.underlying_spot_price:null;
+    let ai=0;if(sp!=null){let best=Infinity;rows.forEach((x,i)=>{const d=Math.abs(x.strike_price-sp);if(d<best){best=d;ai=i;}});}else ai=Math.floor(rows.length/2);
+    const win=rows.slice(Math.max(0,ai-10),ai+11);
+    const md=(o,f)=>o&&o.market_data?o.market_data[f]:null,gk=(o,f)=>o&&o.option_greeks?o.option_greeks[f]:null;
+    const anyG=win.some(x=>gk(x.call_options,'delta')!=null||gk(x.put_options,'delta')!=null);
+    const cell=(o)=>o&&o.instrument_key?` class="c" onclick='mkSelectKey(${JSON.stringify(o.instrument_key).replace(/'/g,"&#39;")})'`:'';
+    const pcr=rows.find(x=>typeof x.pcr==='number');
+    out.innerHTML=`<div class="mk-box"><h5>Option chain — ${mkEsc(inst.underlyingSymbol||'')} · expiry ${mkEsc(inst.expiry)}</h5>
+      <div class="mk-kv"><div>Underlying spot<b>${mkN(sp)}</b></div><div>PCR (Upstox)<b>${pcr?mkN(pcr.pcr):'—'}</b></div><div>Strikes shown<b>${win.length} of ${rows.length} (around ATM)</b></div></div>
+      <div class="mk-scroll"><table class="mk-tbl"><thead><tr><th>OI</th><th>Vol</th>${anyG?'<th>IV</th><th>Δ</th>':''}<th>LTP</th><th style="text-align:center">Strike</th><th>LTP</th>${anyG?'<th>Δ</th><th>IV</th>':''}<th>Vol</th><th>OI</th></tr></thead><tbody>`+
+      win.map((x,i)=>{const C=x.call_options,P=x.put_options;
+        return `<tr class="${rows.indexOf(x)===ai?'atm':''}"><td>${mkN(md(C,'oi'),0)}</td><td>${mkN(md(C,'volume'),0)}</td>${anyG?`<td>${mkN(gk(C,'iv'))}</td><td>${mkN(gk(C,'delta'),3)}</td>`:''}<td${cell(C)}>${mkN(md(C,'ltp'))}</td><td class="k">${mkN(x.strike_price)}</td><td${cell(P)}>${mkN(md(P,'ltp'))}</td>${anyG?`<td>${mkN(gk(P,'delta'),3)}</td><td>${mkN(gk(P,'iv'))}</td>`:''}<td>${mkN(md(P,'volume'),0)}</td><td>${mkN(md(P,'oi'),0)}</td></tr>`;}).join('')+
+      `</tbody></table></div><div style="font-size:10px;color:var(--mk-mut);margin-top:6px">Source: Upstox · fetched ${mkEsc(mkIST(j.fetchedAt))} · “—” means Upstox did not return that field${anyG?'':' (no Greeks returned for this chain)'} · tap an LTP to open that contract.</div></div>`;
+  }catch(e){out.innerHTML='<div class="mk-box">'+mkEsc(e.isPlanGate?'Option chain is an Elite feature: '+e.message:e.message)+'</div>';}
+}
+async function mkLoadBasis(){
+  const inst=MK.sel,out=document.getElementById('mk-deriv-out');
+  out.innerHTML='<div class="mk-box">Loading futures from Upstox…</div>';
+  try{
+    const j=await mkApi('/futures-basis?underlying='+encodeURIComponent(inst.underlyingSymbol)+'&segment='+encodeURIComponent(inst.segment));
+    if(!j.available){out.innerHTML='<div class="mk-box">'+mkEsc(j.reason)+'</div>';return;}
+    out.innerHTML=`<div class="mk-box"><h5>Futures &amp; basis — ${mkEsc(j.underlying)}</h5>
+      <div class="mk-kv"><div>Spot instrument<b>${j.spot?mkEsc(j.spot.symbol)+' '+mkN(j.spot.price):'none in Upstox master'}</b></div></div>
+      <div class="mk-scroll"><table class="mk-tbl"><thead><tr><th style="text-align:left">Contract</th><th>Expiry</th><th>Days</th><th>Price</th><th>Basis</th><th>Basis %</th><th>Annualised %</th><th>OI</th><th>Volume</th></tr></thead><tbody>`+
+      j.rows.map(r=>`<tr><td style="text-align:left;cursor:pointer" onclick='mkSelectKey(${JSON.stringify(r.instrumentKey).replace(/'/g,"&#39;")})'>${mkEsc(r.symbol)}</td><td>${mkEsc(r.expiry)}</td><td>${mkN(r.daysToExpiry,0)}</td><td>${mkN(r.futuresPrice)}</td><td>${mkN(r.basis)}</td><td>${mkN(r.basisPct)}</td><td>${mkN(r.annualizedPct)}</td><td>${mkN(r.openInterest,0)}</td><td>${mkN(r.volume,0)}</td></tr>`).join('')+
+      `</tbody></table></div><div style="font-size:10px;color:var(--mk-mut);margin-top:6px">${mkEsc(j.basisNote)}</div></div>`;
+  }catch(e){out.innerHTML='<div class="mk-box">'+mkEsc(e.message)+'</div>';}
+}
+function mkRenderTech(ctx,tracking){
+  const el=document.getElementById('mk-tech'),t=ctx.technical;
+  if(!t||!t.ok){el.innerHTML='<div class="mk-box"><h5>Technical read</h5>'+mkEsc((t&&t.reason)||'Not enough real data to compute indicators.')+'</div>';return;}
+  const cls=t.bias==='bullish'?'bull':t.bias==='bearish'?'bear':'';
+  const lv=a=>a&&a.length?a.map(x=>mkN(x.level,4)+' ('+x.touches+'×)').join(' · '):'none identified';
+  const tr=tracking&&tracking.recorded?`Recorded for outcome tracking — success is judged after ${tracking.horizonBars} bars: bullish ≥ +${tracking.criteria.directionalMinMoveAtr} ATR, bearish ≤ −${tracking.criteria.directionalMinMoveAtr} ATR, neutral within ±${tracking.criteria.neutralMaxMoveAtr} ATR.`:tracking&&tracking.duplicate?'This candle was already recorded for outcome tracking.':'Not recorded for tracking'+(tracking&&tracking.reason?': '+tracking.reason:'.');
+  el.innerHTML=`<div class="mk-box"><h5>Technical read (rule-based, from real Upstox candles)</h5>
+    <div style="margin-bottom:8px"><span class="mk-pill ${cls}">${mkEsc(t.bias.toUpperCase())}</span> <span style="color:var(--mk-mut)">${mkEsc(ctx.dataMode)} · ${mkEsc(ctx.timeframe)} · ${t.candlesUsed} candles</span></div>
+    ${t.votes.map(v=>`<div class="mk-vote"><span>${mkEsc(v.name)}: ${mkEsc(v.detail)}</span><b class="${v.vote>0?'mk-up':v.vote<0?'mk-dn':''}">${v.vote>0?'+1':v.vote<0?'−1':'0'}</b></div>`).join('')}
+    <div class="mk-kv" style="margin-top:8px">
+      <div>Trend strength (ADX)<b>${mkN(t.trend.strengthAdx)} · ${mkEsc(t.trend.state||'n/a')}</b></div>
+      <div>Momentum ROC 5/10/20<b>${mkN(t.momentum.roc5)}% / ${mkN(t.momentum.roc10)}% / ${mkN(t.momentum.roc20)}%</b></div>
+      <div>Volatility<b>${t.volatility?mkEsc(t.volatility.state)+' · ATR '+mkN(t.volatility.atrPct)+'%':'n/a'}</b></div>
+      <div>Volume vs 20-bar<b>${t.volume?mkN(t.volume.relativeVolume)+'× · '+mkEsc(t.volume.state):'not available'}</b></div>
+      <div>Range state<b>${t.breakout?mkEsc(t.breakout.state)+' ('+t.breakout.lookback+' bars)':'n/a'}</b></div>
+      <div>Invalidation level<b>${t.invalidation!=null?mkN(t.invalidation,4):'n/a'}</b></div>
+    </div>
+    <div style="margin-top:8px">Support: <b>${lv(t.levels.support)}</b><br>Resistance: <b>${lv(t.levels.resistance)}</b></div>
+    ${t.risks.length?'<div style="margin-top:8px;color:var(--mk-warn)">Risks: '+t.risks.map(mkEsc).join(' ')+'</div>':''}
+    <div style="font-size:10px;color:var(--mk-mut);margin-top:8px">${mkEsc(tr)} Indicators describe past prices and can be wrong; this is not a guarantee, prediction of profit or investment advice.</div></div>`;
+}
+async function mkRunAI(){
+  if(!MK.sel)return;
+  const box=document.getElementById('mk-ai'),btn=document.getElementById('mk-ai-btn');
+  const [,unit,interval]=MK_TFS.find(t=>t[0]===MK.tf);
+  box.style.display='block';box.textContent='Computing indicators from Upstox candles...';btn.disabled=true;
+  try{
+    const c=await mkApi('/analysis-context?key='+encodeURIComponent(MK.sel.instrumentKey)+'&unit='+unit+'&interval='+interval);
+    mkRenderTech(c.context,c.tracking);mkLoadAcc();
+    box.textContent='Asking AI...';
+    const res=await apiFetch('/api/ai/insight',{method:'POST',body:JSON.stringify({kind:'instrumentAnalysis',context:c.context})});
+    const j=await res.json();
+    if(!res.ok)throw Object.assign(new Error(j.error||'AI unavailable'),{isPlanGate:res.status===403});
+    box.innerHTML='<div style="font-size:10px;color:var(--mk-mut);margin-bottom:8px">Data: Upstox · '+mkEsc(c.context.dataMode)+' · as of '+mkEsc(mkIST(c.context.asOf))+' · '+c.context.candlesUsed+' candles · model '+mkEsc(j.model||'')+'</div>'+mkEsc(j.text)+'<div style="font-size:10px;color:var(--mk-mut);margin-top:8px">Educational description of indicator readings — not investment advice.</div>';
+  }catch(e){box.textContent=e.isPlanGate?'AI narrative needs a paid plan (or an active trial): '+e.message:e.message;}
+  btn.disabled=false;
+}
+async function mkLoadAcc(){
+  const el=document.getElementById('mk-acc');if(!el)return;
+  try{
+    const a=await mkApi('/accuracy');const o=a.overall;
+    const d=x=>x?new Date(x).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    const tbl=(rows,key)=>rows.length?`<div class="mk-scroll"><table class="mk-tbl"><thead><tr><th style="text-align:left">${key}</th><th>Accuracy</th><th>Evaluated</th><th>Pending</th><th>Unresolved</th></tr></thead><tbody>${rows.map(r=>`<tr><td style="text-align:left">${mkEsc(r.segment||r.timeframe||r.bias)}</td><td>${r.accuracyPct==null?'n/a':r.accuracyPct+'%'}</td><td>${r.eligible}</td><td>${r.pending}</td><td>${r.unresolvable}</td></tr>`).join('')}</tbody></table></div>`:'';
+    el.innerHTML=`<div class="mk-kv"><div>Accuracy (evaluated only)<b>${o.accuracyPct==null?'Not enough evaluated reads yet':o.accuracyPct+'%'}</b></div><div>Sample size<b>${o.eligible} evaluated (${o.correct} correct / ${o.incorrect} incorrect)</b></div><div>Pending<b>${o.pending}</b></div><div>Unresolvable (excluded)<b>${o.unresolvable}</b></div><div>Period<b>${d(o.firstRecordedAt)} → ${d(o.lastEvaluatedAt)}</b></div></div>`+
+      tbl(a.byMarket,'Market')+tbl(a.byTimeframe,'Timeframe')+tbl(a.byBias,'Bias')+
+      `<div style="font-size:10px;color:var(--mk-mut);margin-top:8px">Strategy: ${mkEsc(a.strategy)} · horizon ${a.criteria.horizonBars} bars · bullish/bearish must move ≥ ${a.criteria.directionalMinMoveAtr} ATR in the called direction, neutral must stay within ${a.criteria.neutralMaxMoveAtr} ATR · outcome = ${mkEsc(a.criteria.outcomeBasis)}. ${mkEsc(a.note)}</div>`;
+  }catch(e){el.innerHTML='<div class="mk-empty">'+mkEsc(e.message)+'</div>';}
+}
+// watchlist (any verified instrument)
+async function mkLoadWatch(){
+  if(!currentUser)return;
+  try{const j=await mkApi('/watchlist');MK.watch=j.items||[];mkRenderWatch();mkUpdateWatchBtn();}catch(e){document.getElementById('mk-watch').innerHTML='<div class="mk-empty">'+mkEsc(e.message)+'</div>';}
+}
+async function mkRenderWatch(){
+  const el=document.getElementById('mk-watch');
+  if(!MK.watch.length){el.innerHTML='<div class="mk-empty">Nothing watched yet.</div>';return;}
+  let quotes={};
+  try{const j=await mkApi('/quotes?keys='+encodeURIComponent(MK.watch.map(w=>w.instrument_key).join(',')));j.quotes.forEach(q=>{quotes[q.instrument.instrumentKey]=q;});}catch{}
+  el.innerHTML=MK.watch.map(w=>{
+    const q=quotes[w.instrument_key],qq=q&&q.quote;
+    const cp=qq&&qq.changePct!=null?`<span class="${qq.changePct>=0?'mk-up':'mk-dn'}">${qq.changePct>=0?'+':''}${qq.changePct.toFixed(2)}%</span>`:'';
+    const tag=q?({'real-time':'LIVE','delayed':'STALE','last-close':'CLOSE'}[q.freshness.mode]||'—'):'—';
+    return `<div class="mk-row"><span onclick='mkSelectKey(${JSON.stringify(w.instrument_key).replace(/'/g,"&#39;")})'>${mkEsc(w.symbol)}<span class="n">${mkEsc(w.segment||'')} · ${tag}</span></span><span style="text-align:right">${qq?mkFmt(qq.lastPrice):'—'}<br>${cp} <a style="color:var(--mk-mut);cursor:pointer" onclick="mkRemoveWatch('${mkEsc(w.id)}')">✕</a></span></div>`;
+  }).join('');
+}
+function mkUpdateWatchBtn(){
+  const b=document.getElementById('mk-wl-btn');if(!b||!MK.sel)return;
+  b.textContent=MK.watch.some(w=>w.instrument_key===MK.sel.instrumentKey)?'★ Watching':'☆ Watch';
+}
+async function mkToggleWatch(){
+  if(!currentUser){show('login');return;}
+  const ex=MK.watch.find(w=>w.instrument_key===MK.sel.instrumentKey);
+  try{
+    if(ex)await mkApi('/watchlist/'+ex.id,{method:'DELETE'});
+    else await mkApi('/watchlist',{method:'POST',body:JSON.stringify({instrumentKey:MK.sel.instrumentKey})});
+    await mkLoadWatch();
+  }catch(e){alert(e.message);}
+}
+async function mkRemoveWatch(id){try{await mkApi('/watchlist/'+id,{method:'DELETE'});await mkLoadWatch();}catch(e){alert(e.message);}}
+
 // ══════════════ LIVE WEBSOCKET FEED (real-time, no polling) ══════════════
 // Connects to our backend's /ws/market, which relays Upstox's live tick
 // feed the instant a price changes — replaces the old 4s/15s REST polling
@@ -3920,6 +4437,7 @@ function connectLiveFeed(){
 liveSocket.onopen=()=>{
     liveSocketRetryMs=1000;
     if(chartCurrentSymbol)liveSocket.send(JSON.stringify({type:'watch',symbol:chartCurrentSymbol,exchange:chartCurrentExchange}));
+    if(typeof MK!=='undefined'&&MK.sel)liveSocket.send(JSON.stringify({type:'watch',instrumentKey:MK.sel.instrumentKey}));
     // FIX: screenerWatchedSymbols is a client-side dedupe Set keyed by
     // symbol, not by socket connection — it used to survive a reconnect,
     // so subscribeScreenerLiveTicks() would see every screener symbol as
@@ -3935,6 +4453,7 @@ liveSocket.onopen=()=>{
 
 liveSocket.onmessage=(evt)=>{
     let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
+    if(typeof mkOnTick==='function')mkOnTick(msg);
     if(msg.type!=='tick' && msg.type!=='snapshot')return;
     let got=false;
     for(const [sym,q] of Object.entries(msg.feeds||{})){

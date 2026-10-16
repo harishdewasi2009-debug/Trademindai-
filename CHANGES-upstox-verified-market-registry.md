@@ -1,0 +1,8 @@
+# Upstox-only verified market registry
+
+**Backend (new):** `services/upstoxRegistry.js` (streamed instrument-master ingest → Postgres, segment discovery, UNSUPPORTED marking), `upstoxProbe.js` (live per-segment capability probes), `upstoxHttp.js` (token, rate limits 20/s·300/min·1500/30min, 429 backoff, error log), `instrumentData.js` (quotes, candles, market status, freshness, last-valid-quote persistence, AI context), `controllers/registryController.js`, `routes/registryRoutes.js` (`/api/market/registry/*`), `utils/{jsonArrayStream,instrumentClassifier,seriesIndicators,marketSession,candleUtils,quoteUtils,probeLogic,auditReport}.js`, `scripts/upstoxAudit.js`.
+**Changed:** `liveFeedService.js` (watch by instrument_key, subscription cap, bounded-backoff reconnect, per-segment streaming proof), `server.js`, `tokenScheduler.js` (06:30 IST registry refresh, 10:00 IST probes), `aiService.js`/`aiRoutes.js` (`instrumentAnalysis` insight), `schema.sql` (4 new tables), `package.json`.
+**Frontend:** new Markets page (segment status, search, filters, derivatives picker, charts, timeframes limited to verified intervals, EMA/Bollinger/VWAP/RSI/MACD/ATR, watchlist, AI Analysis, data-mode/market-status/timestamp badges). Black/white scoped to `#page-markets`; rest of site untouched.
+**Tests:** `npm test` → 35 passing (parser, classifier, indicators, session/freshness, quote parsing, probe logic, stubbed end-to-end quote/candle/AI-context flows incl. last-valid-quote retention).
+
+**Not verified here (no network/token):** live Upstox responses. Endpoint paths for market status, `/v3/market-quote/option-greek`, and `complete.json.gz` follow Upstox's docs as I know them; probes will surface any mismatch as an explicit status rather than silent failure.
