@@ -92,9 +92,9 @@ async function assertUsable(key) {
   await ensureSchema();
   const inst = await getInstrument(key);
   if (!inst) throw new AppError('Instrument is not in the verified Upstox registry.', 404);
-  if (inst.accessStatus === 'UNSUPPORTED BY UPSTOX' || inst.accessStatus === 'ACCESS DENIED') {
-    throw new AppError(`${inst.segment} data is ${inst.accessStatus.toLowerCase()} for this Upstox account.`, 422);
-  }
+  // A probe result is only a hint: a single failed probe (expired token, rate limit,
+  // closed market) must never lock every instrument in a segment. Let the real
+  // Upstox call decide — its own error message is surfaced if it truly refuses.
   return inst;
 }
 
@@ -137,8 +137,15 @@ async function getQuotesBatch(keys) {
   const insts = new Map();
   for (const k of valid) insts.set(k, await getInstrument(k));
 
-  const r = await upstoxGet('/v2/market-quote/quotes', { instrument_key: valid.join(',') });
+  // Upstox splits instrument_key on commas, so a key that itself contains one must be asked for on its own.
+  const batchKeys = valid.filter((k) => !k.includes(','));
+  const loneKeys = valid.filter((k) => k.includes(','));
+  const r = batchKeys.length ? await upstoxGet('/v2/market-quote/quotes', { instrument_key: batchKeys.join(',') }) : { ok: true, data: { data: {} } };
   const byTok = r.ok ? indexQuotesByToken(r.data?.data) : new Map();
+  for (const k of loneKeys) {
+    const one = await upstoxGet('/v2/market-quote/quotes', { instrument_key: k });
+    if (one.ok) { const e = indexQuotesByToken(one.data?.data).get(k) || Object.values(one.data?.data || {})[0]; if (e) byTok.set(k, e); }
+  }
   const out = [];
   for (const k of valid) {
     const inst = insts.get(k);

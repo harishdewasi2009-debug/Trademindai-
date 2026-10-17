@@ -8,14 +8,20 @@ const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const numOrNull = (v) => (isNum(v) ? v : null);
 
 /** Upstox sometimes echoes the key with the pipe URL-encoded ("NSE_EQ%7C…"). */
-const normalizeToken = (t) => (typeof t === 'string' ? t.replace(/%7C/gi, '|') : t);
+const normalizeToken = (t) => {
+  if (typeof t !== 'string') return t;
+  if (!/%[0-9A-Fa-f]{2}/.test(t)) return t;
+  try { return decodeURIComponent(t); } catch { return t.replace(/%7C/gi, '|'); }
+};
 
 /** Index the response's data object by the real instrument_key. */
 function indexQuotesByToken(dataObj) {
   const map = new Map();
-  for (const q of Object.values(dataObj || {})) {
+  for (const [k, q] of Object.entries(dataObj || {})) {
     const tok = normalizeToken(q?.instrument_token || q?.instrument_key);
     if (tok) map.set(tok, q);
+    // Fallback: the response object is keyed "SEGMENT:SYMBOL" — index that too.
+    else if (k) map.set(normalizeToken(k), q);
   }
   return map;
 }

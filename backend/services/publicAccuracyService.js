@@ -3,7 +3,7 @@
 //  PUBLIC, read-only accuracy aggregates for the homepage.
 //
 //  Rules (documented so the numbers are auditable):
-//   - Source: prediction_history rows already judged against REAL prices by
+//   - Sources: prediction_history, scanner_signal_history and market_analysis_log rows already judged against REAL prices by
 //     predictionAccuracyService.evaluateDuePredictions(). Nothing is random,
 //     hardcoded or adjusted here.
 //   - Only predictions CREATED on/after PUBLIC_ACCURACY_START_DATE (the
@@ -48,34 +48,74 @@ function eachDay(from, to) {
   return out;
 }
 
-async function compute() {
-  const today = istToday();
+// Every verified source is judged against REAL prices by its own evaluator:
+//   prediction_history       – AI Analyze reads (horizon 7/30/90 days)
+//   scanner_signal_history   – Screener signals, whole market (horizon ≥ 1 trading day)
+//   market_analysis_log      – registry technical reads (horizon 5 bars)
+// A source that is missing or errors is skipped, never fatal.
+const SOURCES = [
+  { name: 'ai_analysis', table: 'prediction_history', outcome: 'outcome', created: 'created_at' },
+  { name: 'screener', table: 'scanner_signal_history', outcome: 'outcome', created: 'created_at' },
+  { name: 'registry', table: 'market_analysis_log', outcome: 'status', created: 'created_at' },
+];
 
+async function querySource(src) {
+  const o = src.outcome, c = src.created;
   const [daily, pending, last] = await Promise.all([
     query(
       `SELECT (evaluated_at AT TIME ZONE 'Asia/Kolkata')::date::text AS day,
-              COUNT(*) FILTER (WHERE outcome = 'correct')::int   AS correct,
-              COUNT(*) FILTER (WHERE outcome = 'incorrect')::int AS incorrect
-         FROM prediction_history
-        WHERE outcome IN ('correct','incorrect')
-          AND evaluated_at IS NOT NULL
-          AND (created_at AT TIME ZONE 'Asia/Kolkata')::date >= $1::date
-        GROUP BY 1`,
-      [START_DATE]
-    ),
+              COUNT(*) FILTER (WHERE ${o} = 'correct')::int   AS correct,
+              COUNT(*) FILTER (WHERE ${o} = 'incorrect')::int AS incorrect
+         FROM ${src.table}
+        WHERE ${o} IN ('correct','incorrect') AND evaluated_at IS NOT NULL
+          AND (${c} AT TIME ZONE 'Asia/Kolkata')::date >= $1::date
+        GROUP BY 1`, [START_DATE]),
     query(
-      `SELECT COUNT(*)::int AS n FROM prediction_history
-        WHERE outcome = 'pending'
-          AND (created_at AT TIME ZONE 'Asia/Kolkata')::date >= $1::date`,
-      [START_DATE]
-    ),
+      `SELECT COUNT(*)::int AS n FROM ${src.table}
+        WHERE ${o} = 'pending' AND (${c} AT TIME ZONE 'Asia/Kolkata')::date >= $1::date`, [START_DATE]),
     query(
-      `SELECT MAX(evaluated_at) AS at FROM prediction_history
-        WHERE outcome IN ('correct','incorrect')
-          AND (created_at AT TIME ZONE 'Asia/Kolkata')::date >= $1::date`,
-      [START_DATE]
-    ),
+      `SELECT MAX(evaluated_at) AS at FROM ${src.table}
+        WHERE ${o} IN ('correct','incorrect') AND (${c} AT TIME ZONE 'Asia/Kolkata')::date >= $1::date`, [START_DATE]),
   ]);
+  return { daily: daily.rows, pending: pending.rows[0].n, last: last.rows[0].at };
+}
+
+// Opportunistic catch-up: on a sleeping/free host the 18:00 cron can be missed.
+// Evaluators only touch rows whose horizon has really passed, so this is safe.
+let lastCatchUp = 0;
+function maybeCatchUp() {
+  if (Date.now() - lastCatchUp < 15 * 60 * 1000) return;
+  lastCatchUp = Date.now();
+  require('./predictionAccuracyService').evaluateDuePredictions().catch((e) => console.warn('[publicAccuracy] catch-up (predictions):', e.message));
+  require('./scannerAccuracyService').evaluateDueScannerSignals().catch((e) => console.warn('[publicAccuracy] catch-up (scanner):', e.message));
+  require('./analysisTracker').evaluateDue((k, o) => require('./instrumentData').getCandles(k, o)).catch((e) => console.warn('[publicAccuracy] catch-up (registry):', e.message));
+}
+
+async function compute() {
+  const today = istToday();
+  try { await require('../db/autoMigrate').ensure(); } catch (e) { /* reported by autoMigrate */ }
+  try { await require('./upstoxRegistry').ensureSchema(); } catch (e) { /* registry log table may not exist yet */ }
+
+  const results = await Promise.allSettled(SOURCES.map(querySource));
+  const merged = new Map();
+  let pendingTotal = 0, lastAt = null;
+  const bySource = {};
+  results.forEach((r, i) => {
+    const name = SOURCES[i].name;
+    if (r.status !== 'fulfilled') { console.warn(`[publicAccuracy] source ${name} skipped:`, r.reason && r.reason.message); bySource[name] = { error: true }; return; }
+    let v = 0;
+    for (const row of r.value.daily) {
+      const m = merged.get(row.day) || { day: row.day, correct: 0, incorrect: 0 };
+      m.correct += row.correct; m.incorrect += row.incorrect; merged.set(row.day, m);
+      v += row.correct + row.incorrect;
+    }
+    pendingTotal += r.value.pending;
+    if (r.value.last && (!lastAt || new Date(r.value.last) > new Date(lastAt))) lastAt = r.value.last;
+    bySource[name] = { verified: v, pending: r.value.pending };
+  });
+  const daily = { rows: [...merged.values()] };
+  const pending = { rows: [{ n: pendingTotal }] };
+  const last = { rows: [{ at: lastAt }] };
 
   const byDay = new Map(daily.rows.map(r => [r.day, r]));
   let totalC = 0, totalI = 0;
@@ -122,6 +162,7 @@ async function compute() {
       changePp: goal.available && todayAcc != null ? round2(todayAcc - prevAcc) : null,
     },
     pending: pending.rows[0].n,
+    sources: bySource,
     goal,
     daily: series,
     lastVerifiedAt,
@@ -132,9 +173,10 @@ async function compute() {
 
 async function getPublicAccuracy() {
   if (cache.data && Date.now() - cache.at < CACHE_MS) return cache.data;
+  maybeCatchUp();
   const data = await compute();
   cache = { at: Date.now(), data };
   return data;
 }
 
-module.exports = { getPublicAccuracy, GOAL_STEP_PP };
+module.exports = { getPublicAccuracy, GOAL_STEP_PP, maybeCatchUp };

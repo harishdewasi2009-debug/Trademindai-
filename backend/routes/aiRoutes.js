@@ -163,9 +163,7 @@ router.post(
     )];
     // Elite gets the higher-token-cap GPT-4o slot ('gpt4o_high') rather than
     // Pro's 'gpt4o' — same chip, same underlying model, different plan quota.
-    if (plan === 'elite') {
-      selectedModelKeys = selectedModelKeys.map(k => (k === 'gpt4o' ? 'gpt4o_high' : k));
-    }
+    selectedModelKeys = []; // DeepSeek is the only model; any chip selection is ignored
 
     let analysisResult;
     try {
@@ -286,11 +284,16 @@ router.post(
     // compatibility but populated with the non-advisory equivalents.
     try {
       if (result.sentiment && result.currentPrice) {
+        await require('../db/autoMigrate').ensure(); // self-heal schema (column width + exchange + instrument_key)
+        const loggedExchange = ['NSE_EQ', 'BSE_EQ', 'MCX_FO'].includes(exchange) ? exchange : null;
+        // Exact instrument the read was made on, so MCX contract rollovers can't change what it is judged against.
+        let loggedKey = null;
+        try { loggedKey = await require('../services/marketDataService').resolveInstrumentKey(stockSymbol, loggedExchange || undefined); } catch { /* evaluator re-resolves */ }
         await query(
           `INSERT INTO prediction_history
              (user_id, stock_symbol, recommendation, entry_price,
-              target_price, horizon_days, confidence_score, outcome)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
+              target_price, horizon_days, confidence_score, outcome, exchange, instrument_key)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8, $9)`,
           [
             req.user.id,
             stockSymbol.toUpperCase(),
@@ -303,6 +306,8 @@ router.post(
             // fell back to 30, even a 6-12 month "long" horizon pick.
             { '1 week': 7, '1 month': 30, '3 months': 90 }[horizon] || 30,
             result.technicalScore,
+            loggedExchange,
+            loggedKey,
           ]
         );
       }
@@ -384,10 +389,7 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and 
       const fnName = step.fn.name; // 'callGeminiPlain' | 'callClaudePlain' | 'callDeepSeekPlain' | 'callGPTPlain'
       const caller = CHAT_CALLERS[fnName];
       const keyPresent =
-        (fnName === 'callGeminiPlain'   && !!process.env.GEMINI_API_KEY) ||
-        (fnName === 'callClaudePlain'   && !!process.env.CLAUDE_API_KEY) ||
-        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY) ||
-        (fnName === 'callGPTPlain'      && !!process.env.OPENAI_API_KEY);
+        (fnName === 'callDeepSeekPlain' && !!process.env.DEEPSEEK_API_KEY);
       if (!caller || !keyPresent) continue;
 
       try {
@@ -405,10 +407,7 @@ Today's date: ${new Date().toDateString()}. Focus on NSE/BSE equity markets and 
              (user_id, stock_symbol, request_type, model_used, model_key,
               tokens_input, tokens_output, cost_usd, latency_ms)
            VALUES ($1, NULL, 'chat', $2, $3, 0, 0, 0, 0)`,
-          [req.user.id, modelUsed, fnName === 'callGeminiPlain' ? (plan === 'elite' ? 'gemini_pro' : 'gemini_flash')
-                                  : fnName === 'callClaudePlain' ? (plan === 'elite' ? 'claude_opus4' : 'claude_sonnet')
-                                  : fnName === 'callGPTPlain'    ? (plan === 'elite' ? 'gpt4o_high' : 'gpt4o')
-                                  : (plan === 'elite' ? 'deepseek_r1' : 'deepseek_v3')]
+          [req.user.id, modelUsed, 'deepseek_v3']
         );
         break;
       } catch (err) {
@@ -470,7 +469,7 @@ router.post(
     let modelKey = model ? (CHIP_MODEL_TO_KEY[model] || null) : null;
     // Elite gets the higher-token-cap GPT-4o slot ('gpt4o_high') rather than
     // Pro's 'gpt4o' — same chip, same underlying model, different plan quota.
-    if (modelKey === 'gpt4o' && req.user.plan === 'elite') modelKey = 'gpt4o_high';
+    modelKey = 'deepseek_v3'; // DeepSeek is the only model on every plan
 
     const { getAIInsight } = require('../services/aiService');
     let text, modelUsed;

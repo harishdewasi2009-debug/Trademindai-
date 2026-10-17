@@ -237,3 +237,24 @@ test('audit report renders probe results and lists unsupported segments explicit
   assert.match(md, /not probed/);
   assert.match(md, /Marked UNSUPPORTED BY UPSTOX[\s\S]*GLOBAL_INDEX/);
 });
+
+// ── fixes: instrument keys, token echo, scanner due-date ──
+test('instrument keys with punctuation/spaces are accepted; malformed are rejected', () => {
+  const { isValidInstrumentKey: v } = require('../utils/instrumentKey');
+  assert.equal(v('NSE_INDEX|Nifty 50'), true);
+  assert.equal(v('NSE_INDEX|Nifty Oil & Gas (TRI)/x+y'), true);
+  assert.equal(v('MCX_FO|487665'), true);
+  assert.equal(v('nopipe'), false);
+  assert.equal(v('NSE_EQ|'), false);
+});
+test('quote index decodes fully percent-encoded token echoes', () => {
+  const { indexQuotesByToken } = require('../utils/quoteUtils');
+  const m = indexQuotesByToken({ x: { instrument_token: 'NSE_INDEX%7CNifty%2050', last_price: 1 } });
+  assert.ok(m.has('NSE_INDEX|Nifty 50'));
+});
+test('scanner signal becomes due only after the target trading day closes', () => {
+  const s = require('../services/scannerAccuracyService');
+  assert.equal(s.targetTradingDay('2026-10-16', 1), '2026-10-19'); // Fri → Mon
+  assert.equal(s.isSignalDue('2026-10-16', 1, 'NSE_EQ', new Date('2026-10-17T12:30:00Z')), false);
+  assert.equal(s.isSignalDue('2026-10-16', 1, 'NSE_EQ', new Date('2026-10-19T11:00:00Z')), true);
+});

@@ -13,12 +13,15 @@ const tracker = require('../services/analysisTracker');
 const futuresBasis = require('../services/futuresBasis');
 const { getPlan } = require('../config/plans');
 
-const KEY_RE = /^[A-Za-z0-9_]+\|[A-Za-z0-9 &_.:\-]+$/;
+const { isValidInstrumentKey } = require('../utils/instrumentKey');
 function keyParam(v) {
   const key = String(v || '').trim();
-  if (!key || key.length > 120 || !KEY_RE.test(key)) throw new AppError('A valid Upstox instrument key is required (e.g. NSE_EQ|INE002A01018).', 400);
+  if (!key || !isValidInstrumentKey(key)) throw new AppError('A valid Upstox instrument key is required (e.g. NSE_EQ|INE002A01018).', 400);
   return key;
 }
+// Keys are "SEGMENT|id"; only a comma followed by a new "SEGMENT|" starts the next key, so a key that itself
+// contains a comma (some index/indicator names do) is no longer cut in half.
+const splitKeys = (v) => String(v || '').split(/,(?=[A-Za-z0-9_]+\|)/).map((x) => x.trim()).filter(Boolean);
 const SEG_RE = /^[A-Z_]{2,30}$/;
 const segParam = (v) => (v ? (SEG_RE.test(String(v)) ? String(v) : (() => { throw new AppError('Invalid segment.', 400); })()) : undefined);
 
@@ -30,7 +33,7 @@ const getSegments = asyncHandler(async (req, res) => {
 
 const searchInstruments = asyncHandler(async (req, res) => {
   const q = String(req.query.q || '').slice(0, 40);
-  if (q && !/^[A-Za-z0-9&_.\- ]+$/.test(q)) throw new AppError('q contains invalid characters.', 400);
+  // free-text search: any printable text is safe (it is bound as a parameter and LIKE-escaped)
   const items = await registry.searchInstruments({
     q, segment: segParam(req.query.segment),
     assetClass: req.query.assetClass ? String(req.query.assetClass).replace(/[^a-z_]/g, '') : undefined,
@@ -63,7 +66,7 @@ const getQuote = asyncHandler(async (req, res) => {
 });
 
 const getQuotes = asyncHandler(async (req, res) => {
-  const keys = String(req.query.keys || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const keys = splitKeys(req.query.keys);
   if (!keys.length || keys.length > 50) throw new AppError('Provide 1–50 instrument keys.', 400);
   keys.forEach(keyParam);
   res.json({ quotes: await data.getQuotesBatch(keys), source: 'Upstox', fetchedAt: new Date().toISOString() });
@@ -120,7 +123,7 @@ const getOptionChain = asyncHandler(async (req, res) => {
 });
 
 const getOptionGreeks = asyncHandler(async (req, res) => {
-  const keys = String(req.query.keys || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const keys = splitKeys(req.query.keys);
   if (!keys.length || keys.length > 50) throw new AppError('Provide 1–50 option instrument keys.', 400);
   keys.forEach(keyParam);
   const r = await upstoxGet('/v3/market-quote/option-greek', { instrument_key: keys.join(',') });
@@ -129,7 +132,7 @@ const getOptionGreeks = asyncHandler(async (req, res) => {
 });
 
 // ── instrument-key watchlist ────────────────────────────────────────────
-const WATCHLIST_LIMITS = { free: 5, basic: 10, pro: 50, elite: Infinity };
+const WATCHLIST_LIMITS = { free: 5, basic: 50, pro: 50, elite: Infinity };
 const getWatchlist = asyncHandler(async (req, res) => {
   await registry.ensureSchema();
   const { rows } = await query('SELECT id, instrument_key, symbol, name, segment, created_at FROM market_watchlist WHERE user_id = $1 ORDER BY created_at DESC', [req.user.id]);

@@ -71,16 +71,24 @@ async function probeSegment(segment) {
   await sleep(250);
 
   // 3) Historical candles — every interval on the ladder, individually proven.
+  // FIX: ONE sample instrument decided every interval for the whole segment, so a single illiquid/suspended
+  // sample (or a 429) wrongly marked a timeframe unsupported for thousands of instruments. Now each interval
+  // is tried on up to 3 real samples and counts as proven as soon as ANY of them returns candles.
+  const candleKeys = [...new Set([samples.primary, ...samples.quoteKeys])].slice(0, 3);
   for (const [unit, interval] of INTERVAL_LADDER) {
-    const path = `/v3/historical-candle/${encodeURIComponent(samples.primary)}/${unit}/${interval}/${iso(new Date())}/${daysAgo(LADDER_LOOKBACK[unit])}`;
-    const r = await upstoxGet(path, {}, { retries: 1 });
-    const { candles } = normalizeCandleRows(r.data?.data?.candles);
-    if (r.ok && candles.length) out.intervals.push(`${unit}:${interval}`);
-    if (unit === 'days' && interval === 1) {
-      out.candles = classifyOutcome(r, candles.length > 0, marketOpen);
-      if (!r.ok) out.notes.push(`historical(days): ${r.status} ${r.error}`);
+    let proven = false, lastRes = null;
+    for (const key of candleKeys) {
+      const path = `/v3/historical-candle/${encodeURIComponent(key)}/${unit}/${interval}/${iso(new Date())}/${daysAgo(LADDER_LOOKBACK[unit])}`;
+      const r = await upstoxGet(path, {}, { retries: 1 });
+      lastRes = { r, n: normalizeCandleRows(r.data?.data?.candles).candles.length };
+      await sleep(250);
+      if (r.ok && lastRes.n) { proven = true; break; }
     }
-    await sleep(250);
+    if (proven) out.intervals.push(`${unit}:${interval}`);
+    if (unit === 'days' && interval === 1 && lastRes) {
+      out.candles = proven ? 'verified' : classifyOutcome(lastRes.r, lastRes.n > 0, marketOpen);
+      if (!proven && !lastRes.r.ok) out.notes.push(`historical(days): ${lastRes.r.status} ${lastRes.r.error}`);
+    }
   }
   if (out.candles === 'untested') out.candles = out.intervals.length ? 'verified' : 'empty';
 
@@ -104,6 +112,15 @@ async function probeSegment(segment) {
 }
 
 async function saveProbe(segment, p) {
+  // An interval proven once stays proven: a later probe that ran while the market was closed, rate limited
+  // or on an illiquid sample must not erase it.
+  let prior = [];
+  try {
+    const { rows } = await query('SELECT intervals_verified FROM market_segment_status WHERE segment = $1', [segment]);
+    prior = rows[0] && rows[0].intervals_verified ? rows[0].intervals_verified.split(',').filter(Boolean) : [];
+  } catch { /* first probe */ }
+  const order = INTERVAL_LADDER.map(([u, i]) => `${u}:${i}`);
+  p.intervals = [...new Set([...prior, ...p.intervals])].sort((a, b) => order.indexOf(a) - order.indexOf(b));
   const access = deriveAccessStatus([p.quote, p.ohlc, p.candles, p.intraday]);
   await query(
     `UPDATE market_segment_status SET

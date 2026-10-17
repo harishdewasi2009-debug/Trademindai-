@@ -18,6 +18,24 @@
 const { query } = require('../db/pool');
 const { isTradingDay, isMarketHoliday } = require('../utils/tradingCalendar');
 
+const istParts = (now = new Date()) => { const ist = new Date(now.getTime() + 5.5 * 3600e3); return { date: ist.toISOString().slice(0, 10), minutes: ist.getUTCHours() * 60 + ist.getUTCMinutes() }; };
+const addDays = (dateStr, n) => { const d = new Date(dateStr + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+
+/** First trading day on/after signalDate + horizonDays (and strictly after signalDate). */
+function targetTradingDay(signalDate, horizonDays) {
+  let d = addDays(signalDate, Math.max(1, horizonDays));
+  for (let i = 0; i < 10 && !isTradingDay(d); i++) d = addDays(d, 1);
+  return d;
+}
+/** A signal is due once its target day's session has closed (15:45 IST; MCX 23:35 IST). */
+function isSignalDue(signalDate, horizonDays, exchange, now = new Date()) {
+  const target = targetTradingDay(signalDate, horizonDays);
+  const { date, minutes } = istParts(now);
+  if (date > target) return true;
+  if (date < target) return false;
+  return minutes >= (exchange === 'MCX_FO' ? 23 * 60 + 35 : 15 * 60 + 45);
+}
+
 const NEUTRAL_BAND_PCT = 3; // same convention as predictionAccuracyService
 
 // How far out each Screener "Time Interval" chip is checked. Intraday chips
@@ -59,65 +77,83 @@ function judgeOutcome(signal, entryPrice, actualPrice) {
 async function logSignal({ symbol, exchange, period, derived, currentPrice }) {
   const signal = normalizeSignal(derived.strength);
   const timeframe = period || '1d';
+  await require('../db/autoMigrate').ensure().catch(() => {}); // adds instrument_key/eval_note if missing
+  // Remember the EXACT instrument (MCX symbols roll to a new front-month contract) so the outcome is
+  // judged against the contract the signal was made on. Cached lookup; never blocks the log.
+  let instrumentKey = null;
+  try { instrumentKey = await require('./marketDataService').resolveInstrumentKey(symbol, exchange || undefined); } catch { /* evaluator re-resolves */ }
   await query(
     `INSERT INTO scanner_signal_history
-       (stock_symbol, exchange, timeframe, signal, strength_score, entry_price, horizon_days, outcome, signal_date)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', CURRENT_DATE)
-     ON CONFLICT (stock_symbol, exchange, timeframe, signal_date) DO NOTHING`,
-    [symbol, exchange || null, timeframe, signal, derived.strengthScore, currentPrice, horizonDaysFor(timeframe)]
+       (stock_symbol, exchange, timeframe, signal, strength_score, entry_price, horizon_days, outcome, signal_date, instrument_key)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', (now() AT TIME ZONE 'Asia/Kolkata')::date, $8)
+     ON CONFLICT DO NOTHING`,
+    [symbol, exchange || null, timeframe, signal, derived.strengthScore, currentPrice, horizonDaysFor(timeframe), instrumentKey]
   );
 }
 
-/** Same idea as predictionAccuracyService.evaluateDuePredictions(): finds
- *  every scanner signal whose horizon has passed and is still pending,
- *  fetches the real current price, and records correct/incorrect. Symbol
- *  lookups are deduped per run (a symbol can appear across many timeframes
- *  on the same day) to keep Upstox request volume sane. */
-async function evaluateDueScannerSignals() {
-  const marketDataService = require('./marketDataService'); // required lazily to avoid a require cycle
-  const { rows: due } = await query(`
-    SELECT id, stock_symbol, exchange, signal, entry_price, horizon_days
+/** Judges every scanner signal whose target trading day has closed.
+ *  Price = the real close of the TARGET day (one batched quote call right after the close, the official daily
+ *  candle afterwards) — never "whatever the price is when the cron happens to run".
+ *  A row that cannot be priced stays pending with the reason in eval_note, and is only given up on
+ *  (outcome 'unresolvable', excluded from accuracy) once it is UNRESOLVABLE_AFTER_DAYS past due. */
+const UNRESOLVABLE_AFTER_DAYS = 14;
+const DAY_MS = 86400e3;
+
+async function evaluateDueScannerSignals({ limit = 6000, now = new Date() } = {}) {
+  const { fetchOutcomePrices, istDate } = require('./outcomePrice');
+  await require('../db/autoMigrate').ensure().catch(() => {});
+  let { rows: due } = await query(`
+    SELECT id, stock_symbol, exchange, instrument_key, signal, entry_price, horizon_days, signal_date::text AS signal_date
     FROM scanner_signal_history
     WHERE outcome = 'pending'
-      AND signal_date + (horizon_days || ' days')::interval <= now()
-  `);
+      AND signal_date + horizon_days <= (now() AT TIME ZONE 'Asia/Kolkata')::date
+    ORDER BY signal_date, created_at
+    LIMIT $1
+  `, [limit]);
+  due = due.filter((r) => isSignalDue(r.signal_date, r.horizon_days, r.exchange, now));
+  if (!due.length) return { evaluated: 0, failed: 0, unresolvable: 0 };
 
-  if (!due.length) return { evaluated: 0, failed: 0 };
+  const items = due.map((r) => ({
+    id: r.id, symbol: r.stock_symbol, exchange: r.exchange, instrumentKey: r.instrument_key,
+    targetDate: targetTradingDay(r.signal_date, r.horizon_days), exact: true,
+  }));
+  const prices = await fetchOutcomePrices(items, { today: istDate(now) });
 
-  const priceCache = {}; // "SYMBOL:EXCHANGE" -> real LTP (or null if lookup failed)
-  let evaluated = 0, failed = 0;
-
-  for (const row of due) {
-    const cacheKey = `${row.stock_symbol}:${row.exchange || ''}`;
-    if (!(cacheKey in priceCache)) {
-      try {
-        const quote = await marketDataService.getLtp(row.stock_symbol, row.exchange);
-        priceCache[cacheKey] = quote?.lastPrice ?? null;
-      } catch (err) {
-        console.warn(`[scannerAccuracy] Could not fetch real price for ${row.stock_symbol}:`, err.message);
-        priceCache[cacheKey] = null;
-      }
+  const done = { ids: [], prices: [], outcomes: [] };
+  const giveUp = [];
+  const notes = new Map(); // reason → [ids]
+  let failed = 0;
+  due.forEach((row, i) => {
+    const p = prices.get(row.id);
+    if (p && p.price != null && Number(row.entry_price) > 0) {
+      done.ids.push(row.id); done.prices.push(p.price); done.outcomes.push(judgeOutcome(row.signal, Number(row.entry_price), p.price));
+      return;
     }
-    const actualPrice = priceCache[cacheKey];
-    if (actualPrice == null) { failed++; continue; }
+    failed++;
+    const reason = String((p && p.error) || 'no price available').slice(0, 200);
+    const daysPast = (now.getTime() - new Date(items[i].targetDate + 'T00:00:00Z').getTime()) / DAY_MS;
+    if (daysPast > UNRESOLVABLE_AFTER_DAYS) giveUp.push({ id: row.id, reason });
+    else { if (!notes.has(reason)) notes.set(reason, []); notes.get(reason).push(row.id); }
+  });
 
-    const outcome = judgeOutcome(row.signal, Number(row.entry_price), actualPrice);
-    try {
-      await query(
-        `UPDATE scanner_signal_history
-         SET actual_price_at_horizon = $1, outcome = $2, evaluated_at = now()
-         WHERE id = $3`,
-        [actualPrice, outcome, row.id]
-      );
-      evaluated++;
-    } catch (err) {
-      console.error(`[scannerAccuracy] Failed to save outcome for signal ${row.id}:`, err.message);
-      failed++;
-    }
+  for (let i = 0; i < done.ids.length; i += 500) {
+    await query(
+      `UPDATE scanner_signal_history t SET actual_price_at_horizon = v.p, outcome = v.o, evaluated_at = now(), eval_note = NULL
+         FROM (SELECT unnest($1::uuid[]) AS id, unnest($2::numeric[]) AS p, unnest($3::text[]) AS o) v
+        WHERE t.id = v.id AND t.outcome = 'pending'`,
+      [done.ids.slice(i, i + 500), done.prices.slice(i, i + 500), done.outcomes.slice(i, i + 500)]);
+  }
+  for (const g of giveUp) {
+    await query(`UPDATE scanner_signal_history SET outcome = 'unresolvable', evaluated_at = now(), eval_note = $2 WHERE id = $1 AND outcome = 'pending'`, [g.id, g.reason]);
+  }
+  for (const [reason, ids] of notes) {
+    await query(`UPDATE scanner_signal_history SET eval_note = $2 WHERE id = ANY($1::uuid[]) AND outcome = 'pending'`, [ids, reason]);
   }
 
-  console.log(`[scannerAccuracy] Evaluated ${evaluated} due scanner signal(s), ${failed} failed.`);
-  return { evaluated, failed };
+  const summary = { evaluated: done.ids.length, failed, unresolvable: giveUp.length };
+  console.log(`[scannerAccuracy] Evaluated ${summary.evaluated} due scanner signal(s); ${failed} could not be priced yet (${giveUp.length} given up).` +
+    (notes.size ? ' Reasons: ' + [...notes].map(([r, ids]) => `${r} ×${ids.length}`).join('; ') : ''));
+  return summary;
 }
 
 /** Aggregate accuracy across the ENTIRE scanned market, for the admin
@@ -333,10 +369,13 @@ async function getScannerAccuracyCalendar({ month, year } = {}) {
 }
 
 module.exports = {
+  UNRESOLVABLE_AFTER_DAYS,
   logSignal,
   evaluateDueScannerSignals,
   getScannerAccuracyStats,
   listAllScannerSignals,
   getScannerAccuracyCalendar,
   judgeOutcome,
+  targetTradingDay,
+  isSignalDue,
 };

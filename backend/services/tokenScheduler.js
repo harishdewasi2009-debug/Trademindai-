@@ -106,6 +106,14 @@ function startUpstoxTokenScheduler() {
     );
   }, { timezone: 'Asia/Kolkata' });
 
+  // Hourly catch-up 16:00–23:00 IST: if the host was asleep at 18:00 the daily
+  // evaluation would otherwise wait a whole day. Only rows whose horizon has
+  // really passed are touched, so repeating is harmless.
+  cron.schedule('0 16-23 * * *', () => {
+    evaluateDuePredictions().catch(err => console.error('[tokenScheduler] Prediction catch-up failed:', err.message));
+    evaluateDueScannerSignals().catch(err => console.error('[tokenScheduler] Scanner catch-up failed:', err.message));
+  }, { timezone: 'Asia/Kolkata' });
+
   // Every 5 minutes during market hours (9:00–15:59 IST, Mon–Fri) — drives
   // screenerCoverageService.runCoverageBatch(), which guarantees every
   // symbol across NSE + BSE + MCX gets a logged '1d' Screener signal each

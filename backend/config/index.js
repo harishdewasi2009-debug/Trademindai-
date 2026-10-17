@@ -22,11 +22,9 @@ function assertRequiredEnv() {
     process.exit(1);
   }
 
-  const hasAnyAiKey = AI_KEYS.some((k) => !!process.env[k]);
-  if (!hasAnyAiKey) {
-    console.error('❌ At least one AI API key is required:', AI_KEYS.join(' | '));
-    console.error('   Set GEMINI_API_KEY (free tier), or add CLAUDE_API_KEY / OPENAI_API_KEY / DEEPSEEK_API_KEY for higher plans.');
-    process.exit(1);
+  // DeepSeek is the only AI model used anywhere. Warn (don't crash) so the rest of the app still boots.
+  if (!process.env.DEEPSEEK_API_KEY) {
+    console.error('⚠️  DEEPSEEK_API_KEY is not set — every AI feature will be unavailable until it is.');
   }
 
   if (process.env.NODE_ENV === 'production') {

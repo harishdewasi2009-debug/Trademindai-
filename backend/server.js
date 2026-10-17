@@ -166,6 +166,10 @@ server.listen(config.port, () => {
   console.log(`   Health check: http://localhost:${config.port}/health`);
   console.log(`   Live market WebSocket: ws://localhost:${config.port}/ws/market`);
   startUpstoxTokenScheduler();
+  // Self-heal schema, then run a catch-up verification pass (host may have slept through the 18:00 cron).
+  require('./db/autoMigrate').ensure()
+    .then(() => setTimeout(() => require('./services/publicAccuracyService').maybeCatchUp(), 90_000).unref?.())
+    .catch(() => {});
   marketDataService.startCacheEvictionSweep(); // FIX: periodically drop expired cache entries so memory doesn't creep up over a trading day
 
   // If Upstox is already connected (token cached from a previous approval),

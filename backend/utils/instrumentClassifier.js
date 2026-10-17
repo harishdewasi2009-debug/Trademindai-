@@ -20,7 +20,13 @@ const EXPECTED_SEGMENTS = [
   'GLOBAL_INDEX', 'GLOBAL_INDICATOR',
 ];
 
-const str = (v) => (v === undefined || v === null || v === '' ? null : String(v));
+// Trimmed: a stray space in the master would make the stored key differ from the (trimmed) key the API receives.
+const str = (v) => { if (v === undefined || v === null) return null; const t = String(v).trim(); return t === '' ? null : t; };
+// market_registry column widths. One over-long value used to make Postgres reject the WHOLE 2,000-row insert
+// batch (so a whole slice of instruments silently never reached the registry) — clip instead.
+const COL_MAX = { symbol: 120, name: 250, asset_class: 30, exchange: 20, segment: 30, instrument_type: 20, currency: 10, isin: 20, underlying_key: 120, underlying_symbol: 120, exchange_token: 40 };
+const KEY_MAX = 120;
+const clip = (v, max) => (typeof v === 'string' && v.length > max ? v.slice(0, max) : v);
 const num = (v) => {
   if (v === undefined || v === null || v === '') return null;
   const n = Number(v);
@@ -79,7 +85,7 @@ function classifyAssetClass(segment, instrumentType, name) {
 /** Returns null for rows that cannot be keyed (no instrument_key). */
 function normalizeInstrument(row) {
   const instrumentKey = str(row.instrument_key ?? row.instrumentKey);
-  if (!instrumentKey) return null;
+  if (!instrumentKey || instrumentKey.length > KEY_MAX) return null; // a clipped key would address a different instrument
 
   const segment = str(row.segment) || (instrumentKey.includes('|') ? instrumentKey.split('|')[0] : null);
   const instrumentType = str(row.instrument_type ?? row.instrumentType);
@@ -96,21 +102,21 @@ function normalizeInstrument(row) {
 
   return {
     instrument_key: instrumentKey,
-    symbol: tradingSymbol || name || instrumentKey,
-    name,
+    symbol: clip(tradingSymbol || name || instrumentKey, COL_MAX.symbol),
+    name: clip(name, COL_MAX.name),
     asset_class: assetClass,
-    exchange,
-    segment,
-    instrument_type: instrumentType,
-    currency,
+    exchange: clip(exchange, COL_MAX.exchange),
+    segment: clip(segment, COL_MAX.segment),
+    instrument_type: clip(instrumentType, COL_MAX.instrument_type),
+    currency: clip(currency, COL_MAX.currency),
     expiry: parseExpiry(row.expiry),
     strike_price: num(row.strike_price),
     lot_size: num(row.lot_size ?? row.minimum_lot),
     tick_size: num(row.tick_size),
-    isin: str(row.isin),
-    underlying_key: str(row.underlying_key),
-    underlying_symbol: str(row.underlying_symbol ?? row.asset_symbol),
-    exchange_token: str(row.exchange_token),
+    isin: clip(str(row.isin), COL_MAX.isin),
+    underlying_key: clip(str(row.underlying_key), COL_MAX.underlying_key),
+    underlying_symbol: clip(str(row.underlying_symbol ?? row.asset_symbol), COL_MAX.underlying_symbol),
+    exchange_token: clip(str(row.exchange_token), COL_MAX.exchange_token),
     provider: 'upstox',
   };
 }

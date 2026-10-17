@@ -15,6 +15,7 @@
 // ══════════════════════════════════════════════════════════════════════════
 const UpstoxClient = require('upstox-js-sdk');
 const { resolveInstrumentKey } = require('./marketDataService');
+const { normalizeToken } = require('../utils/quoteUtils');
 
 // Same curated list the frontend ticker/screener already uses — kept here
 // too so the live feed can subscribe on the backend without waiting for a
@@ -70,7 +71,12 @@ function registerBrowserClient(ws) {
     }
     // Registry-era watch: any verified Upstox instrument, addressed by its instrument_key.
     if (msg.type === 'watch' && typeof msg.instrumentKey === 'string') {
-      watchInstrument(msg.instrumentKey).catch((err) => {
+      watchInstrument(msg.instrumentKey).then(() => {
+        // Already-subscribed instruments (the default stocks/indices/MCX list) would otherwise show nothing
+        // until their next price change — hand the new viewer the last known tick straight away.
+        const last = lastKnownFeed.get(msg.instrumentKey);
+        if (last && ws.readyState === 1) ws.send(JSON.stringify({ type: 'tick', feeds: { [msg.instrumentKey]: last } }));
+      }).catch((err) => {
         console.warn('[liveFeedService] watchInstrument failed:', err.message);
         try { ws.send(JSON.stringify({ type: 'watch_rejected', instrumentKey: msg.instrumentKey, reason: err.message })); } catch { /* socket closed */ }
       });
@@ -105,7 +111,7 @@ async function watchSymbol(symbolRaw, exchangeRaw) {
 const MAX_SUBSCRIPTIONS = parseInt(process.env.UPSTOX_WS_MAX_SUBSCRIPTIONS, 10) || 1000;
 const dynamicKeys = [];            // instrument_keys added on demand, oldest first
 const defaultKeys = new Set();     // never evicted
-const KEY_RE = /^[A-Za-z0-9_]+\|[A-Za-z0-9 &_.:\-]+$/;
+const { isValidInstrumentKey } = require('../utils/instrumentKey');
 const segmentsVerifiedThisFeed = new Set();
 let feedStartedAt = null;
 let lastTickAt = null;
@@ -113,7 +119,7 @@ let reconnectState = { attempts: 0, timer: null, lastError: null };
 
 async function watchInstrument(instrumentKey) {
   if (!streamer) throw new Error('Live feed is not running.');
-  if (!KEY_RE.test(instrumentKey) || instrumentKey.length > 120) throw new Error('Invalid instrument key.');
+  if (!isValidInstrumentKey(instrumentKey)) throw new Error('Invalid instrument key.');
   if (instrumentKeyToSymbol.has(instrumentKey)) return;
   // Only instruments present in the verified registry may be streamed.
   const { query } = require('../db/pool');
@@ -259,7 +265,8 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
     const feeds = parsed.feeds || {};
     console.log('[liveFeedService] tick for:', Object.keys(feeds).map((k) => instrumentKeyToSymbol.get(k)?.feedKey || k).join(', '));
     const out = {};
-    for (const [instrumentKey, feed] of Object.entries(feeds)) {
+    for (const [rawKey, feed] of Object.entries(feeds)) {
+      const instrumentKey = normalizeToken(rawKey); // Upstox sometimes echoes "NSE_INDEX%7CNifty%2050"
       const info = instrumentKeyToSymbol.get(instrumentKey);
       const ltpc = extractLtpc(feed);
       if (!info || !ltpc || typeof ltpc.ltp !== 'number') continue;
@@ -280,6 +287,10 @@ for (const [symbol, instrumentKey] of Object.entries(INDEX_INSTRUMENT_KEYS)) {
       }
       out[info.feedKey] = entry;
       lastKnownFeed.set(info.feedKey, entry);
+      // FIX (market instruments "not working" live): the ticker's default stocks, the 3 indices and the MCX
+      // list were broadcast ONLY under a legacy feed key ("RELIANCE", "NIFTY 50", "MCX:GOLD"), but the Market
+      // page listens under the instrument_key — so those instruments never ticked. Publish under both.
+      if (info.feedKey !== instrumentKey) { out[instrumentKey] = entry; lastKnownFeed.set(instrumentKey, entry); }
     }
     if (Object.keys(out).length) broadcast({ type: 'tick', feeds: out });
   });

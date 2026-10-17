@@ -20,7 +20,6 @@
 // ══════════════════════════════════════════════════════════════════════════
 
 const { query } = require('../db/pool');
-const marketDataService = require('./marketDataService');
 
 const NEUTRAL_BAND_PCT = 3; // neutral call counts as "correct" if move stayed within ±3%
 
@@ -36,54 +35,62 @@ function judgeOutcome(sentiment, entryPrice, actualPrice) {
   return Math.abs(changePct) <= NEUTRAL_BAND_PCT ? 'correct' : 'incorrect';
 }
 
-/** Finds every prediction whose horizon has passed and is still 'pending',
- *  fetches the REAL current price for its symbol (deduping repeated symbols
- *  in one run so we don't hammer Upstox), and records correct/incorrect. */
-async function evaluateDuePredictions() {
-  const { rows: due } = await query(`
-    SELECT id, stock_symbol, recommendation AS sentiment, entry_price, horizon_days, created_at
+/** Judges every AI-Analyze read whose horizon has passed. The price used is the real close on the first
+ *  trading day on/after (created + horizon) — one batched quote call right after that close, the official
+ *  daily candle afterwards — on the exact instrument the read was made on. Unpriceable rows stay pending
+ *  with the reason in eval_note and are given up ('unresolvable', excluded from accuracy) after 14 days. */
+async function evaluateDuePredictions({ now = new Date() } = {}) {
+  const { fetchOutcomePrices, istDate } = require('./outcomePrice');
+  const { targetTradingDay, isSignalDue, UNRESOLVABLE_AFTER_DAYS } = require('./scannerAccuracyService');
+  await require('../db/autoMigrate').ensure().catch(() => {});
+  const { rows } = await query(`
+    SELECT id, stock_symbol, exchange, instrument_key, recommendation AS sentiment, entry_price, horizon_days,
+           (created_at AT TIME ZONE 'Asia/Kolkata')::date::text AS made_on
     FROM prediction_history
     WHERE outcome = 'pending'
       AND created_at + (horizon_days || ' days')::interval <= now()
+    ORDER BY created_at
+    LIMIT 2000
   `);
+  const due = rows.filter((r) => isSignalDue(r.made_on, r.horizon_days, r.exchange, now));
+  if (!due.length) return { evaluated: 0, failed: 0, unresolvable: 0 };
 
-  if (!due.length) return { evaluated: 0, failed: 0 };
+  const items = due.map((r) => ({
+    id: r.id, symbol: r.stock_symbol, exchange: r.exchange, instrumentKey: r.instrument_key,
+    targetDate: targetTradingDay(r.made_on, r.horizon_days), exact: true,
+  }));
+  const prices = await fetchOutcomePrices(items, { today: istDate(now) });
 
-  const priceCache = {}; // symbol -> real LTP (or null if lookup failed)
-  let evaluated = 0, failed = 0;
-
-  for (const row of due) {
-    const sym = row.stock_symbol;
-    if (!(sym in priceCache)) {
-      try {
-        // No exchange stored on the row — getLtp() tries NSE then BSE itself.
-        const quote = await marketDataService.getLtp(sym);
-        priceCache[sym] = quote?.lastPrice ?? null;
-      } catch (err) {
-        console.warn(`[predictionAccuracy] Could not fetch real price for ${sym}:`, err.message);
-        priceCache[sym] = null;
-      }
-    }
-    const actualPrice = priceCache[sym];
-    if (actualPrice == null) { failed++; continue; }
-
-    const outcome = judgeOutcome(row.sentiment, Number(row.entry_price), actualPrice);
+  let evaluated = 0, failed = 0, unresolvable = 0;
+  for (let i = 0; i < due.length; i++) {
+    const row = due[i];
+    const p = prices.get(row.id);
     try {
-      await query(
-        `UPDATE prediction_history
-         SET actual_price_at_horizon = $1, outcome = $2, evaluated_at = now()
-         WHERE id = $3`,
-        [actualPrice, outcome, row.id]
-      );
-      evaluated++;
+      if (p && p.price != null && Number(row.entry_price) > 0) {
+        await query(
+          `UPDATE prediction_history SET actual_price_at_horizon = $1, outcome = $2, evaluated_at = now(), eval_note = NULL WHERE id = $3 AND outcome = 'pending'`,
+          [p.price, judgeOutcome(row.sentiment, Number(row.entry_price), p.price), row.id]);
+        evaluated++;
+        continue;
+      }
+      failed++;
+      const reason = String((p && p.error) || 'no price available').slice(0, 200);
+      const daysPast = (now.getTime() - new Date(items[i].targetDate + 'T00:00:00Z').getTime()) / 86400e3;
+      if (daysPast > UNRESOLVABLE_AFTER_DAYS) {
+        await query(`UPDATE prediction_history SET outcome = 'unresolvable', evaluated_at = now(), eval_note = $2 WHERE id = $1 AND outcome = 'pending'`, [row.id, reason]);
+        unresolvable++;
+      } else {
+        await query(`UPDATE prediction_history SET eval_note = $2 WHERE id = $1 AND outcome = 'pending'`, [row.id, reason]);
+        console.warn(`[predictionAccuracy] ${row.stock_symbol} not priced yet: ${reason}`);
+      }
     } catch (err) {
       console.error(`[predictionAccuracy] Failed to save outcome for prediction ${row.id}:`, err.message);
       failed++;
     }
   }
 
-  console.log(`[predictionAccuracy] Evaluated ${evaluated} due prediction(s), ${failed} failed (real-price lookup or DB error).`);
-  return { evaluated, failed };
+  console.log(`[predictionAccuracy] Evaluated ${evaluated} due prediction(s), ${failed} not priced yet (${unresolvable} given up).`);
+  return { evaluated, failed, unresolvable };
 }
 
 /** Aggregate accuracy across ALL users, for the admin dashboard. Only counts

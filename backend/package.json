@@ -9,7 +9,7 @@
     "dev": "nodemon server.js",
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
-    "test": "node --test tests/market.test.js tests/instrumentData.test.js tests/analysis.test.js",
+    "test": "node --test tests/market.test.js tests/instrumentData.test.js tests/analysis.test.js tests/verification.test.js",
     "audit:upstox": "node scripts/upstoxAudit.js"
   },
   "dependencies": {

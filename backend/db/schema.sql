@@ -170,7 +170,8 @@ CREATE TABLE IF NOT EXISTS prediction_history (
   id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id           UUID REFERENCES users(id) ON DELETE SET NULL,
   stock_symbol      VARCHAR(30) NOT NULL,
-  recommendation    VARCHAR(10) NOT NULL,   -- buy | sell | hold
+  recommendation    VARCHAR(30) NOT NULL,   -- descriptive sentiment e.g. moderate_bullish
+  exchange          VARCHAR(10),            -- NSE_EQ | BSE_EQ | MCX_FO (null = auto NSE→BSE)
   entry_price       NUMERIC(12,2) NOT NULL,
   target_price      NUMERIC(12,2),
   horizon_days      INTEGER NOT NULL DEFAULT 30,
@@ -184,6 +185,9 @@ CREATE TABLE IF NOT EXISTS prediction_history (
 -- so every prediction_history INSERT failed silently and no accuracy could ever
 -- be verified. Widen the column (idempotent; safe to re-run).
 ALTER TABLE prediction_history ALTER COLUMN recommendation TYPE VARCHAR(30);
+ALTER TABLE prediction_history ADD COLUMN IF NOT EXISTS exchange VARCHAR(10);
+ALTER TABLE prediction_history ADD COLUMN IF NOT EXISTS instrument_key VARCHAR(120);
+ALTER TABLE prediction_history ADD COLUMN IF NOT EXISTS eval_note TEXT;
 CREATE INDEX IF NOT EXISTS idx_prediction_history_symbol ON prediction_history(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_prediction_history_outcome ON prediction_history(outcome);
 
@@ -212,6 +216,12 @@ CREATE TABLE IF NOT EXISTS scanner_signal_history (
   created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (stock_symbol, exchange, timeframe, signal_date)
 );
+DELETE FROM scanner_signal_history a USING scanner_signal_history b
+  WHERE a.stock_symbol=b.stock_symbol AND COALESCE(a.exchange,'')=COALESCE(b.exchange,'') AND a.timeframe=b.timeframe
+    AND a.signal_date=b.signal_date AND (a.created_at>b.created_at OR (a.created_at=b.created_at AND a.id>b.id));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_scanner_signal_day ON scanner_signal_history (stock_symbol, COALESCE(exchange,''), timeframe, signal_date);
+ALTER TABLE scanner_signal_history ADD COLUMN IF NOT EXISTS instrument_key VARCHAR(120);
+ALTER TABLE scanner_signal_history ADD COLUMN IF NOT EXISTS eval_note TEXT;
 CREATE INDEX IF NOT EXISTS idx_scanner_signal_symbol ON scanner_signal_history(stock_symbol);
 CREATE INDEX IF NOT EXISTS idx_scanner_signal_outcome ON scanner_signal_history(outcome);
 CREATE INDEX IF NOT EXISTS idx_scanner_signal_timeframe ON scanner_signal_history(timeframe);

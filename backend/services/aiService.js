@@ -616,237 +616,21 @@ async function analyzeStock({ stockSymbol, horizon, riskTolerance, timeframe, ex
     : null;
   const wantsModel = (key) => !selection || selection.has(key);
 
-  // ── FREE: Gemini Flash only ───────────────────────────────────────────
-  if (plan === 'free') {
-    if (!wantsModel('gemini_flash') || !isAvailable(availableModelKeys, 'gemini_flash')) {
-      throw new Error('NO_MODELS_AVAILABLE');
-    }
-    if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-    const maxTok = maxTokensFor(plan, 'gemini_flash');
-    const raw = await callGemini(MODELS.GEMINI_FLASH, system, user, maxTok);
-    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators, horizon, riskTolerance);
-    if (!result) throw new Error('AI returned unparseable JSON');
-    const breakdown = [{ modelKey: 'gemini_flash', model: MODELS.GEMINI_FLASH, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(MODELS.GEMINI_FLASH, raw.tokIn, raw.tokOut) }];
-    return {
-      result,
-      modelUsed:    MODELS.GEMINI_FLASH,
-      tokensInput:  raw.tokIn,
-      tokensOutput: raw.tokOut,
-      costUsd:      breakdown[0].cost,
-      modelBreakdown: breakdown,
-    };
-  }
-
-  // ── BASIC: Gemini Flash → DeepSeek V3 fallback (or both in parallel when
-  //    the user explicitly ticked both chips) ─────────────────────────
-  if (plan === 'basic') {
-    const geminiOk   = wantsModel('gemini_flash')  && isAvailable(availableModelKeys, 'gemini_flash');
-    const deepseekOk = wantsModel('deepseek_v3')    && isAvailable(availableModelKeys, 'deepseek_v3');
-    if (!geminiOk && !deepseekOk) throw new Error('NO_MODELS_AVAILABLE');
-
-    // Explicit multi-select ("Gemini Flash" + "DeepSeek V3" both ticked):
-    // run both in parallel and return a real per-model debate, the same
-    // pattern Pro/Elite already use — instead of DeepSeek only ever being
-    // a silent fallback that ran when Gemini happened to fail.
-    if (selection && selection.size > 1 && geminiOk && deepseekOk) {
-      const calls = [
-        process.env.GEMINI_API_KEY
-          ? callGemini(MODELS.GEMINI_FLASH, system, user, maxTokensFor(plan, 'gemini_flash')).then(r => ({ ...r, modelKey: 'gemini_flash' })).catch(e => { console.warn('[Basic] Gemini failed:', e.message); return null; })
-          : Promise.resolve(null),
-        process.env.DEEPSEEK_API_KEY
-          ? callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3')).then(r => ({ ...r, modelKey: 'deepseek_v3' })).catch(e => { console.warn('[Basic] DeepSeek failed:', e.message); return null; })
-          : Promise.resolve(null),
-      ];
-      const raws = (await Promise.all(calls)).filter(Boolean);
-      if (raws.length === 0) throw new Error('NO_MODELS_AVAILABLE');
-
-      const parsed = raws.map(r => safeParseJSON(r.text));
-      const consensusResult = groundResult(buildConsensus(parsed), marketContext.indicators, horizon, riskTolerance);
-      if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
-      if (raws.length > 1) {
-        consensusResult.modelDebate = raws.map((r, i) => ({
-          model:          r.model,
-          technicalScore: parsed[i]?.technicalScore || 50,
-          sentiment:      parsed[i]?.sentiment       || 'neutral',
-          reasoning:      parsed[i]?.reasoning       || '',
-        }));
-      }
-      const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
-      const totalTokIn  = breakdown.reduce((s, b) => s + b.tokIn,  0);
-      const totalTokOut = breakdown.reduce((s, b) => s + b.tokOut, 0);
-      const totalCost   = breakdown.reduce((s, b) => s + b.cost,   0);
-      return {
-        result:       consensusResult,
-        modelUsed:    breakdown.map(b => b.model).join('+'),
-        tokensInput:  totalTokIn,
-        tokensOutput: totalTokOut,
-        costUsd:      totalCost,
-        modelBreakdown: breakdown,
-      };
-    }
-
-    // Single-model path — either no explicit selection was made (legacy
-    // default: try Gemini, fall back to DeepSeek on failure) or the caller
-    // asked for only one of the two.
-    let raw;
-    let modelKey = 'gemini_flash';
-    let modelLabel = MODELS.GEMINI_FLASH;
-    if (geminiOk) {
-      try {
-        raw = await callGemini(MODELS.GEMINI_FLASH, system, user, maxTokensFor(plan, 'gemini_flash'));
-      } catch (err) {
-        console.warn('[aiService] Gemini Flash failed on Basic, falling back to DeepSeek V3:', err.message);
-      }
-    }
-    if (!raw && deepseekOk) {
-      modelKey = 'deepseek_v3';
-      modelLabel = MODELS.DEEPSEEK_V3;
-      raw = await callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3'));
-    }
-    if (!raw) throw new Error('NO_MODELS_AVAILABLE');
-    const result = groundResult(safeParseJSON(raw.text), marketContext.indicators, horizon, riskTolerance);
-    if (!result) throw new Error('AI returned unparseable JSON');
-    const breakdown = [{ modelKey, model: modelLabel, tokIn: raw.tokIn, tokOut: raw.tokOut, cost: calcCost(modelLabel, raw.tokIn, raw.tokOut) }];
-    return {
-      result,
-      modelUsed:    modelLabel,
-      tokensInput:  raw.tokIn,
-      tokensOutput: raw.tokOut,
-      costUsd:      breakdown[0].cost,
-      modelBreakdown: breakdown,
-    };
-  }
-
-  // ── PRO: Gemini + Claude Sonnet + ChatGPT in parallel; DeepSeek fallback
-  if (plan === 'pro') {
-    const calls = [];
-    if (process.env.GEMINI_API_KEY  && wantsModel('gemini_flash')  && isAvailable(availableModelKeys, 'gemini_flash'))  calls.push(callGemini(MODELS.GEMINI_FLASH, system, user, maxTokensFor(plan, 'gemini_flash')).then(r => ({ ...r, modelKey: 'gemini_flash' })).catch(e => { console.warn('[Pro] Gemini failed:', e.message); return null; }));
-    if (process.env.CLAUDE_API_KEY  && wantsModel('claude_sonnet') && isAvailable(availableModelKeys, 'claude_sonnet')) calls.push(callClaude(MODELS.CLAUDE_SONNET, system, user, maxTokensFor(plan, 'claude_sonnet')).then(r => ({ ...r, modelKey: 'claude_sonnet' })).catch(e => { console.warn('[Pro] Claude failed:', e.message); return null; }));
-    if (process.env.OPENAI_API_KEY  && wantsModel('gpt4o')         && isAvailable(availableModelKeys, 'gpt4o'))         calls.push(callGPT(MODELS.GPT4O, system, user, maxTokensFor(plan, 'gpt4o')).then(r => ({ ...r, modelKey: 'gpt4o' })).catch(e => { console.warn('[Pro] ChatGPT failed:', e.message); return null; }));
-    // FIX: DeepSeek V3 is selectable on Pro too (the chip only needs
-    // Basic+, so Pro/Elite users can tick it) but it used to only ever run
-    // as a silent fallback-of-last-resort below — ticking "DeepSeek V3"
-    // alongside Gemini/Claude/GPT had no effect. Run it as a real parallel
-    // pick whenever it's explicitly selected.
-    if (selection && selection.has('deepseek_v3') && process.env.DEEPSEEK_API_KEY && isAvailable(availableModelKeys, 'deepseek_v3')) {
-      calls.push(callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3')).then(r => ({ ...r, modelKey: 'deepseek_v3' })).catch(e => { console.warn('[Pro] DeepSeek failed:', e.message); return null; }));
-    }
-
-    let raws = (await Promise.all(calls)).filter(Boolean);
-
-    if (raws.length === 0) {
-      if (!isAvailable(availableModelKeys, 'deepseek_v3')) {
-        throw new Error('NO_MODELS_AVAILABLE');
-      }
-      if (!process.env.DEEPSEEK_API_KEY) {
-        console.warn('[aiService] All Pro models failed/exhausted and DEEPSEEK_API_KEY not set; no models available');
-        throw new Error('NO_MODELS_AVAILABLE');
-      }
-      console.warn('[aiService] All Pro models failed or exhausted; falling back to DeepSeek V3');
-      let dsRaw;
-      try {
-        dsRaw = await callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3'));
-      } catch (err) {
-        console.warn('[Pro] DeepSeek fallback failed:', err.message);
-        throw new Error('NO_MODELS_AVAILABLE');
-      }
-      const result = groundResult(safeParseJSON(dsRaw.text), marketContext.indicators, horizon, riskTolerance);
-      if (!result) throw new Error('AI returned unparseable JSON');
-      const breakdown = [{ modelKey: 'deepseek_v3', model: MODELS.DEEPSEEK_V3, tokIn: dsRaw.tokIn, tokOut: dsRaw.tokOut, cost: calcCost(MODELS.DEEPSEEK_V3, dsRaw.tokIn, dsRaw.tokOut) }];
-      return {
-        result,
-        modelUsed:    MODELS.DEEPSEEK_V3,
-        tokensInput:  dsRaw.tokIn,
-        tokensOutput: dsRaw.tokOut,
-        costUsd:      breakdown[0].cost,
-        modelBreakdown: breakdown,
-      };
-    }
-
-    const parsed = raws.map(r => safeParseJSON(r.text));
-    const consensusResult = groundResult(buildConsensus(parsed), marketContext.indicators, horizon, riskTolerance);
-    if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
-
-    // FIX: Pro calls 2-3 models in parallel (whichever the user selected /
-    // are available) exactly like Elite does below, but this used to only
-    // ever return the merged consensus — no per-model breakdown. The
-    // frontend's "AI Model Debate" view only renders when
-    // result.modelDebate is a real array, and previously that field was
-    // only ever set in the Elite branch, so Pro users who ticked 2, 3, or 4
-    // model chips always collapsed to a single merged answer (plus a
-    // misleading "upgrade to Elite" note) even though every selected model
-    // actually ran. Build the same per-model debate array here whenever
-    // more than one model responded, regardless of plan.
-    if (raws.length > 1) {
-      consensusResult.modelDebate = raws.map((r, i) => ({
-        model:          r.model,
-        technicalScore: parsed[i]?.technicalScore || 50,
-        sentiment:      parsed[i]?.sentiment       || 'neutral',
-        reasoning:      parsed[i]?.reasoning       || '',
-      }));
-    }
-
-    const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
-    const totalTokIn  = breakdown.reduce((s, b) => s + b.tokIn,  0);
-    const totalTokOut = breakdown.reduce((s, b) => s + b.tokOut, 0);
-    const totalCost   = breakdown.reduce((s, b) => s + b.cost,   0);
-    const modelsUsed  = breakdown.map(b => b.model).join('+');
-
-    return {
-      result:       consensusResult,
-      modelUsed:    modelsUsed,
-      tokensInput:  totalTokIn,
-      tokensOutput: totalTokOut,
-      costUsd:      totalCost,
-      modelBreakdown: breakdown,
-    };
-  }
-
-  // ── ELITE: all 4 flagship models in parallel consensus (or just the
-  //    ones explicitly selected — see wantsModel() above) ───────────────
-  if (plan === 'elite') {
-    const eliteCalls = [
-      (process.env.GEMINI_API_KEY   && wantsModel('gemini_pro')   && isAvailable(availableModelKeys, 'gemini_pro'))    ? callGemini(MODELS.GEMINI_PRO,   system, user, maxTokensFor(plan, 'gemini_pro')).then(r => ({ ...r, modelKey: 'gemini_pro' })).catch(e => { console.warn('[Elite] Gemini Pro failed:', e.message); return null; }) : Promise.resolve(null),
-      (process.env.CLAUDE_API_KEY   && wantsModel('claude_opus4') && isAvailable(availableModelKeys, 'claude_opus4'))  ? callClaude(MODELS.CLAUDE_OPUS,  system, user, maxTokensFor(plan, 'claude_opus4')).then(r => ({ ...r, modelKey: 'claude_opus4' })).catch(e => { console.warn('[Elite] Claude Opus failed:', e.message); return null; }) : Promise.resolve(null),
-      (process.env.OPENAI_API_KEY   && wantsModel('gpt4o_high')   && isAvailable(availableModelKeys, 'gpt4o_high'))    ? callGPT(MODELS.GPT4O_HIGH,      system, user, maxTokensFor(plan, 'gpt4o_high')).then(r => ({ ...r, modelKey: 'gpt4o_high' })).catch(e => { console.warn('[Elite] ChatGPT failed:', e.message); return null; }) : Promise.resolve(null),
-      (process.env.DEEPSEEK_API_KEY && wantsModel('deepseek_r1')  && isAvailable(availableModelKeys, 'deepseek_r1'))   ? callDeepSeek(MODELS.DEEPSEEK_R1, system, user, maxTokensFor(plan, 'deepseek_r1')).then(r => ({ ...r, modelKey: 'deepseek_r1' })).catch(e => { console.warn('[Elite] DeepSeek R1 failed:', e.message); return null; }) : Promise.resolve(null),
-    ];
-
-    const raws = (await Promise.all(eliteCalls)).filter(Boolean);
-    if (raws.length === 0) throw new Error('NO_MODELS_AVAILABLE');
-
-    const parsed = raws.map(r => safeParseJSON(r.text));
-
-    const modelDebate = raws.map((r, i) => ({
-      model:          r.model,
-      technicalScore: parsed[i]?.technicalScore || 50,
-      sentiment:      parsed[i]?.sentiment       || 'neutral',
-      reasoning:      parsed[i]?.reasoning       || '',
-    }));
-
-    const consensusResult = groundResult(buildConsensus(parsed.filter(Boolean)), marketContext.indicators, horizon, riskTolerance);
-    if (!consensusResult) throw new Error('AI returned unparseable JSON from all models');
-
-    consensusResult.modelDebate = modelDebate;  // Elite-only field
-
-    const breakdown = raws.map(r => ({ modelKey: r.modelKey, model: r.model, tokIn: r.tokIn, tokOut: r.tokOut, cost: calcCost(r.model, r.tokIn, r.tokOut) }));
-    const totalTokIn  = breakdown.reduce((s, b) => s + b.tokIn,  0);
-    const totalTokOut = breakdown.reduce((s, b) => s + b.tokOut, 0);
-    const totalCost   = breakdown.reduce((s, b) => s + b.cost,   0);
-    const modelsUsed  = breakdown.map(b => b.model).join('+');
-
-    return {
-      result:       consensusResult,
-      modelUsed:    modelsUsed,
-      tokensInput:  totalTokIn,
-      tokensOutput: totalTokOut,
-      costUsd:      totalCost,
-      modelBreakdown: breakdown,
-    };
-  }
-
-  // Fallback — unknown plan treated as free
-  return analyzeStock({ stockSymbol, horizon, riskTolerance, timeframe, userPlan: 'free', availableModelKeys, selectedModelKeys });
+  // ── ALL PLANS: DeepSeek V3 only (lowest-cost model; no other AI is used) ──
+  if (!isAvailable(availableModelKeys, 'deepseek_v3')) throw new Error('NO_MODELS_AVAILABLE');
+  if (!process.env.DEEPSEEK_API_KEY) throw new Error('DEEPSEEK_API_KEY not set');
+  const raw = await callDeepSeek(MODELS.DEEPSEEK_V3, system, user, maxTokensFor(plan, 'deepseek_v3'));
+  const result = groundResult(safeParseJSON(raw.text), marketContext.indicators, horizon, riskTolerance);
+  if (!result) throw new Error('AI returned unparseable JSON');
+  const cost = calcCost(MODELS.DEEPSEEK_V3, raw.tokIn, raw.tokOut);
+  return {
+    result,
+    modelUsed:    MODELS.DEEPSEEK_V3,
+    tokensInput:  raw.tokIn,
+    tokensOutput: raw.tokOut,
+    costUsd:      cost,
+    modelBreakdown: [{ modelKey: 'deepseek_v3', model: MODELS.DEEPSEEK_V3, tokIn: raw.tokIn, tokOut: raw.tokOut, cost }],
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -984,35 +768,8 @@ const INSIGHT_MODEL_STEPS = {
 // analyzeStock(), and falls back down the chain (never all the way to
 // nothing) if a higher model is temporarily unavailable.
 function insightCascadeForPlan(plan) {
-  switch (plan) {
-    case 'elite':
-      return [
-        { fn: callClaudePlain,   model: MODELS.CLAUDE_OPUS  },
-        { fn: callGeminiPlain,   model: MODELS.GEMINI_PRO   },
-        { fn: callGPTPlain,      model: MODELS.GPT4O_HIGH   },
-        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_R1  },
-        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
-      ];
-    case 'pro':
-      // FIX: ChatGPT is one of the three models Pro actually pays for
-      // (see analyzeStock's PRO branch + plans.js pro.aiModels.gpt4o) but
-      // was missing from this cascade entirely, so /api/ai/insight could
-      // never return a ChatGPT answer on Pro even though the "GPT-4o" chip
-      // was shown as selectable on Portfolio Health / Option Strategy.
-      return [
-        { fn: callClaudePlain,   model: MODELS.CLAUDE_SONNET },
-        { fn: callGPTPlain,      model: MODELS.GPT4O         },
-        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3   },
-        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH  },
-      ];
-    case 'basic':
-      return [
-        { fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3  },
-        { fn: callGeminiPlain,   model: MODELS.GEMINI_FLASH },
-      ];
-    default: // free
-      return [{ fn: callGeminiPlain, model: MODELS.GEMINI_FLASH }];
-  }
+  // DeepSeek V3 only, on every plan.
+  return [{ fn: callDeepSeekPlain, model: MODELS.DEEPSEEK_V3 }];
 }
 
 // FIX (core bug behind "AI model selection has no effect"): this used to
@@ -1031,6 +788,7 @@ async function getAIInsight(kind, context, plan = 'free', modelKey = null) {
   if (!promptFn) throw new Error(`Unknown insight kind: ${kind}`);
   const prompt = promptFn(context);
 
+  if (modelKey && modelKey !== 'deepseek_v3') modelKey = null; // only DeepSeek exists
   if (modelKey) {
     const allowedOnPlan = getModelConfig(plan, modelKey);
     const step = INSIGHT_MODEL_STEPS[modelKey];
@@ -1097,13 +855,8 @@ async function checkOneProvider(name, envVar, callFn, model) {
 }
 
 async function checkProviderHealth() {
-  const [gemini, claude, gpt, deepseek] = await Promise.all([
-    checkOneProvider('gemini',   'GEMINI_API_KEY',   callGeminiPlain,   MODELS.GEMINI_FLASH),
-    checkOneProvider('claude',   'CLAUDE_API_KEY',   callClaudePlain,   MODELS.CLAUDE_SONNET),
-    checkOneProvider('openai',   'OPENAI_API_KEY',   callGPTPlain,      MODELS.GPT4O),
-    checkOneProvider('deepseek', 'DEEPSEEK_API_KEY', callDeepSeekPlain, MODELS.DEEPSEEK_V3),
-  ]);
-  const results = [gemini, claude, gpt, deepseek];
+  const deepseek = await checkOneProvider('deepseek', 'DEEPSEEK_API_KEY', callDeepSeekPlain, MODELS.DEEPSEEK_V3);
+  const results = [deepseek];
   return {
     checkedAt: new Date().toISOString(),
     allHealthy: results.every((r) => r.status === 'ok'),

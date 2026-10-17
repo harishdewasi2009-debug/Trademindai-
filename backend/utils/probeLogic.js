@@ -13,6 +13,8 @@
 function classifyOutcome(res, hasData, marketOpen = true) {
   if (!res) return 'error';
   if (res.ok) return hasData ? 'verified' : 'empty';
+  // 401 = our token is invalid/expired (not a segment entitlement problem) → inconclusive.
+  if (res.status === 401) return 'error';
   if (res.kind === 'denied') return 'denied';
   if (res.kind === 'rate_limited') return 'rate_limited';
   if (res.kind === 'no_token') return 'error';
