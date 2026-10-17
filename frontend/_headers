@@ -1,7 +1,8 @@
-# FIX (deploy-cache issue): this app is a single static index.html with no
-# hashed filename per build, so Netlify's default asset caching (and
-# intermediate browser/CDN caches) kept serving the previous deploy's copy
-# until a visitor did a manual hard refresh. Forcing no-store here means
-# every visit re-fetches the latest deployed HTML.
+# HTML always revalidates so a new deploy is picked up immediately
+# (no-cache = revalidate with ETag; unlike no-store it still allows
+# conditional requests and the browser back/forward cache).
 /*
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache, must-revalidate
+# Static images and icons rarely change; cache them for a week.
+/assets/*
+  Cache-Control: public, max-age=604800

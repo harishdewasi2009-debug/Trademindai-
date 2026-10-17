@@ -3,8 +3,32 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
       ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/trading-tools",
+      "destination": "/features/",
+      "permanent": true
+    },
+    {
+      "source": "/trust-and-accuracy",
+      "destination": "/trust-accuracy/",
+      "permanent": true
     }
   ]
 }
