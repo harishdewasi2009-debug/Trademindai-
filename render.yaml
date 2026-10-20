@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: trademindai-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run migrate
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384   # registry ingest is streamed; keep headroom on 512MB
+      - key: UPSTOX_WS_MAX_SUBSCRIPTIONS
+        value: "1000"
+      # Secrets (set in the dashboard, sync: false): DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET,
+      # UPSTOX_API_KEY, UPSTOX_SECRET, UPSTOX_REDIRECT_URI, CRON_SECRET, GEMINI_API_KEY, ...
+      - key: DATABASE_URL
+        sync: false
+      - key: UPSTOX_API_KEY
+        sync: false
+      - key: UPSTOX_SECRET
+        sync: false
