@@ -108,6 +108,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/market/registry', registryRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/alerts', require('./routes/alertRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/referral', referralRoutes);
 app.use('/api/advertisers', advertiserRoutes);
 app.use('/api/feedback', feedbackRoutes);

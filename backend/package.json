@@ -9,7 +9,7 @@
     "dev": "nodemon server.js",
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
-    "test": "node --test tests/market.test.js tests/instrumentData.test.js tests/analysis.test.js tests/verification.test.js",
+    "test": "node --test tests/market.test.js tests/instrumentData.test.js tests/analysis.test.js tests/verification.test.js tests/notificationRules.test.js",
     "audit:upstox": "node scripts/upstoxAudit.js"
   },
   "dependencies": {
@@ -30,7 +30,8 @@
     "upstox-js-sdk": "^2.23.0",
     "ws": "^8.18.0",
     "nodemailer": "^6.9.14",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"
