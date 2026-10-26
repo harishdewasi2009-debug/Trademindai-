@@ -127,6 +127,31 @@ function startUpstoxTokenScheduler() {
     );
   }, { timezone: 'Asia/Kolkata' });
 
+  // ── Notifications (watchlist / portfolio / sector heat / top movers / MCX) ──
+  // Every 5 min, Mon–Fri 09:00–23:55 IST. The engine checks each exchange's own
+  // session (NSE/BSE 09:15–15:30, MCX 09:00–23:30, holidays) and no-ops when
+  // closed. Events are deduped per user, so repeat runs never double-notify.
+  cron.schedule('*/5 9-23 * * 1-5', () => {
+    require('./notificationEngine').runAll().catch(err =>
+      console.error('[tokenScheduler] Notification scan failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
+  // Screener "strong bullish/bearish" alerts — offset 2 min after the coverage
+  // batch (which writes today's signals) so fresh signals are picked up quickly.
+  cron.schedule('2-57/5 9-15 * * 1-5', () => {
+    require('./notificationEngine').runScreenerScan().catch(err =>
+      console.error('[tokenScheduler] Screener notification scan failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
+  // 03:30 IST daily — drop notifications older than 30 days.
+  cron.schedule('30 3 * * *', () => {
+    require('./notificationService').pruneOld().catch(err =>
+      console.error('[tokenScheduler] Notification prune failed:', err.message)
+    );
+  }, { timezone: 'Asia/Kolkata' });
+
   // 06:30 IST daily — re-download Upstox's official instrument master (it is
   // republished each morning) and rebuild the verified registry. No token
   // needed: the master files are public static assets.
