@@ -102,6 +102,14 @@ const config = {
   // wasn't tapped in time, so the admin isn't relying on a single channel.
   adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || null,
 
+  // Web Push (browser/phone notifications). Optional — generate a pair with
+  // `npx web-push generate-vapid-keys`. Without these, in-app + email still work.
+  vapid: {
+    publicKey:  process.env.VAPID_PUBLIC_KEY  || null,
+    privateKey: process.env.VAPID_PRIVATE_KEY || null,
+    subject:    process.env.VAPID_SUBJECT     || 'mailto:support@trademindai.co.in',
+  },
+
   // USD→INR conversion used ONLY for displaying real AI provider cost in
   // the admin panel (ai_requests.cost_usd is stored in USD since every
   // model provider bills in USD). Not used anywhere user-facing — pricing
