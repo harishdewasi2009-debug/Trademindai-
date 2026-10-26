@@ -4,6 +4,7 @@
 // by hand (the app is deployed from GitHub + Render with no shell access).
 // Every statement is safe to re-run.
 const { query } = require('./pool');
+const notificationStatements = require('./notificationsSchema');
 
 const STATEMENTS = [
   // 'moderate_bullish' (16 chars) did not fit VARCHAR(10): every insert failed silently.
@@ -18,6 +19,7 @@ const STATEMENTS = [
   `ALTER TABLE scanner_signal_history ADD COLUMN IF NOT EXISTS eval_note TEXT`,
   // Partial index keeps the "what is still pending?" scan cheap with ~10k signals logged per day.
   `CREATE INDEX IF NOT EXISTS idx_scanner_signal_pending ON scanner_signal_history (signal_date) WHERE outcome = 'pending'`,
+  ...notificationStatements,
 ];
 
 let promise = null;
