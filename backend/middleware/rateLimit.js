@@ -8,7 +8,18 @@ const apiLimiter = rateLimit({
   max: config.rateLimit.max,
   standardHeaders: true,
   legacyHeaders: false,
+  // The notification bell polls /unread-count every ~90s — it has its own, separate limiter
+  // (notifLimiter) so it can't eat the general API budget the rest of the app relies on.
+  skip: (req) => req.path === '/api/notifications/unread-count',
   message: { error: 'Too many requests. Please slow down and try again shortly.' },
+});
+
+const notifLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests.' },
 });
 
 // Strict limiter for login/signup — defends against brute force & credential stuffing
@@ -70,4 +81,4 @@ const advertiserLimiter = rateLimit({
   message: { error: 'Too many enquiries submitted. Please try again later or email us directly.' },
 });
 
-module.exports = { apiLimiter, authLimiter, paymentLimiter, aiLimiter, marketLimiter, adminLimiter, advertiserLimiter };
+module.exports = { apiLimiter, notifLimiter, authLimiter, paymentLimiter, aiLimiter, marketLimiter, adminLimiter, advertiserLimiter };
