@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Under Maintenance | TradeMind AI</title>
+<link rel="icon" href="/assets/favicon.ico">
+<style>
+:root{
+  --bg:#000;--bg2:#0A0A0A;--bg3:#111;--border:#27272A;
+  --text:#fff;--text2:#A1A1AA;--text3:#71717A;
+  --gold:#F59E0B;--gold-light:#FBBF24;--teal:#06B6D4;--teal-dim:rgba(6,182,212,.12);
+  --glow:0 0 48px rgba(139,92,246,.18);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',system-ui,-apple-system,Segoe UI,sans-serif;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.box{max-width:540px;width:100%;text-align:center;padding:40px 28px;background:var(--bg2);
+  border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:16px;box-shadow:var(--glow)}
+.logo{font-weight:700;font-size:15px;letter-spacing:.04em;color:var(--text2);margin-bottom:18px}
+.logo b{color:var(--gold-light)}
+.ico{font-size:46px;margin-bottom:10px}
+h1{font-size:26px;margin:0 0 10px}
+p{font-size:14px;line-height:1.6;color:var(--text2);margin:0 0 14px}
+.count{display:flex;gap:10px;justify-content:center;margin:20px 0}
+.count div{min-width:76px;padding:12px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px}
+.count b{display:block;font-size:26px;color:var(--gold-light);font-variant-numeric:tabular-nums}
+.count span{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.gift{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:14px;background:var(--teal-dim);
+  border:1px solid var(--teal);border-radius:8px;font-size:13px;line-height:1.5;margin-top:8px}
+.gift .g{font-size:20px;line-height:1}
+.note{font-size:11px;color:var(--text3);margin-top:18px}
+.note a{color:var(--text2)}
+.done{display:none}
+.done a{display:inline-block;margin-top:6px;padding:10px 20px;background:var(--gold);color:#000;font-weight:700;
+  border-radius:8px;text-decoration:none;font-size:14px}
+@media(max-width:380px){.count div{min-width:64px}.count b{font-size:22px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<main class="box" role="main">
+  <div class="logo">TradeMind <b>AI</b></div>
+
+  <section id="live">
+    <div class="ico">🛠️</div>
+    <h1>We’re under maintenance</h1>
+    <p>The website is down for about <b style="color:var(--text)">1 day</b> while we upgrade the platform. Thanks for your patience.</p>
+
+    <div class="count" aria-label="Time remaining">
+      <div><b id="h">--</b><span>Hours</span></div>
+      <div><b id="m">--</b><span>Minutes</span></div>
+      <div><b id="s">--</b><span>Seconds</span></div>
+    </div>
+    <p id="back" style="font-size:12px;color:var(--text3);margin-bottom:6px">Expected back: —</p>
+
+    <div class="gift">
+      <span class="g">🎁</span>
+      <span><b>Paid users get +1 day free.</b> Your Pro / Elite subscription will be extended by 1 day automatically to make up for this downtime. You don’t need to do anything.</span>
+    </div>
+    <div class="note">Questions? <a href="mailto:support@trademindai.co.in">support@trademindai.co.in</a></div>
+  </section>
+
+  <section id="done" class="done">
+    <div class="ico">✅</div>
+    <h1>We’re back!</h1>
+    <p>Maintenance is complete. Paid subscribers have received their +1 day extension.</p>
+    <a href="/">Open TradeMind AI</a>
+  </section>
+</main>
+
+<script>
+// ── Set the maintenance window here ──
+// Start time (IST) and length. The page counts down to start + HOURS.
+var START = '2026-11-01T00:00:00+05:30';
+var HOURS = 24;
+
+(function(){
+  var end = new Date(START).getTime() + HOURS * 3600000;
+  var $ = function(id){ return document.getElementById(id); };
+  var pad = function(n){ return String(n).padStart(2,'0'); };
+
+  $('back').textContent = 'Expected back: ' + new Date(end).toLocaleString('en-IN',
+    {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'});
+
+  function tick(){
+    var left = end - Date.now();
+    if (left <= 0){
+      $('live').style.display = 'none';
+      $('done').style.display = 'block';
+      return;
+    }
+    $('h').textContent = pad(Math.floor(left / 3600000));
+    $('m').textContent = pad(Math.floor(left % 3600000 / 60000));
+    $('s').textContent = pad(Math.floor(left % 60000 / 1000));
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+</script>
+</body>
+</html>
