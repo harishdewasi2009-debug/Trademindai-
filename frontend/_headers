@@ -1,0 +1,8 @@
+# HTML always revalidates so a new deploy is picked up immediately
+# (no-cache = revalidate with ETag; unlike no-store it still allows
+# conditional requests and the browser back/forward cache).
+/*
+  Cache-Control: no-cache, must-revalidate
+# Static images and icons rarely change; cache them for a week.
+/assets/*
+  Cache-Control: public, max-age=604800
